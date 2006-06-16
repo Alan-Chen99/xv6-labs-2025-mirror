@@ -9,6 +9,8 @@
 
 extern char edata[], end[];
 
+char buf[512];
+
 int main() {
   struct proc *p;
   int i;
@@ -16,16 +18,11 @@ int main() {
   // clear BSS
   memset(edata, 0, end - edata);
 
-  // partially initizialize PIC
-  outb(0x20 + 1, 0xFF); // IO_PIC1
-  outb(0xA0 + 1, 0xFF); // IO_PIC2
-  outb(0x20, 0x11);
-  outb(0x20 + 1, 32);
-
   cprintf("\nxV6\n\n");
 
   kinit(); // physical memory allocator
   tinit(); // traps and interrupts
+  pic_init();
 
   // create fake process zero
   p = &proc[0];
@@ -45,10 +42,20 @@ int main() {
   p->ppid = 0;
   setupsegs(p);
 
+  // turn on interrupts
+  write_eflags(read_eflags() | FL_IF);
+  irq_setmask_8259A(0);
+
+#if 1
+  ide_read(0, buf, 1);
+  cprintf("sec0.0 %x\n", buf[0] & 0xff);
+#endif
+
+#if 0
   p = newproc();
 
   i = 0;
-  p->mem[i++] = 0x90; // nop
+  p->mem[i++] = 0x90; // nop 
   p->mem[i++] = 0xb8; // mov ..., %eax
   p->mem[i++] = SYS_fork;
   p->mem[i++] = 0;
@@ -72,6 +79,7 @@ int main() {
   p->mem[i++] = T_SYSCALL;
   p->tf->tf_eip = 0;
   p->tf->tf_esp = p->sz;
+#endif
 
   swtch();
 
