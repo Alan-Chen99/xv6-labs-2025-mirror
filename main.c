@@ -33,6 +33,9 @@ int main() {
   tinit();   // traps and interrupts
   pic_init();
 
+  while (1)
+    ;
+
   // create fake process zero
   p = &proc[0];
   curproc = p;
