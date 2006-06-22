@@ -97,7 +97,7 @@ static uint32_t *lapicaddr;
 static struct cpu {
   uint8_t apicid; /* Local APIC ID */
   int lintr[2];   /* Local APIC */
-} cpu[NCPU];
+} cpus[NCPU];
 static int ncpu;
 static struct cpu *bcpu;
 
@@ -107,7 +107,7 @@ static void lapic_write(int r, int data) {
   *(lapicaddr + (r / sizeof(*lapicaddr))) = data;
 }
 
-static void lapic_init(int c) {
+void lapic_init(int c) {
   uint32_t r, lvt;
 
   cprintf("lapic_init %d\n", c);
@@ -123,8 +123,8 @@ static void lapic_init(int c) {
    * LINT[01] are set to ExtINT.
    * Acknowledge any outstanding interrupts.
    */
-  lapic_write(LAPIC_LINT0, cpu[c].lintr[0]);
-  lapic_write(LAPIC_LINT1, cpu[c].lintr[1]);
+  lapic_write(LAPIC_LINT0, cpus[c].lintr[0]);
+  lapic_write(LAPIC_LINT1, cpus[c].lintr[1]);
   lapic_write(LAPIC_EOI, 0);
 
   lvt = (lapic_read(LAPIC_VER) >> 16) & 0xFF;
@@ -156,7 +156,7 @@ static void lapic_init(int c) {
 
 static void lapic_online(void) { lapic_write(LAPIC_TPR, 0); }
 
-int lapic_cpu_number(void) { return (lapic_read(LAPIC_ID) >> 24) & 0xFF; }
+int cpu(void) { return (lapic_read(LAPIC_ID) >> 24) & 0xFF; }
 
 static void lapic_startap(struct cpu *c, int v) {
   int crhi, i;
@@ -295,12 +295,12 @@ void mp_init() {
     switch (*p) {
     case MPPROCESSOR:
       proc = (struct MPPE *)p;
-      cpu[ncpu].apicid = proc->apicid;
-      cpu[ncpu].lintr[0] = APIC_IMASK;
-      cpu[ncpu].lintr[1] = APIC_IMASK;
-      cprintf("a processor %x\n", cpu[ncpu].apicid);
+      cpus[ncpu].apicid = proc->apicid;
+      cpus[ncpu].lintr[0] = APIC_IMASK;
+      cpus[ncpu].lintr[1] = APIC_IMASK;
+      cprintf("a processor %x\n", cpus[ncpu].apicid);
       if (proc->flags & MPBP) {
-        bcpu = &cpu[ncpu];
+        bcpu = &cpus[ncpu];
       }
       ncpu++;
       p += sizeof(struct MPPE);
@@ -325,8 +325,8 @@ void mp_init() {
     }
   }
 
-  lapic_init(cpu - bcpu);
-  cprintf("ncpu: %d boot %d\n", ncpu, cpu - bcpu);
+  lapic_init(bcpu - cpus);
+  cprintf("ncpu: %d boot %d\n", ncpu, bcpu - cpus);
 
   lapic_online();
 
@@ -335,13 +335,13 @@ void mp_init() {
           (uint32_t)_binary_bootother_size);
 
   acquire_spinlock(&kernel_lock);
-  for (c = cpu; c < &cpu[ncpu]; c++) {
+  for (c = cpus; c < &cpus[ncpu]; c++) {
     if (c == bcpu)
       continue;
-    cprintf("starting processor %d\n", c - cpu);
-    release_grant_spinlock(&kernel_lock, c - cpu);
+    cprintf("starting processor %d\n", c - cpus);
+    release_grant_spinlock(&kernel_lock, c - cpus);
     lapic_startap(c, (uint32_t)KADDR(APBOOTCODE));
     acquire_spinlock(&kernel_lock);
-    cprintf("done starting processor %d\n", c - cpu);
+    cprintf("done starting processor %d\n", c - cpus);
   }
 }

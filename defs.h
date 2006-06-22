@@ -33,7 +33,7 @@ void pic_init(void);
 
 // mp.c
 void mp_init(void);
-int lapic_cpu_number(void);
+int cpu(void);
 int mp_isbcpu(void);
 
 // spinlock.c
@@ -41,3 +41,6 @@ extern uint32_t kernel_lock;
 void acquire_spinlock(uint32_t *lock);
 void release_spinlock(uint32_t *lock);
 void release_grant_spinlock(uint32_t *lock, int cpu);
+
+// main.c
+void load_icode(struct proc *p, uint8_t *binary, unsigned size);

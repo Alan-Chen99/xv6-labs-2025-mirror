@@ -25,10 +25,13 @@ void tinit() {
 
 void trap(struct Trapframe *tf) {
   int v = tf->tf_trapno;
+
+  acquire_spinlock(&kernel_lock); // released in trapret in trapasm.S
+
   cprintf("trap %d eip %x:%x\n", tf->tf_trapno, tf->tf_cs, tf->tf_eip);
 
   if (v == T_SYSCALL) {
-    curproc->tf = tf;
+    curproc[cpu()]->tf = tf;
     syscall();
     return;
   }
