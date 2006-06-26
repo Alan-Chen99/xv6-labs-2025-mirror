@@ -13,15 +13,16 @@ extern unsigned vectors[]; /* vectors.S, array of 256 entry point addresses */
 extern void trapenter();
 extern void trapenter1();
 
-void tinit() {
+void tvinit() {
   int i;
 
   for (i = 0; i < 256; i++) {
     SETGATE(idt[i], 1, SEG_KCODE << 3, vectors[i], 0);
   }
   SETGATE(idt[T_SYSCALL], T_SYSCALL, SEG_KCODE << 3, vectors[48], 3);
-  asm volatile("lidt %0" : : "g"(idt_pd.pd_lim));
 }
+
+void idtinit() { asm volatile("lidt %0" : : "g"(idt_pd.pd_lim)); }
 
 void trap(struct Trapframe *tf) {
   int v = tf->tf_trapno;

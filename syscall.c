@@ -38,9 +38,14 @@ int fetcharg(int argno, int *ip) {
   return fetchint(curproc[cpu()], esp + 8 + 4 * argno, ip);
 }
 
-void sys_fork() { newproc(); }
+int sys_fork() {
+  struct proc *np;
 
-void sys_exit() {
+  np = newproc();
+  return np->pid;
+}
+
+int sys_exit() {
   struct proc *p;
   struct proc *cp = curproc[cpu()];
 
@@ -57,12 +62,14 @@ void sys_exit() {
       p->pid = 1;
 
   swtch();
+
+  return 0;
 }
 
-void sys_wait() {
+int sys_wait() {
   struct proc *p;
   struct proc *cp = curproc[cpu()];
-  int any;
+  int any, pid;
 
   cprintf("waid pid %d ppid %d\n", cp->pid, cp->ppid);
 
@@ -72,49 +79,53 @@ void sys_wait() {
       if (p->state == ZOMBIE && p->ppid == cp->pid) {
         kfree(p->mem, p->sz);
         kfree(p->kstack, KSTACKSIZE);
+        pid = p->pid;
         p->state = UNUSED;
         cprintf("%x collected %x\n", cp, p);
-        return;
+        return pid;
       }
       if (p->state != UNUSED && p->ppid == cp->pid)
         any = 1;
     }
     if (any == 0) {
       cprintf("%x nothing to wait for\n", cp);
-      return;
+      return -1;
     }
     sleep(cp);
   }
 }
 
-void sys_cons_putc() {
+int sys_cons_putc() {
   int c;
 
   fetcharg(0, &c);
   cons_putc(c & 0xff);
+  return 0;
 }
 
 void syscall() {
   struct proc *cp = curproc[cpu()];
   int num = cp->tf->tf_regs.reg_eax;
+  int ret = -1;
 
   cprintf("%x sys %d\n", cp, num);
   switch (num) {
   case SYS_fork:
-    sys_fork();
+    ret = sys_fork();
     break;
   case SYS_exit:
-    sys_exit();
+    ret = sys_exit();
     break;
   case SYS_wait:
-    sys_wait();
+    ret = sys_wait();
     break;
   case SYS_cons_putc:
-    sys_cons_putc();
+    ret = sys_cons_putc();
     break;
   default:
     cprintf("unknown sys call %d\n", num);
     // XXX fault
     break;
   }
+  cp->tf->tf_regs.reg_eax = ret;
 }

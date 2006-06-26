@@ -69,6 +69,7 @@ struct proc *newproc() {
   np->tf =
       (struct Trapframe *)(np->kstack + KSTACKSIZE - sizeof(struct Trapframe));
   *(np->tf) = *(op->tf);
+  np->tf->tf_regs.reg_eax = 0; // so fork() returns 0 in child
   sp = (unsigned *)np->tf;
   *(--sp) = (unsigned)&trapret; // for return from swtch()
   *(--sp) = 0;                  // previous bp for leave in swtch()

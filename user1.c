@@ -1,4 +1,4 @@
-void fork() {
+int fork() {
   asm("mov $1, %eax");
   asm("int $48");
 }
@@ -8,16 +8,22 @@ void cons_putc(int c) {
   asm("int $48");
 }
 
-void puts(char *s) {
+int puts(char *s) {
   int i;
 
   for (i = 0; s[i]; i++)
     cons_putc(s[i]);
+  return i;
 }
 
 main() {
-  // fork();
-  puts("hello!\n");
+  int pid;
+  pid = fork();
+  if (pid == 0) {
+    cons_putc('C');
+  } else {
+    cons_putc('P');
+  }
   while (1)
     ;
 }

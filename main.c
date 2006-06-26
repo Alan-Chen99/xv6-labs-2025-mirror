@@ -23,6 +23,7 @@ int main() {
     cprintf("an application processor\n");
     release_spinlock(&kernel_lock);
     acquire_spinlock(&kernel_lock);
+    idtinit();
     lapic_init(cpu());
     curproc[cpu()] = &proc[0]; // XXX
     swtch();
@@ -35,7 +36,8 @@ int main() {
 
   mp_init(); // multiprocessor
   kinit();   // physical memory allocator
-  tinit();   // traps and interrupts
+  tvinit();  // trap vectors
+  idtinit(); // CPU's idt
   pic_init();
 
   // create fake process zero
