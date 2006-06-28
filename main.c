@@ -34,11 +34,11 @@ int main() {
 
   cprintf("\nxV6\n\n");
 
-  mp_init(); // multiprocessor
-  kinit();   // physical memory allocator
-  tvinit();  // trap vectors
-  idtinit(); // CPU's idt
-  pic_init();
+  pic_init(); // initialize PIC---not clear why
+  mp_init();  // multiprocessor
+  kinit();    // physical memory allocator
+  tvinit();   // trap vectors
+  idtinit();  // CPU's idt
 
   // create fake process zero
   p = &proc[0];
@@ -58,8 +58,9 @@ int main() {
   p->ppid = 0;
   setupsegs(p);
 
-  // turn on interrupts
-  irq_setmask_8259A(0xff);
+  // turn on interrupts on boot processor
+  lapic_timerinit();
+  lapic_enableintr();
   write_eflags(read_eflags() | FL_IF);
 
 #if 0
@@ -67,38 +68,8 @@ int main() {
   cprintf("sec0.0 %x\n", buf[0] & 0xff);
 #endif
 
-#if 1
   p = newproc();
   load_icode(p, _binary_usertests_start, (unsigned)_binary_usertests_size);
-#endif
-
-#if 0
-  i = 0;
-  p->mem[i++] = 0x90; // nop 
-  p->mem[i++] = 0xb8; // mov ..., %eax
-  p->mem[i++] = SYS_fork;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0xcd; // int
-  p->mem[i++] = T_SYSCALL;
-  p->mem[i++] = 0xb8; // mov ..., %eax
-  p->mem[i++] = SYS_wait;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0xcd; // int
-  p->mem[i++] = T_SYSCALL;
-  p->mem[i++] = 0xb8; // mov ..., %eax
-  p->mem[i++] = SYS_exit;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0;
-  p->mem[i++] = 0xcd; // int
-  p->mem[i++] = T_SYSCALL;
-  p->tf->tf_eip = 0;
-  p->tf->tf_esp = p->sz;
-#endif
 
   swtch();
 
