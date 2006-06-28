@@ -12,6 +12,8 @@ void acquire_spinlock(uint32_t *lock) {
 
   if (*lock == cpu_id)
     return;
+
+  lapic_disableintr();
   while (cmpxchg(LOCK_FREE, cpu_id, lock) != cpu_id) {
     ;
   }
@@ -24,6 +26,7 @@ void release_spinlock(uint32_t *lock) {
   if (*lock != cpu_id)
     panic("release_spinlock: releasing a lock that i don't own\n");
   *lock = LOCK_FREE;
+  lapic_enableintr();
 }
 
 void release_grant_spinlock(uint32_t *lock, int c) {

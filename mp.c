@@ -168,6 +168,8 @@ void lapic_init(int c) {
 
 void lapic_enableintr(void) { lapic_write(LAPIC_TPR, 0); }
 
+void lapic_disableintr(void) { lapic_write(LAPIC_TPR, 0xFF); }
+
 int cpu(void) { return (lapic_read(LAPIC_ID) >> 24) & 0xFF; }
 
 static void lapic_startap(struct cpu *c, int v) {
