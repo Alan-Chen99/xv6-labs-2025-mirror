@@ -26,6 +26,10 @@ int pipe_alloc(struct fd **fd1, struct fd **fd2) {
     goto oops;
   if ((p = (struct pipe *)kalloc(PAGE)) == 0)
     goto oops;
+  p->readopen = 1;
+  p->writeopen = 1;
+  p->writep = 0;
+  p->readp = 0;
   (*fd1)->type = FD_PIPE;
   (*fd1)->readable = 1;
   (*fd1)->writeable = 0;
@@ -50,10 +54,13 @@ oops:
 }
 
 void pipe_close(struct pipe *p, int writeable) {
-  if (writeable)
+  if (writeable) {
     p->writeopen = 0;
-  else
+    wakeup(&p->readp);
+  } else {
     p->readopen = 0;
+    wakeup(&p->writep);
+  }
   if (p->readopen == 0 && p->writeopen == 0)
     kfree((char *)p, PAGE);
 }
@@ -65,11 +72,13 @@ int pipe_write(struct pipe *p, char *addr, int n) {
     while (((p->writep + 1) % PIPESIZE) == p->readp) {
       if (p->readopen == 0)
         return -1;
+      wakeup(&p->readp);
       sleep(&p->writep);
     }
     p->data[p->writep] = addr[i];
     p->writep = (p->writep + 1) % PIPESIZE;
   }
+  wakeup(&p->readp);
   return i;
 }
 
@@ -88,5 +97,6 @@ int pipe_read(struct pipe *p, char *addr, int n) {
     addr[i] = p->data[p->readp];
     p->readp = (p->readp + 1) % PIPESIZE;
   }
+  wakeup(&p->writep);
   return i;
 }

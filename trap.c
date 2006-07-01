@@ -27,16 +27,28 @@ void idtinit() { asm volatile("lidt %0" : : "g"(idt_pd.pd_lim)); }
 void trap(struct Trapframe *tf) {
   int v = tf->tf_trapno;
 
+  if (tf->tf_cs == 0x8 && kernel_lock == cpu())
+    cprintf("cpu %d: trap from %x:%x with lock=%d\n", cpu(), tf->tf_cs,
+            tf->tf_eip, kernel_lock);
+
   acquire_spinlock(&kernel_lock); // released in trapret in trapasm.S
 
   if (v == T_SYSCALL) {
-    curproc[cpu()]->tf = tf;
+    struct proc *cp = curproc[cpu()];
+    cp->tf = tf;
     syscall();
+    if (cp != curproc[cpu()])
+      panic("trap ret wrong curproc");
+    if (cp->state != RUNNING)
+      panic("trap ret but not RUNNING");
+    if (tf != cp->tf)
+      panic("trap ret wrong tf");
+    if (read_esp() < cp->kstack || read_esp() >= cp->kstack + KSTACKSIZE)
+      panic("trap ret esp wrong");
     return;
   }
 
   if (v == (IRQ_OFFSET + IRQ_TIMER)) {
-    curproc[cpu()]->tf = tf;
     lapic_timerintr();
     return;
   }

@@ -33,17 +33,6 @@ struct fd *fd_alloc() {
   return 0;
 }
 
-void fd_close(struct fd *fd) {
-  if (fd->type == FD_CLOSED || fd->count <= 0)
-    panic("fd_close");
-  fd->count -= 1;
-  if (fd->count == 0) {
-    if (fd->type == FD_PIPE)
-      pipe_close(fd->pipe, fd->writeable);
-    fd->type = FD_CLOSED;
-  }
-}
-
 /*
  * addr is a kernel address, pointing into some process's p->mem.
  */
@@ -66,5 +55,20 @@ int fd_read(struct fd *fd, char *addr, int n) {
   } else {
     panic("fd_read");
     return -1;
+  }
+}
+
+void fd_close(struct fd *fd) {
+  if (fd->count < 1 || fd->type == FD_CLOSED)
+    panic("fd_close");
+  fd->count -= 1;
+
+  if (fd->count == 0) {
+    if (fd->type == FD_PIPE) {
+      pipe_close(fd->pipe, fd->writeable);
+    } else {
+      panic("fd_close");
+    }
+    fd->type = FD_CLOSED;
   }
 }
