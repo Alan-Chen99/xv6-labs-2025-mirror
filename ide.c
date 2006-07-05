@@ -29,6 +29,12 @@ static int ide_wait_ready(int check_error) {
   return 0;
 }
 
+void ide_init(void) {
+  cprintf("ide_init: enable IRQ 14\n");
+  irq_setmask_8259A(irq_mask_8259A & ~(1 << 14));
+  ide_wait_ready(0);
+}
+
 int ide_probe_disk1(void) {
   int r, x;
 
@@ -70,8 +76,6 @@ int ide_read(uint32_t secno, void *dst, unsigned nsecs) {
   outb(0x1F5, (secno >> 16) & 0xFF);
   outb(0x1F6, 0xE0 | ((diskno & 1) << 4) | ((secno >> 24) & 0x0F));
   outb(0x1F7, 0x20); // CMD 0x20 means read sector
-
-  sleep(0);
 
   for (; nsecs > 0; nsecs--, dst += 512) {
     if ((r = ide_wait_ready(1)) < 0)
