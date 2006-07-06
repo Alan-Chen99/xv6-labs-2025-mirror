@@ -284,5 +284,6 @@ struct Trapframe {
 
 #define IRQ_OFFSET 32 // IRQ 0 corresponds to int IRQ_OFFSET
 
+#define IRQ_IDE 14
 #define IRQ_ERROR 19
 #define IRQ_SPURIOUS 31
