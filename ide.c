@@ -17,6 +17,7 @@
 #define IDE_ERR 0x01
 
 static int diskno = 0;
+int disk_channel;
 
 static int ide_wait_ready(int check_error) {
   int r;
@@ -35,7 +36,10 @@ void ide_init(void) {
   ide_wait_ready(0);
 }
 
-void ide_intr(void) { cprintf("ide_intr\n"); }
+void ide_intr(void) {
+  cprintf("ide_intr\n");
+  wakeup(&disk_channel);
+}
 
 int ide_probe_disk1(void) {
   int r, x;
@@ -63,11 +67,9 @@ void ide_set_disk(int d) {
   diskno = d;
 }
 
-int ide_read(uint32_t secno, void *dst, unsigned nsecs) {
-  int r;
-
+int ide_start_read(uint32_t secno, void *dst, unsigned nsecs) {
   if (nsecs > 256)
-    panic("ide_read");
+    panic("ide_start_read: nsecs too large");
 
   ide_wait_ready(0);
 
@@ -79,14 +81,17 @@ int ide_read(uint32_t secno, void *dst, unsigned nsecs) {
   outb(0x1F6, 0xE0 | ((diskno & 1) << 4) | ((secno >> 24) & 0x0F));
   outb(0x1F7, 0x20); // CMD 0x20 means read sector
 
-#if 0
+  return 0;
+}
+
+int ide_read(uint32_t secno, void *dst, unsigned nsecs) {
+  int r;
+
   for (; nsecs > 0; nsecs--, dst += 512) {
     if ((r = ide_wait_ready(1)) < 0)
       return r;
-    insl(0x1F0, dst, 512/4);
+    insl(0x1F0, dst, 512 / 4);
   }
-#endif
-
   return 0;
 }
 
