@@ -137,32 +137,7 @@ int sys_fork() {
 }
 
 int sys_exit() {
-  struct proc *p;
-  struct proc *cp = curproc[cpu()];
-  int fd;
-
-  for (fd = 0; fd < NOFILE; fd++) {
-    if (cp->fds[fd]) {
-      fd_close(cp->fds[fd]);
-      cp->fds[fd] = 0;
-    }
-  }
-
-  cp->state = ZOMBIE;
-
-  // wake up parent
-  for (p = proc; p < &proc[NPROC]; p++)
-    if (p->pid == cp->ppid)
-      wakeup(p);
-
-  // abandon children
-  for (p = proc; p < &proc[NPROC]; p++)
-    if (p->ppid == cp->pid)
-      p->pid = 1;
-
-  // switch into scheduler
-  swtch();
-
+  proc_exit();
   return 0;
 }
 
@@ -226,6 +201,22 @@ int sys_block(void) {
   return 0;
 }
 
+int sys_kill() {
+  int pid;
+  struct proc *p;
+
+  fetcharg(0, &pid);
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->pid == pid && p->state != UNUSED) {
+      p->killed = 1;
+      if (p->state == WAITING)
+        p->state = RUNNABLE;
+      return 0;
+    }
+  }
+  return -1;
+}
+
 void syscall() {
   struct proc *cp = curproc[cpu()];
   int num = cp->tf->tf_regs.reg_eax;
@@ -259,6 +250,9 @@ void syscall() {
     break;
   case SYS_block:
     ret = sys_block();
+    break;
+  case SYS_kill:
+    ret = sys_kill();
     break;
   default:
     cprintf("unknown sys call %d\n", num);

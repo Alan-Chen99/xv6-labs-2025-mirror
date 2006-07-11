@@ -17,7 +17,7 @@ void acquire_spinlock(uint32_t *lock) {
   // on a real machine there would be a memory barrier here
   if (DEBUG)
     cprintf("cpu%d: acquiring at %x\n", cpu_id, getcallerpc(&lock));
-  write_eflags(read_eflags() & ~FL_IF);
+  cli();
   if (*lock == cpu_id)
     panic("recursive lock");
 
@@ -36,7 +36,7 @@ void release_spinlock(uint32_t *lock) {
     panic("release_spinlock: releasing a lock that i don't own\n");
   *lock = LOCK_FREE;
   // on a real machine there would be a memory barrier here
-  write_eflags(read_eflags() | FL_IF);
+  sti();
 }
 
 void release_grant_spinlock(uint32_t *lock, int c) {
