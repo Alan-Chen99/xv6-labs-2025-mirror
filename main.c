@@ -26,6 +26,8 @@ int main() {
     acquire_spinlock(&kernel_lock);
     idtinit(); // CPU's idt
     lapic_init(cpu());
+    lapic_timerinit();
+    lapic_enableintr();
     scheduler();
   }
   acpu = 1;
