@@ -35,7 +35,7 @@ int fetcharg(int argno, int *ip) {
   unsigned esp;
 
   esp = (unsigned)curproc[cpu()]->tf->tf_esp;
-  return fetchint(curproc[cpu()], esp + 8 + 4 * argno, ip);
+  return fetchint(curproc[cpu()], esp + 4 + 4 * argno, ip);
 }
 
 int putint(struct proc *p, unsigned addr, int ip) {
@@ -160,6 +160,7 @@ int sys_exit() {
     if (p->ppid == cp->pid)
       p->pid = 1;
 
+  // switch into scheduler
   swtch();
 
   return 0;

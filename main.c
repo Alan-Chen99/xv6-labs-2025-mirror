@@ -26,8 +26,7 @@ int main() {
     acquire_spinlock(&kernel_lock);
     idtinit(); // CPU's idt
     lapic_init(cpu());
-    curproc[cpu()] = &proc[0]; // XXX
-    swtch();
+    scheduler();
   }
   acpu = 1;
   // clear BSS
@@ -43,7 +42,7 @@ int main() {
 
   // create fake process zero
   p = &proc[0];
-  curproc[cpu()] = p;
+  memset(p, 0, sizeof *p);
   p->state = WAITING;
   p->sz = 4 * PAGE;
   p->mem = kalloc(p->sz);
@@ -69,10 +68,10 @@ int main() {
   write_eflags(read_eflags() | FL_IF);
 
   p = newproc();
-  //  load_icode(p, _binary_usertests_start, (unsigned) _binary_usertests_size);
+  // load_icode(p, _binary_usertests_start, (unsigned) _binary_usertests_size);
   load_icode(p, _binary_userfs_start, (unsigned)_binary_userfs_size);
-
-  swtch();
+  cprintf("loaded userfs\n");
+  scheduler();
 
   return 0;
 }

@@ -2,4 +2,7 @@
 
 char buf[1024];
 
-main() { block(); }
+main() {
+  puts("userfs running\n");
+  block();
+}

@@ -98,7 +98,7 @@ void cprintf(char *fmt, ...) {
       if (c == 'd') {
         printint(*ap, 10, 1);
         ap++;
-      } else if (c == 'x') {
+      } else if (c == 'x' || c == 'p') {
         printint(*ap, 16, 0);
         ap++;
       } else if (c == '%') {
