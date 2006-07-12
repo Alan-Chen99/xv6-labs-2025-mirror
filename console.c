@@ -4,6 +4,7 @@
 #include "spinlock.h"
 
 struct spinlock console_lock;
+int use_printf_lock = 0;
 
 /*
  * copy console output to parallel port, which you can tell
@@ -25,7 +26,8 @@ void cons_putc(int c) {
   unsigned short *crt = (unsigned short *)0xB8000; // base of CGA memory
   int ind;
 
-  // acquire(&console_lock);
+  if (use_printf_lock)
+    acquire(&console_lock);
 
   lpt_putc(c);
 
@@ -58,7 +60,8 @@ void cons_putc(int c) {
   outb(crtport, 15);
   outb(crtport + 1, ind);
 
-  // release(&console_lock);
+  if (use_printf_lock)
+    release(&console_lock);
 }
 
 void printint(int xx, int base, int sgn) {
@@ -117,6 +120,8 @@ void cprintf(char *fmt, ...) {
 }
 
 void panic(char *s) {
+  use_printf_lock = 0;
+  cprintf("panic: ");
   cprintf(s, 0);
   cprintf("\n", 0);
   while (1)

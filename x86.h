@@ -243,12 +243,6 @@ static __inline uint64_t read_tsc(void) {
   return tsc;
 }
 
-// disable interrupts
-static __inline void cli(void) { __asm __volatile("cli"); }
-
-// enable interrupts
-static __inline void sti(void) { __asm __volatile("sti"); }
-
 struct PushRegs {
   /* registers as pushed by pusha */
   uint32_t reg_edi;
