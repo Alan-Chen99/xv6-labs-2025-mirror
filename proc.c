@@ -144,7 +144,6 @@ void scheduler(void) {
 
     if (i < NPROC) {
       np->state = RUNNING;
-      release(&proc_table_lock);
       break;
     }
 
@@ -154,6 +153,8 @@ void scheduler(void) {
 
   cpus[cpu()].lastproc = np;
   curproc[cpu()] = np;
+
+  release(&proc_table_lock);
 
   // h/w sets busy bit in TSS descriptor sometimes, and faults
   // if it's set in LTR. so clear tss descriptor busy bit.
