@@ -15,15 +15,11 @@ extern char _binary_user1_start[], _binary_user1_size[];
 extern char _binary_usertests_start[], _binary_usertests_size[];
 extern char _binary_userfs_start[], _binary_userfs_size[];
 
-char buf[512];
-
 int main() {
   struct proc *p;
 
   if (acpu) {
     cprintf("an application processor\n");
-    release_spinlock(&kernel_lock);
-    acquire_spinlock(&kernel_lock);
     idtinit(); // CPU's idt
     lapic_init(cpu());
     lapic_timerinit();
@@ -37,7 +33,6 @@ int main() {
   cprintf("\nxV6\n\n");
 
   pic_init(); // initialize PIC
-  mp_init();  // multiprocessor
   kinit();    // physical memory allocator
   tvinit();   // trap vectors
   idtinit();  // CPU's idt
@@ -60,11 +55,14 @@ int main() {
   p->ppid = 0;
   setupsegs(p);
 
+  mp_init(); // multiprocessor
+
   // turn on timer and enable interrupts on the local APIC
   lapic_timerinit();
   lapic_enableintr();
+
   // init disk device
-  ide_init();
+  // ide_init();
 
   // become interruptable
   sti();
@@ -73,7 +71,9 @@ int main() {
 
   load_icode(p, _binary_usertests_start, (unsigned)_binary_usertests_size);
   // load_icode(p, _binary_userfs_start, (unsigned) _binary_userfs_size);
+  p->state = RUNNABLE;
   cprintf("loaded userfs\n");
+
   scheduler();
 
   return 0;

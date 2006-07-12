@@ -5,6 +5,7 @@
 #include "defs.h"
 #include "x86.h"
 #include "traps.h"
+#include "syscall.h"
 
 struct Gatedesc idt[256];
 struct Pseudodesc idt_pd = {0, sizeof(idt) - 1, (unsigned)&idt};
@@ -26,12 +27,6 @@ void idtinit() { asm volatile("lidt %0" : : "g"(idt_pd.pd_lim)); }
 
 void trap(struct Trapframe *tf) {
   int v = tf->tf_trapno;
-
-  if (tf->tf_cs == 0x8 && kernel_lock == cpu())
-    cprintf("cpu %d: trap %d from %x:%x with lock=%d\n", cpu(), v, tf->tf_cs,
-            tf->tf_eip, kernel_lock);
-
-  acquire_spinlock(&kernel_lock); // released in trapret in trapasm.S
 
   if (v == T_SYSCALL) {
     struct proc *cp = curproc[cpu()];

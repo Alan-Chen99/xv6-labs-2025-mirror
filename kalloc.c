@@ -10,6 +10,9 @@
 #include "param.h"
 #include "types.h"
 #include "defs.h"
+#include "spinlock.h"
+
+struct spinlock kalloc_lock;
 
 struct run {
   struct run *next;
@@ -50,6 +53,8 @@ void kfree(char *cp, int len) {
   for (i = 0; i < len; i++)
     cp[i] = 1;
 
+  acquire(&kalloc_lock);
+
   rr = &freelist;
   while (*rr) {
     struct run *rend = (struct run *)((char *)(*rr) + (*rr)->len);
@@ -59,13 +64,13 @@ void kfree(char *cp, int len) {
       p->len = len + (*rr)->len;
       p->next = (*rr)->next;
       *rr = p;
-      return;
+      goto out;
     }
     if (pend < *rr) {
       p->len = len;
       p->next = *rr;
       *rr = p;
-      return;
+      goto out;
     }
     if (p == rend) {
       (*rr)->len += len;
@@ -73,13 +78,16 @@ void kfree(char *cp, int len) {
         (*rr)->len += (*rr)->next->len;
         (*rr)->next = (*rr)->next->next;
       }
-      return;
+      goto out;
     }
     rr = &((*rr)->next);
   }
   p->len = len;
   p->next = 0;
   *rr = p;
+
+out:
+  release(&kalloc_lock);
 }
 
 /*
@@ -93,20 +101,25 @@ char *kalloc(int n) {
   if (n % PAGE)
     panic("kalloc");
 
+  acquire(&kalloc_lock);
+
   rr = &freelist;
   while (*rr) {
     struct run *r = *rr;
     if (r->len == n) {
       *rr = r->next;
+      release(&kalloc_lock);
       return (char *)r;
     }
     if (r->len > n) {
       char *p = (char *)r + (r->len - n);
       r->len -= n;
+      release(&kalloc_lock);
       return p;
     }
     rr = &(*rr)->next;
   }
+  release(&kalloc_lock);
   return 0;
 }
 
