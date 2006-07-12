@@ -54,6 +54,9 @@ void trap(struct Trapframe *tf) {
     struct proc *cp = curproc[cpu()];
     lapic_timerintr();
     if (cp) {
+      if (cpus[cpu()].clis != 0)
+        panic("trap clis > 0");
+      cpus[cpu()].clis += 1;
       sti();
       if (cp->killed)
         proc_exit();
@@ -61,6 +64,7 @@ void trap(struct Trapframe *tf) {
     }
     return;
   }
+
   if (v == (IRQ_OFFSET + IRQ_IDE)) {
     ide_intr();
     return;
