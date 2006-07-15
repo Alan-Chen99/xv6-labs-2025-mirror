@@ -98,7 +98,7 @@ void *ide_start_read(uint32_t secno, void *dst, unsigned nsecs) {
     panic("ide_start_read: nsecs too large");
 
   while ((head + 1) % NREQUEST == tail)
-    sleep(&disk_channel);
+    sleep(&disk_channel, 0);
 
   r = &request[head];
   r->secno = secno;
