@@ -144,36 +144,16 @@ int sys_fork(void) {
 
 int sys_exit(void) {
   proc_exit();
-  return 0;
+  return 0; // not reached
 }
 
-int sys_wait(void) {
-  struct proc *p;
-  struct proc *cp = curproc[cpu()];
-  int any, pid;
+int sys_wait(void) { return proc_wait(); }
 
-  acquire(&proc_table_lock);
+int sys_kill(void) {
+  int pid;
 
-  while (1) {
-    any = 0;
-    for (p = proc; p < &proc[NPROC]; p++) {
-      if (p->state == ZOMBIE && p->ppid == cp->pid) {
-        kfree(p->mem, p->sz);
-        kfree(p->kstack, KSTACKSIZE);
-        pid = p->pid;
-        p->state = UNUSED;
-        release(&proc_table_lock);
-        return pid;
-      }
-      if (p->state != UNUSED && p->ppid == cp->pid)
-        any = 1;
-    }
-    if (any == 0) {
-      release(&proc_table_lock);
-      return -1;
-    }
-    sleep(cp, &proc_table_lock);
-  }
+  fetcharg(0, &pid);
+  return proc_kill(pid);
 }
 
 int sys_cons_putc(void) {
@@ -205,25 +185,6 @@ int sys_block(void) {
     cprintf("\n");
   }
   return 0;
-}
-
-int sys_kill(void) {
-  int pid;
-  struct proc *p;
-
-  fetcharg(0, &pid);
-  acquire(&proc_table_lock);
-  for (p = proc; p < &proc[NPROC]; p++) {
-    if (p->pid == pid && p->state != UNUSED) {
-      p->killed = 1;
-      if (p->state == WAITING)
-        p->state = RUNNABLE;
-      release(&proc_table_lock);
-      return 0;
-    }
-  }
-  release(&proc_table_lock);
-  return -1;
 }
 
 int sys_panic(void) {
