@@ -19,8 +19,6 @@
  * Return value? Error indication? Errno?
  */
 
-extern struct spinlock proc_table_lock;
-
 /*
  * fetch 32 bits from a user-supplied pointer.
  * returns 0 if addr was OK, -1 if illegal.
@@ -48,7 +46,7 @@ int putint(struct proc *p, unsigned addr, int ip) {
   return 0;
 }
 
-int sys_pipe() {
+int sys_pipe(void) {
   struct fd *rfd = 0, *wfd = 0;
   int f1 = -1, f2 = -1;
   struct proc *p = curproc[cpu()];
@@ -83,7 +81,7 @@ oops:
   return -1;
 }
 
-int sys_write() {
+int sys_write(void) {
   int fd, n, ret;
   unsigned addr;
   struct proc *p = curproc[cpu()];
@@ -100,7 +98,7 @@ int sys_write() {
   return ret;
 }
 
-int sys_read() {
+int sys_read(void) {
   int fd, n, ret;
   unsigned addr;
   struct proc *p = curproc[cpu()];
@@ -117,7 +115,7 @@ int sys_read() {
   return ret;
 }
 
-int sys_close() {
+int sys_close(void) {
   int fd;
   struct proc *p = curproc[cpu()];
 
@@ -132,7 +130,7 @@ int sys_close() {
   return 0;
 }
 
-int sys_fork() {
+int sys_fork(void) {
   struct proc *np;
 
   np = newproc();
@@ -144,12 +142,12 @@ int sys_fork() {
   }
 }
 
-int sys_exit() {
+int sys_exit(void) {
   proc_exit();
   return 0;
 }
 
-int sys_wait() {
+int sys_wait(void) {
   struct proc *p;
   struct proc *cp = curproc[cpu()];
   int any, pid;
@@ -178,7 +176,7 @@ int sys_wait() {
   }
 }
 
-int sys_cons_putc() {
+int sys_cons_putc(void) {
   int c;
 
   fetcharg(0, &c);
@@ -209,7 +207,7 @@ int sys_block(void) {
   return 0;
 }
 
-int sys_kill() {
+int sys_kill(void) {
   int pid;
   struct proc *p;
 
@@ -228,7 +226,7 @@ int sys_kill() {
   return -1;
 }
 
-int sys_panic() {
+int sys_panic(void) {
   struct proc *p = curproc[cpu()];
   unsigned int addr;
 
@@ -237,7 +235,7 @@ int sys_panic() {
   return 0;
 }
 
-void syscall() {
+void syscall(void) {
   struct proc *cp = curproc[cpu()];
   int num = cp->tf->tf_regs.reg_eax;
   int ret = -1;
