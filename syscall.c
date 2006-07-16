@@ -28,7 +28,16 @@ int fetchint(struct proc *p, unsigned addr, int *ip) {
 
   if (addr > p->sz - 4)
     return -1;
-  memmove(ip, p->mem + addr, 4);
+  *ip = *(int *)(p->mem + addr);
+  return 0;
+}
+
+// Fetch byte from a user-supplied pointer.
+// Returns 0 on success, -1 if pointer is illegal.
+int fetchbyte(struct proc *p, unsigned addr, char *c) {
+  if (addr >= p->sz)
+    return -1;
+  *c = *(p->mem + addr);
   return 0;
 }
 
@@ -150,15 +159,36 @@ int sys_wait(void) { return proc_wait(); }
 int sys_kill(void) {
   int pid;
 
-  fetcharg(0, &pid);
+  if (fetcharg(0, &pid) < 0)
+    return -1;
   return proc_kill(pid);
 }
 
 int sys_cons_putc(void) {
   int c;
+  char buf[2];
 
-  fetcharg(0, &c);
-  cons_putc(c & 0xff);
+  if (fetcharg(0, &c) < 0)
+    return -1;
+  buf[0] = c;
+  buf[1] = 0;
+  cprintf("%s", buf);
+  return 0;
+}
+
+int sys_cons_puts(void) {
+  char buf[256];
+  int i;
+  unsigned addr;
+  struct proc *cp = curproc[cpu()];
+
+  if (fetcharg(0, &addr) < 0)
+    return -1;
+  for (i = 0; i < sizeof buf - 1 && fetchbyte(cp, addr + i, &buf[i]) >= 0; i++)
+    if (buf[i] == 0)
+      break;
+  buf[i] = 0;
+  cprintf("%s", buf);
   return 0;
 }
 
@@ -189,7 +219,8 @@ int sys_panic(void) {
   struct proc *p = curproc[cpu()];
   unsigned int addr;
 
-  fetcharg(0, &addr);
+  if (fetcharg(0, &addr) < 0)
+    return -1;
   panic(p->mem + addr);
   return 0;
 }
