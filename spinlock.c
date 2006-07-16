@@ -10,11 +10,11 @@
 // because cprintf uses them itself.
 #define cprintf dont_use_cprintf
 
-extern int use_console_lock;
+extern int bootstrap;
 
 int getcallerpc(void *v) { return ((int *)v)[-1]; }
 
-void acquire1(struct spinlock *lock, struct proc *cp) {
+void acquire(struct spinlock *lock) {
   if (cpus[cpu()].nlock++ == 0)
     cli();
   while (cmpxchg(0, 1, &lock->locked) == 1)
@@ -23,13 +23,9 @@ void acquire1(struct spinlock *lock, struct proc *cp) {
   lock->locker_pc = getcallerpc(&lock);
 }
 
-void release1(struct spinlock *lock, struct proc *cp) {
+void release(struct spinlock *lock) {
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->locked = 0;
-  if (--cpus[cpu()].nlock == 0)
+  if (--cpus[cpu()].nlock == 0 && !bootstrap)
     sti();
 }
-
-void acquire(struct spinlock *lock) { acquire1(lock, curproc[cpu()]); }
-
-void release(struct spinlock *lock) { release1(lock, curproc[cpu()]); }
