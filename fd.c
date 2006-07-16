@@ -88,7 +88,7 @@ void fd_close(struct fd *fd) {
   release(&fd_table_lock);
 }
 
-void fd_reference(struct fd *fd) {
+void fd_incref(struct fd *fd) {
   acquire(&fd_table_lock);
   if (fd->count < 1 || fd->type == FD_CLOSED)
     panic("fd_reference");

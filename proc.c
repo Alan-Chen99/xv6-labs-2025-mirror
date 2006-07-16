@@ -111,7 +111,7 @@ struct proc *copyproc(struct proc *p) {
   for (i = 0; i < NOFILE; i++) {
     np->fds[i] = p->fds[i];
     if (np->fds[i])
-      fd_reference(np->fds[i]);
+      fd_incref(np->fds[i]);
   }
 
   return np;
