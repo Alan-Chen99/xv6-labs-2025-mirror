@@ -9,3 +9,12 @@ int puts1(char *s) {
     cons_putc(s[i]);
   return i;
 }
+
+char *strcpy(char *s, char *t) {
+  char *os;
+
+  os = s;
+  while ((*s++ = *t++) != 0)
+    ;
+  return os;
+}
