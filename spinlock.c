@@ -10,7 +10,7 @@
 // because cprintf uses them itself.
 #define cprintf dont_use_cprintf
 
-extern int bootstrap;
+extern int use_console_lock;
 
 int getcallerpc(void *v) { return ((int *)v)[-1]; }
 
@@ -26,6 +26,6 @@ void acquire(struct spinlock *lock) {
 void release(struct spinlock *lock) {
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->locked = 0;
-  if (--cpus[cpu()].nlock == 0 && !bootstrap)
+  if (--cpus[cpu()].nlock == 0)
     sti();
 }

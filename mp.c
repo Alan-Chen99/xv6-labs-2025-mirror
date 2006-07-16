@@ -163,6 +163,8 @@ void mp_init() {
 
 int mp_bcpu(void) { return bcpu - cpus; }
 
+extern void mpmain(void);
+
 void mp_startthem() {
   extern uint8_t _binary_bootother_start[], _binary_bootother_size[];
   extern int main();
@@ -177,7 +179,8 @@ void mp_startthem() {
     cprintf("starting processor %d\n", c);
     *(unsigned *)(APBOOTCODE - 4) =
         (unsigned)(cpus[c].mpstack) + MPSTACK; // tell it what to use for %esp
-    *(unsigned *)(APBOOTCODE - 8) = (unsigned)&main; // tell it where to jump to
+    *(unsigned *)(APBOOTCODE - 8) =
+        (unsigned)mpmain; // tell it where to jump to
     lapic_startap(cpus[c].apicid, (uint32_t)APBOOTCODE);
   }
 }

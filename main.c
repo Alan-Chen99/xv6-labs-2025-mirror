@@ -11,34 +11,28 @@
 #include "spinlock.h"
 
 extern char edata[], end[];
-extern int acpu;
 extern uint8_t _binary_user1_start[], _binary_user1_size[];
 extern uint8_t _binary_usertests_start[], _binary_usertests_size[];
 extern uint8_t _binary_userfs_start[], _binary_userfs_size[];
 
 extern int use_console_lock;
 
-struct spinlock sillylock; // hold this to keep interrupts disabled
-
+// CPU 0 starts running C code here.
 int main() {
+  int i;
   struct proc *p;
-
-  if (acpu) {
-    cprintf("an application processor\n");
-    idtinit(); // CPU's idt
-    lapic_init(cpu());
-    lapic_timerinit();
-    lapic_enableintr();
-    scheduler();
-  }
-  acpu = 1;
 
   // clear BSS
   memset(edata, 0, end - edata);
 
+  // Make sure interrupts stay disabled on all processors
+  // until each signals it is ready, by pretending to hold
+  // an extra lock.
+  for (i = 0; i < NCPU; i++)
+    cpus[i].nlock++;
+
   mp_init(); // collect info about this machine
 
-  acquire(&sillylock);
   use_console_lock = 1;
 
   lapic_init(mp_bcpu());
@@ -77,7 +71,8 @@ int main() {
   // init disk device
   // ide_init();
 
-  // become interruptable
+  // Enable interrupts on this processor.
+  cpus[cpu()].nlock--;
   sti();
 
   p = copyproc(&proc[0]);
@@ -86,11 +81,25 @@ int main() {
   // load_icode(p, _binary_userfs_start, (unsigned) _binary_userfs_size);
   p->state = RUNNABLE;
   cprintf("loaded userfs\n");
-  release(&sillylock);
 
   scheduler();
 
   return 0;
+}
+
+// Additional processors start here.
+int mpmain(void) {
+  cprintf("an application processor\n");
+  idtinit(); // CPU's idt
+  lapic_init(cpu());
+  lapic_timerinit();
+  lapic_enableintr();
+
+  // Enable interrupts on this processor.
+  cpus[cpu()].nlock--;
+  sti();
+
+  scheduler();
 }
 
 void load_icode(struct proc *p, uint8_t *binary, unsigned size) {
