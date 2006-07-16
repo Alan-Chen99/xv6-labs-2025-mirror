@@ -86,8 +86,6 @@ void main0(void) {
   cprintf("loaded userfs\n");
 
   scheduler();
-
-  return 0;
 }
 
 // Additional processors start here.
