@@ -8,7 +8,6 @@
 #include "syscall.h"
 
 struct Gatedesc idt[256];
-struct Pseudodesc idt_pd = {0, sizeof(idt) - 1, (unsigned)&idt};
 extern unsigned vectors[]; /* vectors.S, array of 256 entry point addresses */
 
 extern void trapenter();
@@ -23,7 +22,7 @@ void tvinit() {
   SETGATE(idt[T_SYSCALL], T_SYSCALL, SEG_KCODE << 3, vectors[48], 3);
 }
 
-void idtinit() { asm volatile("lidt %0" : : "g"(idt_pd.lim)); }
+void idtinit() { lidt(idt, sizeof idt); }
 
 void trap(struct Trapframe *tf) {
   int v = tf->trapno;
