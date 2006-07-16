@@ -30,7 +30,7 @@ void ktest();
  * cheats by just considering the one megabyte of pages
  * after _end.
  */
-void kinit() {
+void kinit(void) {
   extern int end;
   unsigned mem;
   char *start;
@@ -126,7 +126,7 @@ char *kalloc(int n) {
   return 0;
 }
 
-void ktest() {
+void ktest(void) {
   char *p1, *p2, *p3;
 
   // test coalescing
@@ -150,10 +150,7 @@ void ktest() {
 
   // test running out of memory
   p1 = 0;
-  while (1) {
-    p2 = kalloc(PAGE);
-    if (p2 == 0)
-      break;
+  while ((p2 = kalloc(PAGE)) != 0) {
     *(char **)p2 = p1;
     p1 = p2;
   }
