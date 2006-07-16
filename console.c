@@ -103,7 +103,7 @@ void printint(int xx, int base, int sgn) {
  */
 void cprintf(char *fmt, ...) {
   int i, state = 0, c;
-  unsigned int *ap = (unsigned int *)&fmt + 1;
+  unsigned int *ap = (unsigned int *)(void *)&fmt + 1;
 
   if (use_console_lock)
     acquire(&console_lock);

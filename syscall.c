@@ -32,7 +32,8 @@ int fetchint(struct proc *p, unsigned addr, int *ip) {
   return 0;
 }
 
-int fetcharg(int argno, int *ip) {
+// This arg is void* so that both int* and uint* can be passed.
+int fetcharg(int argno, void *ip) {
   unsigned esp;
 
   esp = (unsigned)curproc[cpu()]->tf->tf_esp;
