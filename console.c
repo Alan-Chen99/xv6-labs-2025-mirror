@@ -22,7 +22,7 @@ static void lpt_putc(int c) {
   outb(0x378 + 2, 0x08);
 }
 
-static void real_cons_putc(int c) {
+static void cons_putc(int c) {
   int crtport = 0x3d4;                 // io port of CGA
   uint16_t *crt = (uint16_t *)0xB8000; // base of CGA memory
   int ind;
@@ -65,14 +65,6 @@ static void real_cons_putc(int c) {
   outb(crtport + 1, ind);
 }
 
-void cons_putc(int c) {
-  if (use_console_lock)
-    acquire(&console_lock);
-  real_cons_putc(c);
-  if (use_console_lock)
-    release(&console_lock);
-}
-
 void printint(int xx, int base, int sgn) {
   char buf[16];
   char digits[] = "0123456789ABCDEF";
@@ -93,7 +85,7 @@ void printint(int xx, int base, int sgn) {
     buf[i++] = '-';
 
   while (--i >= 0)
-    real_cons_putc(buf[i]);
+    cons_putc(buf[i]);
 }
 
 /*
@@ -112,7 +104,7 @@ void cprintf(char *fmt, ...) {
       if (c == '%') {
         state = '%';
       } else {
-        real_cons_putc(c);
+        cons_putc(c);
       }
     } else if (state == '%') {
       if (c == 'd') {
@@ -125,15 +117,15 @@ void cprintf(char *fmt, ...) {
         char *s = (char *)*ap;
         ap++;
         while (*s != 0) {
-          real_cons_putc(*s);
+          cons_putc(*s);
           s++;
         }
       } else if (c == '%') {
-        real_cons_putc(c);
+        cons_putc(c);
       } else {
         // Unknown % sequence.  Print it to draw attention.
-        real_cons_putc('%');
-        real_cons_putc(c);
+        cons_putc('%');
+        cons_putc(c);
       }
       state = 0;
     }
