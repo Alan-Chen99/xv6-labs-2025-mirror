@@ -227,7 +227,7 @@ int sys_panic(void) {
 
 void syscall(void) {
   struct proc *cp = curproc[cpu()];
-  int num = cp->tf->regs.eax;
+  int num = cp->tf->eax;
   int ret = -1;
 
   // cprintf("%x sys %d\n", cp, num);
@@ -273,5 +273,5 @@ void syscall(void) {
     // XXX fault
     break;
   }
-  cp->tf->regs.eax = ret;
+  cp->tf->eax = ret;
 }
