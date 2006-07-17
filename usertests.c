@@ -4,7 +4,7 @@ char buf[2048];
 
 // simple fork and pipe read/write
 
-void pipe1() {
+void pipe1(void) {
   int fds[2], pid;
   int seq = 0, i, n, cc, total;
 
@@ -25,10 +25,7 @@ void pipe1() {
     close(fds[1]);
     total = 0;
     cc = 1;
-    while (1) {
-      n = read(fds[0], buf, cc);
-      if (n < 1)
-        break;
+    while ((n = read(fds[0], buf, cc)) > 0) {
       for (i = 0; i < n; i++) {
         if ((buf[i] & 0xff) != (seq++ & 0xff)) {
           panic("pipe1 oops 2\n");
@@ -49,18 +46,18 @@ void pipe1() {
 }
 
 // meant to be run w/ at most two CPUs
-void preempt() {
+void preempt(void) {
   int pid1, pid2, pid3;
   int pfds[2];
 
   pid1 = fork();
   if (pid1 == 0)
-    while (1)
+    for (;;)
       ;
 
   pid2 = fork();
   if (pid2 == 0)
-    while (1)
+    for (;;)
       ;
 
   pipe(pfds);
@@ -70,7 +67,7 @@ void preempt() {
     if (write(pfds[1], "x", 1) != 1)
       panic("preempt write error");
     close(pfds[1]);
-    while (1)
+    for (;;)
       ;
   }
 
@@ -90,7 +87,7 @@ void preempt() {
 }
 
 // try to find any races between exit and wait
-void exitwait() {
+void exitwait(void) {
   int i, pid;
 
   for (i = 0; i < 100; i++) {
@@ -111,7 +108,7 @@ void exitwait() {
   puts("exitwait ok\n");
 }
 
-int main() {
+int main(void) {
   puts("usertests starting\n");
 
   pipe1();

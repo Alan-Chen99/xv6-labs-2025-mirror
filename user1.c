@@ -2,7 +2,7 @@
 
 char buf[32];
 
-int main() {
+int main(void) {
   int pid, fds[2], n;
 
   pipe(fds);

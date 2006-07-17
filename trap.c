@@ -10,10 +10,10 @@
 struct Gatedesc idt[256];
 extern unsigned vectors[]; /* vectors.S, array of 256 entry point addresses */
 
-extern void trapenter();
-extern void trapenter1();
+extern void trapenter(void);
+extern void trapenter1(void);
 
-void tvinit() {
+void tvinit(void) {
   int i;
 
   for (i = 0; i < 256; i++) {
@@ -22,7 +22,7 @@ void tvinit() {
   SETGATE(idt[T_SYSCALL], T_SYSCALL, SEG_KCODE << 3, vectors[48], 3);
 }
 
-void idtinit() { lidt(idt, sizeof idt); }
+void idtinit(void) { lidt(idt, sizeof idt); }
 
 void trap(struct Trapframe *tf) {
   int v = tf->trapno;

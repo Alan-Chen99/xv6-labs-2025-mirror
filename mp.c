@@ -93,7 +93,7 @@ static int mp_detect(void) {
   return 0;
 }
 
-void mp_init() {
+void mp_init(void) {
   int r;
   uint8_t *p, *e;
   struct MPCTB *mpctb;
@@ -164,7 +164,7 @@ int mp_bcpu(void) { return bcpu - cpus; }
 
 extern void mpmain(void);
 
-void mp_startthem() {
+void mp_startthem(void) {
   extern uint8_t _binary_bootother_start[], _binary_bootother_size[];
   extern int main();
   int c;
