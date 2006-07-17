@@ -21,11 +21,11 @@ static __inline void outsl(int port, const void *addr, int cnt)
 static __inline void outl(int port, uint32_t data)
     __attribute__((always_inline));
 static __inline void invlpg(void *addr) __attribute__((always_inline));
-struct Segdesc;
-static __inline void lgdt(struct Segdesc *p, int)
+struct segdesc;
+static __inline void lgdt(struct segdesc *p, int)
     __attribute__((always_inline));
-struct Gatedesc;
-static __inline void lidt(struct Gatedesc *p, int)
+struct gatedesc;
+static __inline void lidt(struct gatedesc *p, int)
     __attribute__((always_inline));
 static __inline void lldt(uint16_t sel) __attribute__((always_inline));
 static __inline void ltr(uint16_t sel) __attribute__((always_inline));
@@ -126,7 +126,7 @@ static __inline void invlpg(void *addr) {
   __asm __volatile("invlpg (%0)" : : "r"(addr) : "memory");
 }
 
-static __inline void lgdt(struct Segdesc *p, int size) {
+static __inline void lgdt(struct segdesc *p, int size) {
   volatile uint16_t pd[3];
 
   pd[0] = size - 1;
@@ -136,7 +136,7 @@ static __inline void lgdt(struct Segdesc *p, int size) {
   asm volatile("lgdt (%0)" : : "g"(pd));
 }
 
-static __inline void lidt(struct Gatedesc *p, int size) {
+static __inline void lidt(struct gatedesc *p, int size) {
   volatile uint16_t pd[3];
 
   pd[0] = size - 1;
@@ -272,7 +272,7 @@ static __inline void cli(void) { __asm__ volatile("cli"); }
 
 static __inline void sti(void) { __asm__ volatile("sti"); }
 
-struct Trapframe {
+struct trapframe {
   /* registers as pushed by pusha */
   uint32_t edi;
   uint32_t esi;

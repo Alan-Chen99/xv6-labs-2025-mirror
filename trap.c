@@ -7,7 +7,7 @@
 #include "traps.h"
 #include "syscall.h"
 
-struct Gatedesc idt[256];
+struct gatedesc idt[256];
 extern uint vectors[]; /* vectors.S, array of 256 entry point addresses */
 
 extern void trapenter(void);
@@ -24,7 +24,7 @@ void tvinit(void) {
 
 void idtinit(void) { lidt(idt, sizeof idt); }
 
-void trap(struct Trapframe *tf) {
+void trap(struct trapframe *tf) {
   int v = tf->trapno;
 
   if (v == T_SYSCALL) {

@@ -13,7 +13,7 @@ struct proc proc[NPROC];
 struct proc *curproc[NCPU];
 int next_pid = 1;
 extern void forkret(void);
-extern void forkret1(struct Trapframe *);
+extern void forkret1(struct trapframe *);
 
 /*
  * set up a process's task state and segment descriptors
@@ -22,7 +22,7 @@ extern void forkret1(struct Trapframe *);
  * doesn't change the cpu's current segmentation setup.
  */
 void setupsegs(struct proc *p) {
-  memset(&p->ts, 0, sizeof(struct Taskstate));
+  memset(&p->ts, 0, sizeof(struct taskstate));
   p->ts.ss0 = SEG_KDATA << 3;
   p->ts.esp0 = (uint)(p->kstack + KSTACKSIZE);
 
@@ -93,7 +93,7 @@ struct proc *copyproc(struct proc *p) {
   setupsegs(np);
 
   // Copy trapframe registers from parent.
-  np->tf = (struct Trapframe *)(np->kstack + KSTACKSIZE) - 1;
+  np->tf = (struct trapframe *)(np->kstack + KSTACKSIZE) - 1;
   *np->tf = *p->tf;
 
   // Clear %eax so that fork system call returns 0 in child.

@@ -56,8 +56,8 @@ void main0(void) {
   memset(p->mem, 0, p->sz);
   p->kstack = kalloc(KSTACKSIZE);
   p->tf =
-      (struct Trapframe *)(p->kstack + KSTACKSIZE - sizeof(struct Trapframe));
-  memset(p->tf, 0, sizeof(struct Trapframe));
+      (struct trapframe *)(p->kstack + KSTACKSIZE - sizeof(struct trapframe));
+  memset(p->tf, 0, sizeof(struct trapframe));
   p->tf->es = p->tf->ds = p->tf->ss = (SEG_UDATA << 3) | 3;
   p->tf->cs = (SEG_UCODE << 3) | 3;
   p->tf->eflags = FL_IF;
@@ -105,11 +105,11 @@ void mpmain(void) {
 
 void load_icode(struct proc *p, uint8_t *binary, uint size) {
   int i;
-  struct Elf *elf;
-  struct Proghdr *ph;
+  struct elfhdr *elf;
+  struct proghdr *ph;
 
   // Check magic number on binary
-  elf = (struct Elf *)binary;
+  elf = (struct elfhdr *)binary;
   cprintf("elf %x magic %x\n", elf, elf->magic);
   if (elf->magic != ELF_MAGIC)
     panic("load_icode: not an ELF binary");
@@ -118,7 +118,7 @@ void load_icode(struct proc *p, uint8_t *binary, uint size) {
   p->tf->esp = p->sz;
 
   // Map and load segments as directed.
-  ph = (struct Proghdr *)(binary + elf->phoff);
+  ph = (struct proghdr *)(binary + elf->phoff);
   for (i = 0; i < elf->phnum; i++, ph++) {
     if (ph->type != ELF_PROG_LOAD)
       continue;
