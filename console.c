@@ -23,8 +23,8 @@ static void lpt_putc(int c) {
 }
 
 static void real_cons_putc(int c) {
-  int crtport = 0x3d4;                             // io port of CGA
-  unsigned short *crt = (unsigned short *)0xB8000; // base of CGA memory
+  int crtport = 0x3d4;                 // io port of CGA
+  uint16_t *crt = (uint16_t *)0xB8000; // base of CGA memory
   int ind;
 
   if (panicked) {
@@ -77,7 +77,7 @@ void printint(int xx, int base, int sgn) {
   char buf[16];
   char digits[] = "0123456789ABCDEF";
   int i = 0, neg = 0;
-  unsigned int x;
+  uint x;
 
   if (sgn && xx < 0) {
     neg = 1;
@@ -101,7 +101,7 @@ void printint(int xx, int base, int sgn) {
  */
 void cprintf(char *fmt, ...) {
   int i, state = 0, c;
-  unsigned int *ap = (unsigned int *)(void *)&fmt + 1;
+  uint *ap = (uint *)(void *)&fmt + 1;
 
   if (use_console_lock)
     acquire(&console_lock);
