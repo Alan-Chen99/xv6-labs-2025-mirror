@@ -15,17 +15,28 @@ extern int use_console_lock;
 int getcallerpc(void *v) { return ((int *)v)[-1]; }
 
 void acquire(struct spinlock *lock) {
+  if (holding(lock))
+    panic("acquire");
+
   if (cpus[cpu()].nlock++ == 0)
     cli();
   while (cmpxchg(0, 1, &lock->locked) == 1)
     ;
   cpuid(0, 0, 0, 0, 0); // memory barrier
-  lock->locker_pc = getcallerpc(&lock);
+  lock->pc = getcallerpc(&lock);
+  lock->cpu = cpu();
 }
 
 void release(struct spinlock *lock) {
+  if (!holding(lock))
+    panic("release");
+
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->locked = 0;
   if (--cpus[cpu()].nlock == 0)
     sti();
+}
+
+int holding(struct spinlock *lock) {
+  return lock->locked && lock->cpu == cpu();
 }
