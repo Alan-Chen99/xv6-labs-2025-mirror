@@ -33,21 +33,21 @@
 #define SECTSIZE 512
 #define ELFHDR ((struct elfhdr *)0x10000) // scratch space
 
-void readsect(void *, uint32_t);
-void readseg(uint32_t, uint32_t, uint32_t);
+void readsect(void *, uint);
+void readseg(uint, uint, uint);
 
 void cmain(void) {
   struct proghdr *ph, *eph;
 
   // read 1st page off disk
-  readseg((uint32_t)ELFHDR, SECTSIZE * 8, 0);
+  readseg((uint)ELFHDR, SECTSIZE * 8, 0);
 
   // is this a valid ELF?
   if (ELFHDR->magic != ELF_MAGIC)
     goto bad;
 
   // load each program segment (ignores ph flags)
-  ph = (struct proghdr *)((uint8_t *)ELFHDR + ELFHDR->phoff);
+  ph = (struct proghdr *)((uchar *)ELFHDR + ELFHDR->phoff);
   eph = ph + ELFHDR->phnum;
   for (; ph < eph; ph++)
     readseg(ph->va, ph->memsz, ph->offset);
@@ -65,8 +65,8 @@ bad:
 
 // Read 'count' bytes at 'offset' from kernel into virtual address 'va'.
 // Might copy more than asked
-void readseg(uint32_t va, uint32_t count, uint32_t offset) {
-  uint32_t end_va;
+void readseg(uint va, uint count, uint offset) {
+  uint end_va;
 
   va &= 0xFFFFFF;
   end_va = va + count;
@@ -81,7 +81,7 @@ void readseg(uint32_t va, uint32_t count, uint32_t offset) {
   // We'd write more to memory than asked, but it doesn't matter --
   // we load in increasing order.
   while (va < end_va) {
-    readsect((uint8_t *)va, offset);
+    readsect((uchar *)va, offset);
     va += SECTSIZE;
     offset++;
   }
@@ -93,7 +93,7 @@ void waitdisk(void) {
     /* do nothing */;
 }
 
-void readsect(void *dst, uint32_t offset) {
+void readsect(void *dst, uint offset) {
   // wait for disk to be ready
   waitdisk();
 

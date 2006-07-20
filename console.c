@@ -23,8 +23,8 @@ static void lpt_putc(int c) {
 }
 
 static void cons_putc(int c) {
-  int crtport = 0x3d4;                 // io port of CGA
-  uint16_t *crt = (uint16_t *)0xB8000; // base of CGA memory
+  int crtport = 0x3d4;             // io port of CGA
+  ushort *crt = (ushort *)0xB8000; // base of CGA memory
   int ind;
 
   if (panicked) {

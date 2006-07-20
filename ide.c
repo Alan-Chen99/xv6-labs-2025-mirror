@@ -18,7 +18,8 @@
 #define IDE_ERR 0x01
 
 struct ide_request {
-  uint32_t secno;
+  int diskno;
+  uint secno;
   void *dst;
   uint nsecs;
 };
@@ -26,7 +27,6 @@ struct ide_request request[NREQUEST];
 int head, tail;
 struct spinlock ide_lock;
 
-static int diskno = 0;
 int disk_channel;
 
 static int ide_wait_ready(int check_error) {
@@ -71,12 +71,6 @@ int ide_probe_disk1(void) {
   return (x < 1000);
 }
 
-void ide_set_disk(int d) {
-  if (d != 0 && d != 1)
-    panic("bad disk number");
-  diskno = d;
-}
-
 void ide_start_request(void) {
   struct ide_request *r;
 
@@ -88,12 +82,12 @@ void ide_start_request(void) {
     outb(0x1F3, r->secno & 0xFF);
     outb(0x1F4, (r->secno >> 8) & 0xFF);
     outb(0x1F5, (r->secno >> 16) & 0xFF);
-    outb(0x1F6, 0xE0 | ((diskno & 1) << 4) | ((r->secno >> 24) & 0x0F));
+    outb(0x1F6, 0xE0 | ((r->diskno & 1) << 4) | ((r->secno >> 24) & 0x0F));
     outb(0x1F7, 0x20); // CMD 0x20 means read sector
   }
 }
 
-void *ide_start_read(uint32_t secno, void *dst, uint nsecs) {
+void *ide_start_read(uint secno, void *dst, uint nsecs) {
   struct ide_request *r;
   if (!holding(&ide_lock))
     panic("ide_start_read: not holding ide_lock");
@@ -108,6 +102,7 @@ void *ide_start_read(uint32_t secno, void *dst, uint nsecs) {
   r->secno = secno;
   r->dst = dst;
   r->nsecs = nsecs;
+  r->diskno = 0;
 
   ide_start_request();
 
@@ -138,8 +133,9 @@ int ide_finish_read(void *c) {
   return 0;
 }
 
-int ide_write(uint32_t secno, const void *src, uint nsecs) {
+int ide_write(uint secno, const void *src, uint nsecs) {
   int r;
+  int diskno = 0;
 
   if (nsecs > 256)
     panic("ide_write");
