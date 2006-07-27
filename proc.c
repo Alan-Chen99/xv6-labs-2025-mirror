@@ -128,6 +128,9 @@ void scheduler(void) {
   cprintf("start scheduler on cpu %d jmpbuf %p\n", cpu(), &cpus[cpu()].jmpbuf);
   cpus[cpu()].lastproc = &proc[0];
 
+  if (cpus[cpu()].nlock != 0)
+    panic("holding locks at first entry to scheduler");
+
   for (;;) {
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);

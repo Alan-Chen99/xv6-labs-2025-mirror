@@ -97,6 +97,7 @@ void mpmain(void) {
   lapic_enableintr();
 
   // Enable interrupts on this processor.
+  cprintf("cpu %d initial nlock %d\n", cpu(), cpus[cpu()].nlock);
   cpus[cpu()].nlock--;
   sti();
 
