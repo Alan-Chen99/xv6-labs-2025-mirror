@@ -108,7 +108,7 @@ void exitwait(void) {
   puts("exitwait ok\n");
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
   puts("usertests starting\n");
 
   pipe1();
