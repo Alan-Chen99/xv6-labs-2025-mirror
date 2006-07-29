@@ -8,15 +8,19 @@
 
 // Can't call cprintf from inside these routines,
 // because cprintf uses them itself.
-#define cprintf dont_use_cprintf
+// #define cprintf dont_use_cprintf
 
 extern int use_console_lock;
 
 int getcallerpc(void *v) { return ((int *)v)[-1]; }
 
 void acquire(struct spinlock *lock) {
-  if (holding(lock))
+  if (holding(lock)) {
+    extern use_console_lock;
+    use_console_lock = 0;
+    cprintf("lock %s pc %x\n", lock->name ? lock->name : "", lock->pc);
     panic("acquire");
+  }
 
   if (cpus[cpu()].nlock++ == 0)
     cli();
@@ -25,12 +29,14 @@ void acquire(struct spinlock *lock) {
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->pc = getcallerpc(&lock);
   lock->cpu = cpu();
+  cpus[cpu()].lastacquire = lock;
 }
 
 void release(struct spinlock *lock) {
   if (!holding(lock))
     panic("release");
 
+  cpus[cpu()].lastrelease = lock;
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->locked = 0;
   if (--cpus[cpu()].nlock == 0)

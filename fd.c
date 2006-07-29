@@ -76,6 +76,8 @@ void fd_close(struct fd *fd) {
   if (--fd->ref == 0) {
     if (fd->type == FD_PIPE) {
       pipe_close(fd->pipe, fd->writeable);
+    } else if (fd->type == FD_FILE) {
+      idecref(fd->ip);
     } else {
       panic("fd_close");
     }
