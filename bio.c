@@ -39,7 +39,7 @@ struct buf *bread(uint dev, uint sector) {
 
   acquire(&ide_lock);
   c = ide_start_read(dev & 0xff, sector, b->data, 1);
-  // sleep (c, &ide_lock);
+  sleep(c, &ide_lock);
   ide_finish_read(c);
   release(&ide_lock);
 

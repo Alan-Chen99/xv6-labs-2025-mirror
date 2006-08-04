@@ -155,6 +155,8 @@ void lapic_enableintr(void) { lapic_write(LAPIC_TPR, 0); }
 
 void lapic_disableintr(void) { lapic_write(LAPIC_TPR, 0xFF); }
 
+void lapic_eoi(void) { lapic_write(LAPIC_EOI, 0); }
+
 int cpu(void) { return (lapic_read(LAPIC_ID) >> 24) & 0xFF; }
 
 void lapic_startap(uchar apicid, int v) {

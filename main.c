@@ -43,9 +43,10 @@ void main0(void) {
   cprintf("\nxV6\n\n");
 
   pic_init(); // initialize PIC
-  kinit();    // physical memory allocator
-  tvinit();   // trap vectors
-  idtinit();  // CPU's idt
+  ioapic_init();
+  kinit();   // physical memory allocator
+  tvinit();  // trap vectors
+  idtinit(); // CPU's idt
 
   // create fake process zero
   p = &proc[0];
