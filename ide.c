@@ -20,8 +20,9 @@
 struct ide_request {
   int diskno;
   uint secno;
-  void *dst;
+  void *addr;
   uint nsecs;
+  uint read;
 };
 struct ide_request request[NREQUEST];
 int head, tail;
@@ -83,18 +84,22 @@ void ide_start_request(void) {
   if (head != tail) {
     r = &request[tail];
     ide_wait_ready(0);
-    outb(0x3f6, 0);
+    outb(0x3f6, 0); // generate interrupt
     outb(0x1F2, r->nsecs);
     outb(0x1F3, r->secno & 0xFF);
     outb(0x1F4, (r->secno >> 8) & 0xFF);
     outb(0x1F5, (r->secno >> 16) & 0xFF);
     outb(0x1F6, 0xE0 | ((r->diskno & 1) << 4) | ((r->secno >> 24) & 0x0F));
-    outb(0x1F7, 0x20); // CMD 0x20 means read sector
+    if (r->read)
+      outb(0x1F7, 0x20); // read
+    else
+      outb(0x1F7, 0x30); // write
   }
 }
 
-void *ide_start_read(int diskno, uint secno, void *dst, uint nsecs) {
+void *ide_start_rw(int diskno, uint secno, void *addr, uint nsecs, int read) {
   struct ide_request *r;
+
   if (!holding(&ide_lock))
     panic("ide_start_read: not holding ide_lock");
 
@@ -106,9 +111,10 @@ void *ide_start_read(int diskno, uint secno, void *dst, uint nsecs) {
 
   r = &request[head];
   r->secno = secno;
-  r->dst = dst;
+  r->addr = addr;
   r->nsecs = nsecs;
   r->diskno = diskno;
+  r->read = read;
 
   head = (head + 1) % NREQUEST;
 
@@ -117,7 +123,7 @@ void *ide_start_read(int diskno, uint secno, void *dst, uint nsecs) {
   return r;
 }
 
-int ide_finish_read(void *c) {
+int ide_finish(void *c) {
   int r = 0;
   struct ide_request *req = (struct ide_request *)c;
 
@@ -126,10 +132,13 @@ int ide_finish_read(void *c) {
 
   if (!holding(&ide_lock))
     panic("ide_start_read: not holding ide_lock");
-  for (; req->nsecs > 0; req->nsecs--, req->dst += 512) {
+  for (; req->nsecs > 0; req->nsecs--, req->addr += 512) {
     if ((r = ide_wait_ready(1)) < 0)
       break;
-    insl(0x1F0, req->dst, 512 / 4);
+    if (req->read)
+      insl(0x1F0, req->addr, 512 / 4);
+    else
+      outsl(0x1F0, req->addr, 512 / 4);
   }
 
   if ((head + 1) % NREQUEST == tail) {
