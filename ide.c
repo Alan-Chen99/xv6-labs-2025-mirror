@@ -92,8 +92,10 @@ void ide_start_request(void) {
     outb(0x1F6, 0xE0 | ((r->diskno & 1) << 4) | ((r->secno >> 24) & 0x0F));
     if (r->read)
       outb(0x1F7, 0x20); // read
-    else
+    else {
       outb(0x1F7, 0x30); // write
+      outsl(0x1F0, r->addr, 512 / 4);
+    }
   }
 }
 
@@ -103,7 +105,7 @@ void *ide_start_rw(int diskno, uint secno, void *addr, uint nsecs, int read) {
   if (!holding(&ide_lock))
     panic("ide_start_read: not holding ide_lock");
 
-  if (nsecs > 256)
+  if (nsecs > 1)
     panic("ide_start_read: nsecs too large");
 
   while ((head + 1) % NREQUEST == tail)
@@ -124,7 +126,7 @@ void *ide_start_rw(int diskno, uint secno, void *addr, uint nsecs, int read) {
 }
 
 int ide_finish(void *c) {
-  int r = 0;
+  int r;
   struct ide_request *req = (struct ide_request *)c;
 
   if (c != &request[tail])
@@ -132,13 +134,10 @@ int ide_finish(void *c) {
 
   if (!holding(&ide_lock))
     panic("ide_start_read: not holding ide_lock");
-  for (; req->nsecs > 0; req->nsecs--, req->addr += 512) {
-    if ((r = ide_wait_ready(1)) < 0)
-      break;
-    if (req->read)
+
+  if (req->read) {
+    if ((r = ide_wait_ready(1)) >= 0)
       insl(0x1F0, req->addr, 512 / 4);
-    else
-      outsl(0x1F0, req->addr, 512 / 4);
   }
 
   if ((head + 1) % NREQUEST == tail) {
