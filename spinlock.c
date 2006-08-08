@@ -12,23 +12,28 @@
 
 extern int use_console_lock;
 
-int getcallerpc(void *v) { return ((int *)v)[-1]; }
+void getcallerpcs(void *v, uint pcs[]) {
+  uint *ebp = (uint *)v - 2;
+  int i;
+  for (i = 0; i < 10 && ebp && ebp != (uint *)0xffffffff;
+       ebp = (uint *)*ebp, i++) {
+    pcs[i] = *(ebp + 1);
+  }
+  for (; i < 10; i++)
+    pcs[i] = 0;
+}
 
 void acquire(struct spinlock *lock) {
-  if (holding(lock)) {
-    extern use_console_lock;
-    use_console_lock = 0;
-    cprintf("lock %s pc %x\n", lock->name ? lock->name : "", lock->pc);
+  if (holding(lock))
     panic("acquire");
-  }
 
   if (cpus[cpu()].nlock++ == 0)
     cli();
   while (cmpxchg(0, 1, &lock->locked) == 1)
     ;
   cpuid(0, 0, 0, 0, 0); // memory barrier
-  lock->pc = getcallerpc(&lock);
-  lock->cpu = cpu();
+  getcallerpcs(&lock, lock->pcs);
+  lock->cpu = cpu() + 10;
   cpus[cpu()].lastacquire = lock;
 }
 
@@ -37,6 +42,8 @@ void release(struct spinlock *lock) {
     panic("release");
 
   cpus[cpu()].lastrelease = lock;
+  lock->pcs[0] = 0;
+  lock->cpu = 0xffffffff;
   cpuid(0, 0, 0, 0, 0); // memory barrier
   lock->locked = 0;
   if (--cpus[cpu()].nlock == 0)
@@ -44,5 +51,5 @@ void release(struct spinlock *lock) {
 }
 
 int holding(struct spinlock *lock) {
-  return lock->locked && lock->cpu == cpu();
+  return lock->locked && lock->cpu == cpu() + 10;
 }

@@ -63,7 +63,7 @@ void ioapic_init(void) {
   }
 }
 
-void ioapic_enable(int irq, int cpu) {
+void ioapic_enable(int irq, int cpunum) {
   uint l, h;
   struct ioapic *io;
 
@@ -73,7 +73,7 @@ void ioapic_enable(int irq, int cpu) {
   ioapic_write(io, IOAPIC_REDTBL_LO(irq), l);
   h = ioapic_read(io, IOAPIC_REDTBL_HI(irq));
   h &= ~IOART_DEST;
-  h |= (cpu << APIC_ID_SHIFT); // for fun, disk interrupts to cpu 1
+  h |= (cpunum << APIC_ID_SHIFT); // for fun, disk interrupts to cpu 1
   ioapic_write(io, IOAPIC_REDTBL_HI(irq), h);
-  cprintf("intr %d: lo 0x%x hi 0x%x\n", irq, l, h);
+  cprintf("cpu%d: intr %d: lo 0x%x hi 0x%x\n", cpu(), irq, l, h);
 }

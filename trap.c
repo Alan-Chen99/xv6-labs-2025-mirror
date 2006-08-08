@@ -27,6 +27,14 @@ void idtinit(void) { lidt(idt, sizeof idt); }
 void trap(struct trapframe *tf) {
   int v = tf->trapno;
 
+  if (cpus[cpu()].nlock) {
+    cprintf("trap v %d eip %x cpu %d nlock %d\n", v, tf->eip, cpu(),
+            cpus[cpu()].nlock);
+    panic("interrupt while holding a lock");
+  }
+  if ((read_eflags() & FL_IF) == 0)
+    panic("interrupt but interrupts now disabled");
+
   if (v == T_SYSCALL) {
     struct proc *cp = curproc[cpu()];
     int num = cp->tf->eax;
@@ -53,16 +61,13 @@ void trap(struct trapframe *tf) {
       panic("trap ret esp wrong");
     if (cp->killed)
       proc_exit();
+    // XXX probably ought to lgdt on trap return
     return;
   }
 
   if (v == (IRQ_OFFSET + IRQ_TIMER)) {
     struct proc *cp = curproc[cpu()];
     lapic_timerintr();
-    if (cpus[cpu()].nlock)
-      panic("timer interrupt while holding a lock");
-    if ((read_eflags() & FL_IF) == 0)
-      panic("timer interrupt but interrupts now disabled");
     if (cp) {
       // Force process exit if it has been killed
       // and the interrupt came from user space.
@@ -83,8 +88,6 @@ void trap(struct trapframe *tf) {
     ide_intr();
     return;
   }
-
-  // XXX probably ought to lgdt on trap return
 
   return;
 }

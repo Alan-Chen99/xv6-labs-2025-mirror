@@ -5,7 +5,8 @@
 // file system tests
 
 char buf[1024];
-char *args[] = {"echo", "hello", "goodbye", 0};
+char *echo_args[] = {"echo", "hello", "goodbye", 0};
+char *cat_args[] = {"cat", "README", 0};
 
 int main(void) {
   int fd;
@@ -32,6 +33,7 @@ int main(void) {
   } else {
     puts("open doesnotexist failed\n");
   }
-  exec("echo", args);
+  // exec("echo", echo_args);
+  exec("cat", cat_args);
   return 0;
 }
