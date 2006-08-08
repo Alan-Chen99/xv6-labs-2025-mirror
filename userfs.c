@@ -1,4 +1,6 @@
 #include "user.h"
+#include "types.h"
+#include "fs.h"
 
 // file system tests
 
@@ -10,6 +12,12 @@ int main(void) {
 
   puts("userfs running\n");
   block();
+
+  if (mknod("console", T_DEV, 1, 1) < 0)
+    puts("mknod failed\n");
+  else
+    puts("made a node\n");
+
   fd = open("echo", 0);
   if (fd >= 0) {
     puts("open echo ok\n");
