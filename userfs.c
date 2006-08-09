@@ -21,7 +21,6 @@ int main(void) {
   fd = open("console", 1);
   if (fd >= 0) {
     puts("open console ok\n");
-    close(fd);
   } else {
     puts("open console failed!\n");
   }

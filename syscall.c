@@ -229,6 +229,7 @@ int sys_open(void) {
     iput(ip);
     return -1;
   }
+
   if ((ufd = fd_ualloc()) < 0) {
     iput(ip);
     fd_close(fd);
@@ -426,14 +427,6 @@ int sys_block(void) {
 
     brelse(b);
   }
-
-#if 0
-  cprintf("overwrite fs.img!\n");
-  b = getblk();
-  memset (b->data, 'f', 10);
-  bwrite(1, b, 0);
-  cprintf("write is done\n");
-#endif
 
   ip = iget(1, 1);
   cprintf("iget 1: %d %d %d %d %d %d %d %d\n", ip->dev, ip->inum, ip->count,
