@@ -8,6 +8,7 @@
 #include "buf.h"
 #include "fs.h"
 #include "fsvar.h"
+#include "dev.h"
 
 // these are inodes currently in use
 // an entry is free if count == 0
@@ -229,6 +230,14 @@ int readi(struct inode *ip, void *xdst, uint off, uint n) {
   }
 
   return target - n;
+}
+
+int writei(struct inode *ip, void *addr, uint n) {
+  if (ip->type == T_DEV) {
+    return devsw[ip->major].d_write(ip->minor, addr, n);
+  } else {
+    panic("writei: unknown type\n");
+  }
 }
 
 struct inode *namei(char *path) {

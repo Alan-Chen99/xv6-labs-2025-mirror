@@ -71,6 +71,7 @@ void main0(void) {
   setupsegs(p);
 
   // init disk device
+  console_init();
   ide_init();
 
   mp_startthem();

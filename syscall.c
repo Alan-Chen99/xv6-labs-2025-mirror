@@ -237,8 +237,13 @@ int sys_open(void) {
 
   iunlock(ip);
   fd->type = FD_FILE;
-  fd->readable = 1;
-  fd->writeable = 0;
+  if (arg1) {
+    fd->readable = 1;
+    fd->writeable = 1;
+  } else {
+    fd->readable = 1;
+    fd->writeable = 0;
+  }
   fd->ip = ip;
   fd->off = 0;
   cp->fds[ufd] = fd;
