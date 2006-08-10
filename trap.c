@@ -19,7 +19,7 @@ void tvinit(void) {
   for (i = 0; i < 256; i++) {
     SETGATE(idt[i], 1, SEG_KCODE << 3, vectors[i], 0);
   }
-  SETGATE(idt[T_SYSCALL], T_SYSCALL, SEG_KCODE << 3, vectors[48], 3);
+  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE << 3, vectors[48], 3);
 }
 
 void idtinit(void) { lidt(idt, sizeof idt); }
@@ -32,12 +32,12 @@ void trap(struct trapframe *tf) {
             cpus[cpu()].nlock);
     panic("interrupt while holding a lock");
   }
-  if ((read_eflags() & FL_IF) == 0)
-    panic("interrupt but interrupts now disabled");
 
   if (v == T_SYSCALL) {
     struct proc *cp = curproc[cpu()];
     int num = cp->tf->eax;
+    if ((read_eflags() & FL_IF) == 0)
+      panic("syscall but interrupts now disabled");
     if (cp == 0)
       panic("syscall with no proc");
     if (cp->killed)
@@ -65,6 +65,9 @@ void trap(struct trapframe *tf) {
     return;
   }
 
+  // if(read_eflags() & FL_IF)
+  // panic("interrupt but interrupts enabled");
+
   if (v == (IRQ_OFFSET + IRQ_TIMER)) {
     struct proc *cp = curproc[cpu()];
     lapic_timerintr();
@@ -88,6 +91,13 @@ void trap(struct trapframe *tf) {
     ide_intr();
     return;
   }
+
+  if (v == (IRQ_OFFSET + IRQ_KBD)) {
+    kbd_intr();
+    return;
+  }
+
+  cprintf("trap %d\n", v);
 
   return;
 }

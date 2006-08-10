@@ -70,7 +70,7 @@ void main0(void) {
   p->tf->eflags = FL_IF;
   setupsegs(p);
 
-  // init disk device
+  // initialize I/O devices, let them enable interrupts
   console_init();
   ide_init();
 

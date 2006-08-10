@@ -45,7 +45,7 @@ void ide_init(void) {
   if (ncpu < 2) {
     panic("ide_init: disk interrupt is going to the second  cpu\n");
   }
-  ioapic_enable(14, 1); // 14 is IRQ # for IDE
+  ioapic_enable(IRQ_IDE, 1);
   ide_wait_ready(0);
   cprintf("cpu%d: ide_init:done\n", cpu());
 }
