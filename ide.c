@@ -26,7 +26,7 @@ struct ide_request {
 };
 struct ide_request request[NREQUEST];
 int head, tail;
-struct spinlock ide_lock = {"ide"};
+struct spinlock ide_lock;
 
 int disk_channel;
 
@@ -42,6 +42,7 @@ static int ide_wait_ready(int check_error) {
 }
 
 void ide_init(void) {
+  initlock(&ide_lock, "ide");
   if (ncpu < 2) {
     panic("ide_init: disk interrupt is going to the second  cpu\n");
   }
@@ -55,7 +56,6 @@ void ide_intr(void) {
   //  cprintf("cpu%d: ide_intr\n", cpu());
   wakeup(&request[tail]);
   release(&ide_lock);
-  lapic_eoi();
 }
 
 int ide_probe_disk1(void) {

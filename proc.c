@@ -7,13 +7,15 @@
 #include "defs.h"
 #include "spinlock.h"
 
-struct spinlock proc_table_lock = {"proc_table"};
+struct spinlock proc_table_lock;
 
 struct proc proc[NPROC];
 struct proc *curproc[NCPU];
 int next_pid = NCPU;
 extern void forkret(void);
 extern void forkret1(struct trapframe *);
+
+void pinit(void) { initlock(&proc_table_lock, "proc_table"); }
 
 /*
  * set up a process's task state and segment descriptors
@@ -136,6 +138,8 @@ void scheduler(void) {
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);
     for (i = 0; i < NPROC; i++) {
+      if (cpus[cpu()].guard1 != 0xdeadbeef || cpus[cpu()].guard2 != 0xdeadbeef)
+        panic("cpu guard");
       p = &proc[i];
       if (p->state != RUNNABLE)
         continue;
@@ -187,6 +191,7 @@ void scheduler(void) {
 
       // XXX if not holding proc_table_lock panic.
     }
+
     release(&proc_table_lock);
 
     if (cpus[cpu()].nlock != 0)
@@ -203,7 +208,9 @@ void scheduler(void) {
 // Enter scheduler.  Must already hold proc_table_lock
 // and have changed curproc[cpu()]->state.
 void sched(void) {
-  if (setjmp(&curproc[cpu()]->jmpbuf) == 0)
+  struct proc *p = curproc[cpu()];
+
+  if (setjmp(&p->jmpbuf) == 0)
     longjmp(&cpus[cpu()].jmpbuf);
 }
 
