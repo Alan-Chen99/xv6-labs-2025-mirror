@@ -91,6 +91,7 @@ loop:
         goto loop;
       }
       ip->count++;
+      ip->busy = 1;
       release(&inode_table_lock);
       return ip;
     }
@@ -242,15 +243,14 @@ uint bmap(struct inode *ip, uint bn) {
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-int readi(struct inode *ip, void *xdst, uint off, uint n) {
-  char *dst = (char *)xdst;
+int readi(struct inode *ip, char *dst, uint off, uint n) {
   uint target = n, n1;
   struct buf *bp;
 
   if (ip->type == T_DEV) {
     if (ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].d_read)
       return -1;
-    return devsw[ip->major].d_read(ip->minor, xdst, n);
+    return devsw[ip->major].d_read(ip->minor, dst, n);
   }
 
   while (n > 0 && off < ip->size) {
@@ -269,7 +269,7 @@ int readi(struct inode *ip, void *xdst, uint off, uint n) {
 
 #define MIN(a, b) ((a < b) ? a : b)
 
-int writei(struct inode *ip, void *addr, uint off, uint n) {
+int writei(struct inode *ip, char *addr, uint off, uint n) {
   if (ip->type == T_DEV) {
     if (ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].d_write)
       return -1;
@@ -373,7 +373,7 @@ struct inode *mknod(struct inode *dp, char *cp, short type, short major,
   int i;
   struct buf *bp = 0;
 
-  cprintf("mknod: %s %d %d %d\n", cp, type, major, minor);
+  cprintf("mknod: dir %d %s %d %d %d\n", dp->inum, cp, type, major, minor);
 
   ip = ialloc(dp->dev, type);
   if (ip == 0)
