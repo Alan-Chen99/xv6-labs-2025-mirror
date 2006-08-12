@@ -50,7 +50,7 @@ static uint balloc(uint dev) {
 
   cprintf("balloc: allocate block %d\n", b);
   bp->data[bi / 8] |= 0x1 << (bi % 8);
-  bwrite(dev, bp, BBLOCK(b, ninodes)); // mark it allocated on disk
+  bwrite(bp, BBLOCK(b, ninodes)); // mark it allocated on disk
   brelse(bp);
   return b;
 }
@@ -72,7 +72,7 @@ static void bfree(int dev, uint b) {
   bi = b % BPB;
   m = ~(0x1 << (bi % 8));
   bp->data[bi / 8] &= m;
-  bwrite(dev, bp, BBLOCK(b, ninodes)); // mark it free on disk
+  bwrite(bp, BBLOCK(b, ninodes)); // mark it free on disk
   brelse(bp);
 }
 
@@ -135,7 +135,7 @@ void iupdate(struct inode *ip) {
   dip->nlink = ip->nlink;
   dip->size = ip->size;
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
-  bwrite(ip->dev, bp, IBLOCK(ip->inum)); // mark it allocated on the disk
+  bwrite(bp, IBLOCK(ip->inum)); // mark it allocated on the disk
   brelse(bp);
 }
 
@@ -167,7 +167,7 @@ struct inode *ialloc(uint dev, short type) {
 
   cprintf("ialloc: %d\n", inum);
   dip->type = type;
-  bwrite(dev, bp, IBLOCK(inum)); // mark it allocated on the disk
+  bwrite(bp, IBLOCK(inum)); // mark it allocated on the disk
   brelse(bp);
   ip = iget(dev, inum);
   return ip;
@@ -321,7 +321,7 @@ int writei(struct inode *ip, char *addr, uint off, uint n) {
       m = min(BSIZE - off % BSIZE, n - r);
       bp = bread(ip->dev, bmap(ip, off / BSIZE));
       memmove(bp->data + off % BSIZE, addr, m);
-      bwrite(ip->dev, bp, bmap(ip, off / BSIZE));
+      bwrite(bp, bmap(ip, off / BSIZE));
       brelse(bp);
       r += m;
       off += m;
@@ -449,11 +449,13 @@ found:
   ep->inum = ip->inum;
   for (i = 0; i < DIRSIZ && cp[i]; i++)
     ep->name[i] = cp[i];
-  bwrite(dp->dev, bp, bmap(dp, off / BSIZE)); // write directory block
+  for (; i < DIRSIZ; i++)
+    ep->name[i] = '\0';
+  bwrite(bp, bmap(dp, off / BSIZE)); // write directory block
   brelse(bp);
-  dp->size += sizeof(struct dirent); // update directory inode
-  iupdate(dp);
+
   iput(dp);
+
   return ip;
 }
 
@@ -491,7 +493,7 @@ int unlink(char *cp) {
 
 found:
   ep->inum = 0;
-  bwrite(dp->dev, bp, bmap(dp, off / BSIZE)); // write directory block
+  bwrite(bp, bmap(dp, off / BSIZE)); // write directory block
   brelse(bp);
   iupdate(dp);
   iput(dp);

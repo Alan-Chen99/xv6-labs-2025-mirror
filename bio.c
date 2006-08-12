@@ -84,12 +84,12 @@ struct buf *bread(uint dev, uint sector) {
   return b;
 }
 
-void bwrite(uint dev, struct buf *b, uint sector) {
+void bwrite(struct buf *b, uint sector) {
   void *c;
   extern struct spinlock ide_lock;
 
   acquire(&ide_lock);
-  c = ide_start_rw(dev & 0xff, sector, b->data, 1, 0);
+  c = ide_start_rw(b->dev & 0xff, sector, b->data, 1, 0);
   sleep(c, &ide_lock);
   ide_finish(c);
   b->flags |= B_VALID;
