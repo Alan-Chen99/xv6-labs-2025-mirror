@@ -12,23 +12,30 @@ struct spinlock buf_table_lock;
 
 void binit(void) { initlock(&buf_table_lock, "buf_table"); }
 
-struct buf *getblk() {
-  int i;
+struct buf *getblk(uint dev, uint sector) {
+  struct buf *b;
 
   acquire(&buf_table_lock);
 
-  // XXX need to lock the block even if not caching, to
-  // avoid read modify write problems.
-
   while (1) {
-    for (i = 0; i < NBUF; i++) {
-      if ((buf[i].flags & B_BUSY) == 0) {
-        buf[i].flags |= B_BUSY;
-        release(&buf_table_lock);
-        return buf + i;
+    for (b = buf; b < buf + NBUF; b++)
+      if ((b->flags & B_BUSY) && b->dev == dev && b->sector)
+        break;
+
+    if (b < buf + NBUF) {
+      sleep(buf, &buf_table_lock);
+    } else {
+      for (b = buf; b < buf + NBUF; b++) {
+        if ((b->flags & B_BUSY) == 0) {
+          b->flags |= B_BUSY;
+          b->dev = dev;
+          b->sector = sector;
+          release(&buf_table_lock);
+          return b;
+        }
       }
+      panic("getblk: no buffers");
     }
-    sleep(buf, &buf_table_lock);
   }
 }
 
@@ -37,7 +44,7 @@ struct buf *bread(uint dev, uint sector) {
   struct buf *b;
   extern struct spinlock ide_lock;
 
-  b = getblk();
+  b = getblk(dev, sector);
 
   acquire(&ide_lock);
   c = ide_start_rw(dev & 0xff, sector, b->data, 1, 1);
