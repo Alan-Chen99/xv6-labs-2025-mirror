@@ -289,7 +289,7 @@ void createdelete() {
 
 // can I unlink a file and still read it?
 void unlinkread() {
-  int fd;
+  int fd, fd1;
 
   fd = open("unlinkread", O_CREATE | O_RDWR);
   if (fd < 0) {
@@ -308,8 +308,17 @@ void unlinkread() {
     puts("unlink unlinkread failed\n");
     exit();
   }
+
+  fd1 = open("xxx", O_CREATE | O_RDWR);
+  write(fd1, "yyy", 3);
+  close(fd1);
+
   if (read(fd, buf, sizeof(buf)) != 5) {
     puts("unlinkread read failed");
+    exit();
+  }
+  if (buf[0] != 'h') {
+    puts("unlinkread wrong data\n");
     exit();
   }
   if (write(fd, buf, 10) != 10) {
@@ -317,13 +326,14 @@ void unlinkread() {
     exit();
   }
   close(fd);
+  unlink("xxx");
   puts("unlinkread ok\n");
 }
 
 int main(int argc, char *argv[]) {
   puts("usertests starting\n");
 
-  // unlinkread();
+  unlinkread();
   createdelete();
   twofiles();
   sharedfd();

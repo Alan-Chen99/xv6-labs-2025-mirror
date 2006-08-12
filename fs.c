@@ -466,7 +466,7 @@ int unlink(char *cp) {
   uint pinum;
 
   if ((ip = namei(cp, &pinum)) == 0) {
-    cprintf("file to be unlinked doesn't exist\n");
+    cprintf("unlink(%s) it doesn't exist\n", cp);
     return -1;
   }
 
