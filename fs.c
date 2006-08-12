@@ -206,11 +206,42 @@ void iunlock(struct inode *ip) {
   release(&inode_table_lock);
 }
 
+uint bmap(struct inode *ip, uint bn) {
+  unsigned x;
+
+  if (bn >= NDIRECT)
+    panic("bmap 1");
+  x = ip->addrs[bn];
+  if (x == 0)
+    panic("bmap 2");
+  return x;
+}
+
+void iunlink(struct inode *ip) {
+  int i;
+
+  // free inode, its blocks, and remove dir entry
+  for (i = 0; i < NDIRECT; i++) {
+    if (ip->addrs[i] != 0) {
+      bfree(ip->dev, ip->addrs[i]);
+      ip->addrs[i] = 0;
+    }
+  }
+  ip->size = 0;
+  ip->major = 0;
+  ip->minor = 0;
+  iupdate(ip);
+  ifree(ip); // is this the right order?
+}
+
 // caller is releasing a reference to this inode.
 // you must have the inode lock.
 void iput(struct inode *ip) {
   if (ip->count < 1 || ip->busy != 1)
     panic("iput");
+
+  if ((ip->count <= 1) && (ip->nlink <= 0))
+    iunlink(ip);
 
   acquire(&inode_table_lock);
 
@@ -232,19 +263,6 @@ void idecref(struct inode *ip) {
   release(&inode_table_lock);
 }
 
-uint bmap(struct inode *ip, uint bn) {
-  unsigned x;
-
-  if (bn >= NDIRECT)
-    panic("bmap 1");
-  x = ip->addrs[bn];
-  if (x == 0)
-    panic("bmap 2");
-  return x;
-}
-
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
 void stati(struct inode *ip, struct stat *st) {
   st->st_dev = ip->dev;
   st->st_ino = ip->inum;
@@ -252,6 +270,8 @@ void stati(struct inode *ip, struct stat *st) {
   st->st_nlink = ip->nlink;
   st->st_size = ip->size;
 }
+
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 int readi(struct inode *ip, char *dst, uint off, uint n) {
   uint target = n, n1;
@@ -277,8 +297,6 @@ int readi(struct inode *ip, char *dst, uint off, uint n) {
   return target - n;
 }
 
-#define MIN(a, b) ((a < b) ? a : b)
-
 int writei(struct inode *ip, char *addr, uint off, uint n) {
   if (ip->type == T_DEV) {
     if (ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].d_write)
@@ -300,7 +318,7 @@ int writei(struct inode *ip, char *addr, uint off, uint n) {
           return r;
         ip->addrs[lbn] = b;
       }
-      m = MIN(BSIZE - off % BSIZE, n - r);
+      m = min(BSIZE - off % BSIZE, n - r);
       bp = bread(ip->dev, bmap(ip, off / BSIZE));
       memmove(bp->data + off % BSIZE, addr, m);
       bwrite(ip->dev, bp, bmap(ip, off / BSIZE));
@@ -440,8 +458,8 @@ found:
 }
 
 int unlink(char *cp) {
-  int i;
-  struct inode *ip, *dp;
+  struct inode *ip;
+  struct inode *dp;
   struct dirent *ep = 0;
   int off;
   struct buf *bp = 0;
@@ -454,23 +472,9 @@ int unlink(char *cp) {
 
   ip->nlink--;
   if (ip->nlink > 0) {
-    iupdate(ip);
-    iput(ip); // is this the right order?
+    iput(ip);
     return 0;
   }
-
-  // free inode, its blocks, and remove dir entry
-  for (i = 0; i < NDIRECT; i++) {
-    if (ip->addrs[i] != 0) {
-      bfree(ip->dev, ip->addrs[i]);
-      ip->addrs[i] = 0;
-    }
-  }
-  ip->size = 0;
-  ip->major = 0;
-  ip->minor = 0;
-  iupdate(ip);
-  ifree(ip); // is this the right order?
 
   dp = iget(rootdev, pinum);
   for (off = 0; off < dp->size; off += BSIZE) {
@@ -489,8 +493,8 @@ found:
   ep->inum = 0;
   bwrite(dp->dev, bp, bmap(dp, off / BSIZE)); // write directory block
   brelse(bp);
-  iput(ip);
   iupdate(dp);
   iput(dp);
+  iput(ip);
   return 0;
 }
