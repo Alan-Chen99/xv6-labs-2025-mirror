@@ -219,7 +219,7 @@ void twofiles() {
 // two processes create and delete files in same directory
 void createdelete() {
   int pid, i, fd;
-  int n = 10; // for now, fit in one directory block
+  int n = 20;
   char name[32];
 
   pid = fork();
