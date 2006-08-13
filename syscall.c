@@ -254,7 +254,8 @@ int sys_mknod(void) {
     return -1;
 
   nip = mknod(cp->mem + arg0, (short)arg1, (short)arg2, (short)arg3);
-  iput(nip);
+  if (nip)
+    iput(nip);
   return (nip == 0) ? -1 : 0;
 }
 

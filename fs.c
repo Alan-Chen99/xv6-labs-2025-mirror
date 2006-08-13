@@ -48,7 +48,6 @@ static uint balloc(uint dev) {
   if (b >= size)
     panic("balloc: out of blocks\n");
 
-  cprintf("balloc: allocate block %d\n", b);
   bp->data[bi / 8] |= 0x1 << (bi % 8);
   bwrite(bp, BBLOCK(b, ninodes)); // mark it allocated on disk
   brelse(bp);
@@ -62,7 +61,6 @@ static void bfree(int dev, uint b) {
   int ninodes;
   uchar m;
 
-  cprintf("bfree: free block %d\n", b);
   bp = bread(dev, 1);
   sb = (struct superblock *)bp->data;
   ninodes = sb->ninodes;
@@ -83,13 +81,14 @@ static void bfree(int dev, uint b) {
 
 // returns an inode with busy set and incremented reference count.
 struct inode *iget(uint dev, uint inum) {
-  struct inode *ip, *nip = 0;
+  struct inode *ip, *nip;
   struct dinode *dip;
   struct buf *bp;
 
   acquire(&inode_table_lock);
 
 loop:
+  nip = 0;
   for (ip = &inode[0]; ip < &inode[NINODE]; ip++) {
     if (ip->count > 0 && ip->dev == dev && ip->inum == inum) {
       if (ip->busy) {
@@ -166,11 +165,9 @@ struct inode *ialloc(uint dev, short type) {
     brelse(bp);
   }
 
-  if (inum >= ninodes) {
+  if (inum >= ninodes)
     panic("ialloc: no inodes left\n");
-  }
 
-  cprintf("ialloc: %d\n", inum);
   dip->type = type;
   bwrite(bp, IBLOCK(inum)); // mark it allocated on the disk
   brelse(bp);
@@ -179,7 +176,6 @@ struct inode *ialloc(uint dev, short type) {
 }
 
 static void ifree(struct inode *ip) {
-  cprintf("ifree: %d\n", ip->inum);
   ip->type = 0;
   iupdate(ip);
 }
@@ -200,7 +196,7 @@ void ilock(struct inode *ip) {
 // caller is holding onto a reference to this inode, but no
 // longer needs to examine or change it, so clear ip->busy.
 void iunlock(struct inode *ip) {
-  if (ip->busy != 1)
+  if (ip->busy != 1 || ip->count < 1)
     panic("iunlock");
 
   acquire(&inode_table_lock);
@@ -245,7 +241,7 @@ void iput(struct inode *ip) {
   if (ip->count < 1 || ip->busy != 1)
     panic("iput");
 
-  if ((ip->count <= 1) && (ip->nlink <= 0))
+  if ((ip->count == 1) && (ip->nlink == 0))
     iunlink(ip);
 
   acquire(&inode_table_lock);
@@ -459,8 +455,6 @@ found:
 struct inode *mknod(char *cp, short type, short major, short minor) {
   struct inode *ip, *dp;
 
-  cprintf("mknod: %s %d %d %d\n", cp, type, major, minor);
-
   if ((dp = namei(cp, NAMEI_CREATE, 0)) == 0)
     return 0;
 
@@ -484,22 +478,17 @@ struct inode *mknod(char *cp, short type, short major, short minor) {
 int unlink(char *cp) {
   struct inode *ip, *dp;
   struct dirent de;
-  uint off, inum, cc;
+  uint off, inum, dev;
 
-  cprintf("unlink(%s)\n", cp);
-
-  if ((dp = namei(cp, NAMEI_DELETE, &off)) == 0) {
-    cprintf("unlink(%s) it doesn't exist\n", cp);
+  if ((dp = namei(cp, NAMEI_DELETE, &off)) == 0)
     return -1;
-  }
 
-  if ((cc = readi(dp, (char *)&de, off, sizeof(de))) != sizeof(de) ||
-      de.inum == 0) {
-    cprintf("off %d dp->size %d cc %d de.inum %d", off, dp->size, cc, de.inum);
+  dev = dp->dev;
+
+  if (readi(dp, (char *)&de, off, sizeof(de)) != sizeof(de) || de.inum == 0)
     panic("unlink no entry");
-  }
+
   inum = de.inum;
-  cprintf("dinum %d off %d de %s/%d\n", dp->inum, off, de.name, de.inum);
 
   memset(&de, 0, sizeof(de));
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
@@ -508,9 +497,7 @@ int unlink(char *cp) {
   iupdate(dp);
   iput(dp);
 
-  ip = iget(dp->dev, inum);
-  if (ip == 0)
-    panic("unlink no inode");
+  ip = iget(dev, inum);
 
   ip->nlink--;
 
@@ -523,14 +510,9 @@ int unlink(char *cp) {
 int link(char *name1, char *name2) {
   struct inode *ip, *dp;
 
-  cprintf("link(%s, %s)\n", name1, name2);
-
-  if ((ip = namei(name1, NAMEI_LOOKUP, 0)) == 0) {
-    cprintf("  failed %s does not exist\n", name1);
+  if ((ip = namei(name1, NAMEI_LOOKUP, 0)) == 0)
     return -1;
-  }
   if (ip->type == T_DIR) {
-    cprintf("  failed %s is a dir\n", name1);
     iput(ip);
     return -1;
   }
@@ -538,12 +520,10 @@ int link(char *name1, char *name2) {
   iunlock(ip);
 
   if ((dp = namei(name2, NAMEI_CREATE, 0)) == 0) {
-    cprintf("  failed %s exists\n", name2);
     idecref(ip);
     return -1;
   }
   if (dp->dev != ip->dev) {
-    cprintf("  cross-device link\n");
     idecref(ip);
     iput(dp);
     return -1;
@@ -556,8 +536,6 @@ int link(char *name1, char *name2) {
   wdir(dp, name2, ip->inum);
   iput(dp);
   iput(ip);
-
-  cprintf("  succeeded\n");
 
   return 0;
 }
