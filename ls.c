@@ -33,7 +33,8 @@ int main(int argc, char *argv[]) {
       printf(2, "ls: read error\n");
       exit();
     }
-    printf(1, "%s\n", dirent.name);
+    if (dirent.inum != 0)
+      printf(1, "%s\n", dirent.name);
   }
   close(fd);
 
