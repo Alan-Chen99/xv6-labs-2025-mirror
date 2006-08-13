@@ -86,7 +86,6 @@ void main0(void) {
   lapic_enableintr();
 
   // Enable interrupts on this processor.
-  cprintf("cpu%d: nlock %d before -- and sti\n", cpu(), cpus[0].nlock);
   cpus[cpu()].nlock--;
   sti();
 
@@ -96,7 +95,6 @@ void main0(void) {
   // load_icode(p, _binary_userfs_start, (uint) _binary_userfs_size);
   load_icode(p, _binary_init_start, (uint)_binary_init_size);
   p->state = RUNNABLE;
-  cprintf("loaded init\n");
 
   scheduler();
 }
@@ -119,7 +117,6 @@ void mpmain(void) {
   cpus[cpu()].booted = 1;
 
   // Enable interrupts on this processor.
-  cprintf("cpu%d: initial nlock %d\n", cpu(), cpus[cpu()].nlock);
   cpus[cpu()].nlock--;
   sti();
 
@@ -133,7 +130,6 @@ void load_icode(struct proc *p, uchar *binary, uint size) {
 
   // Check magic number on binary
   elf = (struct elfhdr *)binary;
-  cprintf("elf %x magic %x\n", elf, elf->magic);
   if (elf->magic != ELF_MAGIC)
     panic("load_icode: not an ELF binary");
 
@@ -145,7 +141,6 @@ void load_icode(struct proc *p, uchar *binary, uint size) {
   for (i = 0; i < elf->phnum; i++, ph++) {
     if (ph->type != ELF_PROG_LOAD)
       continue;
-    cprintf("va %x memsz %d\n", ph->va, ph->memsz);
     if (ph->va + ph->memsz < ph->va)
       panic("load_icode: overflow in elf header segment");
     if (ph->va + ph->memsz >= p->sz)

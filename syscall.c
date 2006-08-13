@@ -290,6 +290,19 @@ int sys_fstat(void) {
   return r;
 }
 
+int sys_link(void) {
+  struct proc *cp = curproc[cpu()];
+  uint name1, name2;
+  int r;
+
+  if (fetcharg(0, &name1) < 0 || checkstring(name1) < 0)
+    return -1;
+  if (fetcharg(1, &name2) < 0 || checkstring(name2) < 0)
+    return -1;
+  r = link(cp->mem + name1, cp->mem + name2);
+  return r;
+}
+
 int sys_exec(void) {
   struct proc *cp = curproc[cpu()];
   uint arg0, arg1, sz = 0, ap, sp, p1, p2;
@@ -499,6 +512,9 @@ void syscall(void) {
     break;
   case SYS_fstat:
     ret = sys_fstat();
+    break;
+  case SYS_link:
+    ret = sys_link();
     break;
   default:
     cprintf("unknown sys call %d\n", num);
