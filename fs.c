@@ -68,6 +68,11 @@ static void bfree(int dev, uint b) {
   ninodes = sb->ninodes;
   brelse(bp);
 
+  bp = bread(dev, b);
+  memset(bp->data, 0, BSIZE);
+  bwrite(bp, b);
+  brelse(bp);
+
   bp = bread(dev, BBLOCK(b, ninodes));
   bi = b % BPB;
   m = ~(0x1 << (bi % 8));
@@ -410,6 +415,7 @@ void wdir(struct inode *dp, char *name, uint ino) {
   struct buf *bp = 0;
   struct dirent *ep = 0;
   int i;
+  int lb;
 
   for (off = 0; off < dp->size; off += BSIZE) {
     bp = bread(dp->dev, bmap(dp, off / BSIZE));
@@ -420,17 +426,23 @@ void wdir(struct inode *dp, char *name, uint ino) {
     }
     brelse(bp);
   }
-
-  panic("mknod: XXXX no dir entry free\n");
-
+  lb = dp->size / BSIZE;
+  if (lb >= NDIRECT) {
+    panic("wdir: too many entries");
+  }
+  dp->addrs[lb] = balloc(dp->dev);
+  bp = bread(dp->dev, dp->addrs[lb]);
+  ep = (struct dirent *)(bp->data);
 found:
   ep->inum = ino;
   for (i = 0; i < DIRSIZ && name[i]; i++)
     ep->name[i] = name[i];
   for (; i < DIRSIZ; i++)
     ep->name[i] = '\0';
+  dp->size += sizeof(struct dirent);
   bwrite(bp, bmap(dp, off / BSIZE)); // write directory block
   brelse(bp);
+  iupdate(dp);
 }
 
 struct inode *mknod(char *cp, short type, short major, short minor) {
@@ -443,7 +455,6 @@ struct inode *mknod(char *cp, short type, short major, short minor) {
     iput(ip);
     return 0;
   }
-  cprintf("mknod: pinum = %d\n", pinum);
   dp = iget(rootdev, pinum);
   ip = ialloc(dp->dev, type);
   if (ip == 0) {
@@ -458,9 +469,7 @@ struct inode *mknod(char *cp, short type, short major, short minor) {
   iupdate(ip); // write new inode to disk
 
   wdir(dp, cp, ip->inum);
-
   iput(dp);
-
   return ip;
 }
 
@@ -494,12 +503,14 @@ int unlink(char *cp) {
     }
     brelse(bp);
   }
-  panic("mknod: XXXX no dir entry free\n");
+  panic("unlink: entry doesn't exist\n");
 
 found:
   ep->inum = 0;
+  memset(ep->name, '\0', DIRSIZ);
   bwrite(bp, bmap(dp, off / BSIZE)); // write directory block
   brelse(bp);
+  dp->size -= sizeof(struct dirent);
   iupdate(dp);
   iput(dp);
   iput(ip);
