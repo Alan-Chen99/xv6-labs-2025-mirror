@@ -11,6 +11,7 @@ int main(int argc, char *argv[]) {
   int fd;
   uint off;
   uint sz;
+  int i;
 
   if (argc > 1) {
     puts("Usage: ls\n");
@@ -40,8 +41,13 @@ int main(int argc, char *argv[]) {
         printf(1, "stat: failed\n");
         break;
       }
-      printf(1, "%s t %d ino %d sz %d\n", dirent.name, st.st_type, dirent.inum,
-             st.st_size);
+      for (i = 0; i < DIRSIZ; i++) {
+        if (dirent.name[i] != '\0')
+          printf(1, "%c", dirent.name[i]);
+        else
+          printf(1, " ");
+      }
+      printf(1, "%d %d %d\n", st.st_type, dirent.inum, st.st_size);
     }
   }
   close(fd);
