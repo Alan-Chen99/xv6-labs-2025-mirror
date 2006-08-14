@@ -262,8 +262,10 @@ int sys_mknod(void) {
 int sys_mkdir(void) {
   struct proc *cp = curproc[cpu()];
   struct inode *nip;
+  struct inode *pip;
   uint arg0;
   int l;
+  struct dirent de;
 
   if (fetcharg(0, &arg0) < 0)
     return -1;
@@ -276,7 +278,15 @@ int sys_mkdir(void) {
 
   nip = mknod(cp->mem + arg0, T_DIR, 0, 0);
 
-  // XXX put . and .. in
+  de.name[0] = '.';
+  de.inum = nip->inum;
+  writei(nip, (char *)&de, 0, sizeof(de));
+
+  pip = namei(".", NAMEI_LOOKUP, 0);
+  de.inum = pip->inum;
+  de.name[1] = '.';
+  iput(pip);
+  writei(nip, (char *)&de, sizeof(de), sizeof(de));
 
   iput(nip);
   return (nip == 0) ? -1 : 0;
