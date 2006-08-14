@@ -13,3 +13,4 @@
 #define SYS_unlink 16
 #define SYS_fstat 17
 #define SYS_link 18
+#define SYS_mkdir 19

@@ -259,6 +259,29 @@ int sys_mknod(void) {
   return (nip == 0) ? -1 : 0;
 }
 
+int sys_mkdir(void) {
+  struct proc *cp = curproc[cpu()];
+  struct inode *nip;
+  uint arg0;
+  int l;
+
+  if (fetcharg(0, &arg0) < 0)
+    return -1;
+
+  if ((l = checkstring(arg0)) < 0)
+    return -1;
+
+  if (l >= DIRSIZ)
+    return -1;
+
+  nip = mknod(cp->mem + arg0, T_DIR, 0, 0);
+
+  // XXX put . and .. in
+
+  iput(nip);
+  return (nip == 0) ? -1 : 0;
+}
+
 int sys_unlink(void) {
   struct proc *cp = curproc[cpu()];
   uint arg0;
@@ -516,6 +539,9 @@ void syscall(void) {
     break;
   case SYS_link:
     ret = sys_link();
+    break;
+  case SYS_mkdir:
+    ret = sys_mkdir();
     break;
   default:
     cprintf("unknown sys call %d\n", num);

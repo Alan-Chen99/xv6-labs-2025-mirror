@@ -63,7 +63,13 @@ int main(void) {
     printf(stdout, "read failed\n");
   }
   close(fd);
+
+  printf(stdout, "unlink doesnotexist\n");
+
   unlink("doesnotexist");
+
+  printf(stdout, "many creates, followed by unlink\n");
+
   name[0] = 'a';
   name[2] = '\0';
   for (i = 0; i < 52; i++) {
@@ -77,6 +83,13 @@ int main(void) {
     name[1] = '0' + i;
     unlink(name);
   }
+
+  printf(stdout, "mkdir\n");
+
+  if (mkdir("dir0") < 0)
+    printf(stdout, "mkdir failed\n");
+
+  //  unlink("dir0");
 
   // exec("echo", echo_args);
   printf(stdout, "about to do exec\n");
