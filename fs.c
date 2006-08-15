@@ -258,6 +258,12 @@ void idecref(struct inode *ip) {
   iput(ip);
 }
 
+void iincref(struct inode *ip) {
+  ilock(ip);
+  ip->count++;
+  iunlock(ip);
+}
+
 void stati(struct inode *ip, struct stat *st) {
   st->st_dev = ip->dev;
   st->st_ino = ip->inum;
