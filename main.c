@@ -27,10 +27,14 @@ void main0(void) {
   // clear BSS
   memset(edata, 0, end - edata);
 
+  // switch to cpu0's cpu stack
+  asm volatile("movl %0, %%esp" : : "r"(cpus[0].mpstack + MPSTACK - 32));
+  asm volatile("movl %0, %%ebp" : : "r"(cpus[0].mpstack + MPSTACK));
+
   // Make sure interrupts stay disabled on all processors
   // until each signals it is ready, by pretending to hold
   // an extra lock.
-  // xxx maybe replace w/ acquire remembering if FL_IF
+  // xxx maybe replace w/ acquire remembering if FL_IF was already clear
   for (i = 0; i < NCPU; i++) {
     cpus[i].nlock++;
     cpus[i].guard1 = 0xdeadbeef;
@@ -53,16 +57,9 @@ void main0(void) {
   fd_init();
   iinit();
 
-  // create a fake process per CPU
-  // so each CPU always has a tss and a gdt
-  for (p = &proc[0]; p < &proc[NCPU]; p++) {
-    p->state = IDLEPROC;
-    p->kstack = cpus[p - proc].mpstack;
-    p->pid = p - proc;
-  }
-
   // fix process 0 so that copyproc() will work
   p = &proc[0];
+  p->state = IDLEPROC;
   p->sz = 4 * PAGE;
   p->mem = kalloc(p->sz);
   memset(p->mem, 0, p->sz);
@@ -72,8 +69,9 @@ void main0(void) {
   p->tf->es = p->tf->ds = p->tf->ss = (SEG_UDATA << 3) | 3;
   p->tf->cs = (SEG_UCODE << 3) | 3;
   p->tf->eflags = FL_IF;
-  setupsegs(p);
-  // curproc[cpu()] = p;
+
+  // make sure there's a TSS
+  setupsegs(0);
 
   // initialize I/O devices, let them enable interrupts
   console_init();
@@ -113,7 +111,8 @@ void mpmain(void) {
   lapic_timerinit();
   lapic_enableintr();
 
-  setupsegs(&proc[cpu()]);
+  // make sure there's a TSS
+  setupsegs(0);
 
   cpuid(0, 0, 0, 0, 0); // memory barrier
   cpus[cpu()].booted = 1;
