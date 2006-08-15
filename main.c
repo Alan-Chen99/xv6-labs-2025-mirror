@@ -66,7 +66,7 @@ void main0(void) {
   p->sz = 4 * PAGE;
   p->mem = kalloc(p->sz);
   memset(p->mem, 0, p->sz);
-  p->kstack = kalloc(KSTACKSIbZE);
+  p->kstack = kalloc(KSTACKSIZE);
   p->tf = (struct trapframe *)(p->kstack + KSTACKSIZE) - 1;
   memset(p->tf, 0, sizeof(struct trapframe));
   p->tf->es = p->tf->ds = p->tf->ss = (SEG_UDATA << 3) | 3;
