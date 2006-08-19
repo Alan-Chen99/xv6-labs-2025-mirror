@@ -14,3 +14,4 @@
 #define SYS_fstat 17
 #define SYS_link 18
 #define SYS_mkdir 19
+#define SYS_chdir 20

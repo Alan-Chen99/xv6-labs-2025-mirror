@@ -278,6 +278,7 @@ int sys_mkdir(void) {
 
   nip = mknod(cp->mem + arg0, T_DIR, 0, 0);
 
+  memset(de.name, '\0', DIRSIZ);
   de.name[0] = '.';
   de.inum = nip->inum;
   writei(nip, (char *)&de, 0, sizeof(de));
@@ -290,6 +291,40 @@ int sys_mkdir(void) {
 
   iput(nip);
   return (nip == 0) ? -1 : 0;
+}
+
+int sys_chdir(void) {
+  struct proc *cp = curproc[cpu()];
+  struct inode *ip;
+  uint arg0;
+  int l;
+
+  if (fetcharg(0, &arg0) < 0)
+    return -1;
+
+  if ((l = checkstring(arg0)) < 0)
+    return -1;
+
+  if (l >= DIRSIZ)
+    return -1;
+
+  if ((ip = namei(cp->mem + arg0, NAMEI_LOOKUP, 0)) == 0)
+    return -1;
+
+  if (ip == cp->cwd) {
+    iput(ip);
+    return 0;
+  }
+
+  if (ip->type != T_DIR) {
+    iput(ip);
+    return 0;
+  }
+
+  idecref(cp->cwd);
+  cp->cwd = ip;
+  iunlock(cp->cwd);
+  return 0;
 }
 
 int sys_unlink(void) {
@@ -552,6 +587,9 @@ void syscall(void) {
     break;
   case SYS_mkdir:
     ret = sys_mkdir();
+    break;
+  case SYS_chdir:
+    ret = sys_chdir();
     break;
   default:
     cprintf("unknown sys call %d\n", num);

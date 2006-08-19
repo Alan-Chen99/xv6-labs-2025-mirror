@@ -13,15 +13,20 @@ int main(void) {
 
   while (1) {
     puts("$ ");
+    memset(buf, '\0', sizeof(buf));
     gets(buf, sizeof(buf));
     if (buf[0] == '\0')
       continue;
     pid = fork();
     if (pid == 0) {
       parse(buf);
-      exec(buf, args);
-      printf(1, "%s: not found\n", buf);
-      exit();
+      if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == '\0') { // cd
+        chdir(&buf[3]);
+      } else {
+        exec(buf, args);
+        printf(1, "%s: not found\n", buf);
+        exit();
+      }
     }
     if (pid > 0)
       wait();
@@ -42,4 +47,5 @@ void parse(char buf[]) {
       }
     }
   }
+  args[j] = '\0';
 }
