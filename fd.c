@@ -131,5 +131,3 @@ void fd_incref(struct fd *fd) {
   fd->ref++;
   release(&fd_table_lock);
 }
-
-int fd_dup(struct fd *fd) { return -1; }
