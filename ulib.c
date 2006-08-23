@@ -14,6 +14,12 @@ char *strcpy(char *s, char *t) {
   return os;
 }
 
+int strcmp(const char *p, const char *q) {
+  while (*p && *p == *q)
+    p++, q++;
+  return (int)((unsigned char)*p - (unsigned char)*q);
+}
+
 unsigned int strlen(char *s) {
   int n = 0;
   for (n = 0; s[n]; n++)
@@ -28,6 +34,13 @@ void *memset(void *dst, int c, unsigned int n) {
     *d++ = c;
 
   return dst;
+}
+
+char *strchr(const char *s, char c) {
+  for (; *s; s++)
+    if (*s == c)
+      return (char *)s;
+  return 0;
 }
 
 char *gets(char *buf, int max) {

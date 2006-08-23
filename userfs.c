@@ -18,6 +18,10 @@ int main(void) {
 
   printf(stdout, "userfs is running\n");
 
+  if (sbrk(4096) < 0) {
+    printf(stdout, "sbrk failed\n");
+  }
+
   fd = open("echo", 0);
   if (fd >= 0) {
     printf(stdout, "open echo ok\n");

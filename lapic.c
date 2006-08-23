@@ -109,7 +109,7 @@ void lapic_timerinit(void) {
 }
 
 void lapic_timerintr(void) {
-  cprintf("cpu%d: timer interrupt!\n", cpu());
+  // cprintf("cpu%d: timer interrupt!\n", cpu());
   lapic_write(LAPIC_EOI, 0);
 }
 
