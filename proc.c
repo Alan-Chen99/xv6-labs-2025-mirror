@@ -140,10 +140,9 @@ char *growproc(int n) {
   oldmem = cp->mem;
   cp->mem = newmem;
   kfree(oldmem, cp->sz);
+  cprintf("growproc: added %d bytes to %d bytes\n", n, cp->sz);
   cp->sz += n;
-  cprintf("growproc: added %d bytes starting at address 0x%x\n", n,
-          newmem + cp->sz - n);
-  return newmem + cp->sz - n;
+  return cp->sz - n;
 }
 
 // Per-CPU process scheduler.
