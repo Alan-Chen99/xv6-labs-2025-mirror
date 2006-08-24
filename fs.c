@@ -219,8 +219,7 @@ uint bmap(struct inode *ip, uint bn) {
     if (x == 0)
       panic("bmap 2");
   } else {
-    cprintf("indirect block read\n");
-    inbp = bread(ip->dev, INDIRECT);
+    inbp = bread(ip->dev, ip->addrs[INDIRECT]);
     a = (uint *)inbp->data;
     x = a[bn - NDIRECT];
     brelse(inbp);
@@ -232,20 +231,23 @@ uint bmap(struct inode *ip, uint bn) {
 
 void iunlink(struct inode *ip) {
   int i, j;
+  struct buf *inbp;
 
   // free inode, its blocks, and remove dir entry
   for (i = 0; i < NADDRS; i++) {
     if (ip->addrs[i] != 0) {
       if (i == INDIRECT) {
+        inbp = bread(ip->dev, ip->addrs[INDIRECT]);
         for (j = 0; j < NINDIRECT; j++) {
-          uint *a = (uint *)(ip->addrs[i]);
+          uint *a = (uint *)inbp->data;
           if (a[j] != 0) {
             bfree(ip->dev, a[j]);
             a[j] = 0;
           }
         }
-      } else
-        bfree(ip->dev, ip->addrs[i]);
+        brelse(inbp);
+      }
+      bfree(ip->dev, ip->addrs[i]);
       ip->addrs[i] = 0;
     }
   }
@@ -319,7 +321,7 @@ int readi(struct inode *ip, char *dst, uint off, uint n) {
   return target - n;
 }
 
-int newblock(struct inode *ip, uint lbn) {
+static int newblock(struct inode *ip, uint lbn) {
   struct buf *inbp;
   uint *inaddrs;
   uint b;
@@ -332,22 +334,20 @@ int newblock(struct inode *ip, uint lbn) {
       ip->addrs[lbn] = b;
     }
   } else {
-    cprintf("newblock: use indirect block\n");
     if (ip->addrs[INDIRECT] == 0) {
-      cprintf("newblock: allocate indirect block\n");
       b = balloc(ip->dev);
       if (b <= 0)
         return -1;
       ip->addrs[INDIRECT] = b;
     }
-    inbp = bread(ip->dev, bmap(ip, INDIRECT));
+    inbp = bread(ip->dev, ip->addrs[INDIRECT]);
     inaddrs = (uint *)inbp->data;
     if (inaddrs[lbn - NDIRECT] == 0) {
       b = balloc(ip->dev);
       if (b <= 0)
         return -1;
       inaddrs[lbn - NDIRECT] = b;
-      bwrite(inbp, INDIRECT);
+      bwrite(inbp, ip->addrs[INDIRECT]);
     }
     brelse(inbp);
   }
