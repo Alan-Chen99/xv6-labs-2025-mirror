@@ -238,8 +238,8 @@ void iunlink(struct inode *ip) {
     if (ip->addrs[i] != 0) {
       if (i == INDIRECT) {
         inbp = bread(ip->dev, ip->addrs[INDIRECT]);
+        uint *a = (uint *)inbp->data;
         for (j = 0; j < NINDIRECT; j++) {
-          uint *a = (uint *)inbp->data;
           if (a[j] != 0) {
             bfree(ip->dev, a[j]);
             a[j] = 0;
@@ -549,6 +549,9 @@ int unlink(char *cp) {
   iput(dp);
 
   ip = iget(dev, inum);
+
+  if (ip->nlink < 1)
+    panic("unlink nlink < 1");
 
   ip->nlink--;
 
