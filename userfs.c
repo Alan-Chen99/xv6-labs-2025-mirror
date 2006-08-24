@@ -44,10 +44,10 @@ int main(void) {
   }
   for (i = 0; i < 100; i++) {
     if (write(fd, "aaaaaaaaaa", 10) != 10) {
-      printf(stdout, "error: write new file failed\n");
+      printf(stdout, "error: write aa %d new file failed\n", i);
     }
     if (write(fd, "bbbbbbbbbb", 10) != 10) {
-      printf(stdout, "error: write new file failed\n");
+      printf(stdout, "error: write bb %d new file failed\n", i);
     }
   }
   printf(stdout, "writes done\n");
