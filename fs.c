@@ -466,8 +466,10 @@ struct inode *namei(char *path, int mode, uint *ret_off, char **ret_last,
         for (i = 0; i < DIRSIZ && cp[i] != '/' && cp[i]; i++)
           if (cp[i] != ep->name[i])
             break;
-        if ((cp[i] == '\0' || cp[i] == '/') &&
+        if ((cp[i] == '\0' || cp[i] == '/' || i >= DIRSIZ) &&
             (i >= DIRSIZ || ep->name[i] == '\0')) {
+          while (cp[i] != '\0' && cp[i] != '/')
+            i++;
           off += (uchar *)ep - bp->data;
           ninum = ep->inum;
           brelse(bp);

@@ -396,8 +396,9 @@ void bigdir() {
 }
 
 void subdir() {
-  int fd;
+  int fd, cc;
 
+  unlink("ff");
   if (mkdir("dd") != 0) {
     puts("subdir mkdir dd failed\n");
     exit();
@@ -422,6 +423,18 @@ void subdir() {
     exit();
   }
   write(fd, "FF", 2);
+  close(fd);
+
+  fd = open("dd/dd/../ff", 0);
+  if (fd < 0) {
+    puts("open dd/dd/../ff failed\n");
+    exit();
+  }
+  cc = read(fd, buf, sizeof(buf));
+  if (cc != 2 || buf[0] != 'f') {
+    puts("dd/dd/../ff wrong content\n");
+    exit();
+  }
   close(fd);
 
   if (link("dd/dd/ff", "dd/dd/ffff") != 0) {
@@ -469,6 +482,18 @@ void subdir() {
   }
   if (open("dd/xx/ff", O_CREATE | O_RDWR) >= 0) {
     puts("create dd/xx/ff succeeded!\n");
+    exit();
+  }
+  if (open("dd", O_CREATE) >= 0) {
+    puts("create dd succeeded!\n");
+    exit();
+  }
+  if (open("dd", O_RDWR) >= 0) {
+    puts("open dd rdwr succeeded!\n");
+    exit();
+  }
+  if (open("dd", O_WRONLY) >= 0) {
+    puts("open dd wronly succeeded!\n");
     exit();
   }
   if (link("dd/ff/ff", "dd/dd/xx") == 0) {
@@ -579,9 +604,46 @@ void bigfile() {
   puts("bigfile ok\n");
 }
 
+void fourteen() {
+  int fd;
+
+  if (mkdir("12345678901234") != 0) {
+    puts("mkdir 12345678901234 failed\n");
+    exit();
+  }
+  if (mkdir("12345678901234/123456789012345") != 0) {
+    puts("mkdir 12345678901234/123456789012345 failed\n");
+    exit();
+  }
+  fd = open("123456789012345/123456789012345/123456789012345", O_CREATE);
+  if (fd < 0) {
+    puts("create 123456789012345/123456789012345/123456789012345 failed\n");
+    exit();
+  }
+  close(fd);
+  fd = open("12345678901234/12345678901234/12345678901234", 0);
+  if (fd < 0) {
+    puts("open 12345678901234/12345678901234/12345678901234 failed\n");
+    exit();
+  }
+  close(fd);
+
+  if (mkdir("12345678901234/12345678901234") == 0) {
+    puts("mkdir 12345678901234/12345678901234 succeeded!\n");
+    exit();
+  }
+  if (mkdir("123456789012345/12345678901234") == 0) {
+    puts("mkdir 12345678901234/123456789012345 succeeded!\n");
+    exit();
+  }
+
+  puts("fourteen ok\n");
+}
+
 int main(int argc, char *argv[]) {
   puts("fstests starting\n");
 
+  fourteen();
   bigfile();
   subdir();
   // bigdir(); // slow
