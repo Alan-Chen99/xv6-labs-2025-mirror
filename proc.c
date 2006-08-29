@@ -308,6 +308,9 @@ void proc_exit(void) {
     }
   }
 
+  idecref(cp->cwd);
+  cp->cwd = 0;
+
   acquire(&proc_table_lock);
 
   // Wake up our parent.
@@ -321,6 +324,7 @@ void proc_exit(void) {
       p->ppid = 1;
 
   // Jump into the scheduler, never to return.
+  cp->killed = 0;
   cp->state = ZOMBIE;
   sched();
   panic("zombie exit");

@@ -144,7 +144,7 @@ void createdelete() {
   }
 
   if (pid)
-    wait();
+    exit();
   else
     exit();
 
@@ -154,8 +154,10 @@ void createdelete() {
     fd = open(name, 0);
     if ((i == 0 || i >= n / 2) && fd < 0) {
       printf(1, "oops createdelete %s didn't exist\n", name);
+      exit();
     } else if ((i >= 1 && i < n / 2) && fd >= 0) {
       printf(1, "oops createdelete %s did exist\n", name);
+      exit();
     }
     if (fd >= 0)
       close(fd);
@@ -165,8 +167,10 @@ void createdelete() {
     fd = open(name, 0);
     if ((i == 0 || i >= n / 2) && fd < 0) {
       printf(1, "oops createdelete %s didn't exist\n", name);
+      exit();
     } else if ((i >= 1 && i < n / 2) && fd >= 0) {
       printf(1, "oops createdelete %s did exist\n", name);
+      exit();
     }
     if (fd >= 0)
       close(fd);

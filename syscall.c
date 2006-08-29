@@ -101,7 +101,6 @@ int sys_pipe(void) {
   return 0;
 
 oops:
-  cprintf("sys_pipe failed\n");
   if (rfd)
     fd_close(rfd);
   if (wfd)
@@ -550,14 +549,12 @@ int sys_exec(void) {
   return 0;
 
 bad:
-  cprintf("exec failed early\n");
   if (mem)
     kfree(mem, sz);
   iput(ip);
   return -1;
 
 bad2:
-  cprintf("exec failed late\n");
   iput(ip);
   proc_exit();
   return 0;
