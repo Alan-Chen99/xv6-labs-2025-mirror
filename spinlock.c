@@ -38,7 +38,6 @@ void acquire(struct spinlock *lock) {
   cpuid(0, 0, 0, 0, 0); // memory barrier
   getcallerpcs(&lock, lock->pcs);
   lock->cpu = cpu() + 10;
-  cpus[cpu()].lastacquire = lock;
 }
 
 void release(struct spinlock *lock) {
@@ -46,7 +45,6 @@ void release(struct spinlock *lock) {
   if (!holding(lock))
     panic("release");
 
-  cpus[cpu()].lastrelease = lock;
   lock->pcs[0] = 0;
   lock->cpu = 0xffffffff;
   cpuid(0, 0, 0, 0, 0); // memory barrier
