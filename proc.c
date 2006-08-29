@@ -32,8 +32,6 @@ void setupsegs(struct proc *p) {
     c->ts.esp0 = 0xffffffff;
   }
 
-  // XXX it may be wrong to modify the current segment table!
-
   c->gdt[0] = SEG_NULL;
   c->gdt[SEG_KCODE] = SEG(STA_X | STA_R, 0, 0x100000 + 64 * 1024, 0); // xxx
   c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
@@ -86,7 +84,7 @@ struct proc *copyproc(struct proc *p) {
   np->ppid = p->pid;
   release(&proc_table_lock);
 
-  // Copy process image memory.
+  // Copy user memory.
   np->sz = p->sz;
   np->mem = kalloc(np->sz);
   if (np->mem == 0) {
@@ -196,18 +194,16 @@ void sched(void) {
 
 // Give up the CPU for one scheduling round.
 void yield(void) {
-  struct proc *p;
+  struct proc *p = curproc[cpu()];
 
-  if ((p = curproc[cpu()]) == 0 || curproc[cpu()]->state != RUNNING)
-    panic("yield");
   acquire(&proc_table_lock);
   p->state = RUNNABLE;
   sched();
   release(&proc_table_lock);
 }
 
-// A process's very first scheduling by scheduler()
-// will longjmp here to do the first jump into user space.
+// A fork child's very first scheduling by scheduler()
+// will longjmp here. "return" to user space.
 void forkret(void) {
   // Still holding proc_table_lock from scheduler.
   release(&proc_table_lock);
@@ -339,7 +335,7 @@ int proc_wait(void) {
 
   acquire(&proc_table_lock);
   for (;;) {
-    // Scan through table looking zombie children.
+    // Scan through table looking for zombie children.
     havekids = 0;
     for (i = 0; i < NPROC; i++) {
       p = &proc[i];
