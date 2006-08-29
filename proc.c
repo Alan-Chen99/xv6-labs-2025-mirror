@@ -128,20 +128,20 @@ struct proc *copyproc(struct proc *p) {
   return np;
 }
 
-int growproc(int n) {
+uint growproc(int n) {
   struct proc *cp = curproc[cpu()];
   char *newmem, *oldmem;
 
   newmem = kalloc(cp->sz + n);
   if (newmem == 0)
-    return -1;
+    return 0xffffffff;
   memmove(newmem, cp->mem, cp->sz);
   memset(newmem + cp->sz, 0, n);
   oldmem = cp->mem;
   cp->mem = newmem;
   kfree(oldmem, cp->sz);
   cp->sz += n;
-  return 0;
+  return cp->sz - n;
 }
 
 // Per-CPU process scheduler.

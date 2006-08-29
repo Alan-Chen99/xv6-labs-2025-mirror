@@ -29,7 +29,6 @@ void trap(struct trapframe *tf) {
 
   if (v == T_SYSCALL) {
     struct proc *cp = curproc[cpu()];
-    int num = cp->tf->eax;
     if (cp->killed)
       proc_exit();
     cp->tf = tf;
