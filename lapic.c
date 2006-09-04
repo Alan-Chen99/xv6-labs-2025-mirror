@@ -103,10 +103,7 @@ void lapic_timerinit(void) {
   lapic_write(LAPIC_TICR, 10000000);
 }
 
-void lapic_timerintr(void) {
-  // cprintf("cpu%d: timer interrupt!\n", cpu());
-  lapic_write(LAPIC_EOI, 0);
-}
+void lapic_timerintr(void) { lapic_write(LAPIC_EOI, 0); }
 
 void lapic_init(int c) {
   uint r, lvt;
