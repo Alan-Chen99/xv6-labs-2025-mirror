@@ -95,10 +95,10 @@ enum {                     /* table entry types */
 
 /*
  * Common bits for
- *	I/O APIC Redirection Table Entry;
- *	Local APIC Local Interrupt Vector Table;
- *	Local APIC Inter-Processor Interrupt;
- *	Local APIC Timer Vector Table.
+ *      I/O APIC Redirection Table Entry;
+ *      Local APIC Local Interrupt Vector Table;
+ *      Local APIC Inter-Processor Interrupt;
+ *      Local APIC Timer Vector Table.
  */
 enum {
   APIC_FIXED = 0x00000000,  /* [10:8] Delivery Mode */

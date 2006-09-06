@@ -45,8 +45,8 @@ void pic_init(void) {
   //    n:  1 = special fully nested mode
   //    b:  1 = buffered mode
   //    m:  0 = slave PIC, 1 = master PIC
-  //	  (ignored when b is 0, as the master/slave role
-  //	  can be hardwired).
+  //      (ignored when b is 0, as the master/slave role
+  //      can be hardwired).
   //    a:  1 = Automatic EOI mode
   //    p:  0 = MCS-80/85 mode, 1 = intel x86 mode
   outb(IO_PIC1 + 1, 0x3);

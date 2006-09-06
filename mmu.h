@@ -158,8 +158,8 @@ struct gatedesc {
 // - sel: Code segment selector for interrupt/trap handler
 // - off: Offset in code segment for interrupt/trap handler
 // - dpl: Descriptor Privilege Level -
-//	  the privilege level required for software to invoke
-//	  this interrupt/trap gate explicitly using an int instruction.
+//        the privilege level required for software to invoke
+//        this interrupt/trap gate explicitly using an int instruction.
 #define SETGATE(gate, istrap, sel, off, d)                                     \
   {                                                                            \
     (gate).off_15_0 = (uint)(off) & 0xffff;                                    \

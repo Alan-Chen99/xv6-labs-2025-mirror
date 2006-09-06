@@ -268,11 +268,11 @@ int gettoken(char *s, char **p1) {
 // Get the next token from string s.
 // Set *p1 to the beginning of the token and *p2 just past the token.
 // Returns
-//	0 for end-of-string;
-//	< for <;
-//	> for >;
-//	| for |;
-//	w for a word.
+//      0 for end-of-string;
+//      < for <;
+//      > for >;
+//      | for |;
+//      w for a word.
 //
 // Eventually (once we parse the space where the \0 will go),
 // words get nul-terminated.

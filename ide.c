@@ -23,6 +23,7 @@ struct ide_request {
   uint nsecs;
   uint read;
 };
+
 struct ide_request request[NREQUEST];
 int head, tail;
 struct spinlock ide_lock;
