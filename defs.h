@@ -1,12 +1,12 @@
 // kalloc.c
-char *kalloc(int n);
-void kfree(char *cp, int len);
+char *kalloc(int);
+void kfree(char *, int);
 void kinit(void);
 
 // console.c
 void console_init(void);
-void cprintf(char *fmt, ...);
-void panic(char *s);
+void cprintf(char *, ...);
+void panic(char *);
 void kbd_intr(void);
 
 // proc.c
@@ -35,10 +35,10 @@ void tvinit(void);
 void idtinit(void);
 
 // string.c
-void *memset(void *dst, int c, uint n);
-int memcmp(const void *v1, const void *v2, uint n);
-void *memmove(void *dst, const void *src, uint n);
-int strncmp(const char *p, const char *q, uint n);
+void *memset(void *, int, uint);
+int memcmp(const void *, const void *, uint);
+void *memmove(void *, const void *, uint);
+int strncmp(const char *, const char *, uint);
 
 // syscall.c
 void syscall(void);
@@ -75,15 +75,15 @@ void release(struct spinlock *);
 int holding(struct spinlock *);
 
 // main.c
-void load_icode(struct proc *p, uchar *binary, uint size);
+void load_icode(struct proc *, uchar *, uint);
 
 // pipe.c
 struct pipe;
 struct fd;
-int pipe_alloc(struct fd **fd1, struct fd **fd2);
-void pipe_close(struct pipe *p, int writeable);
-int pipe_write(struct pipe *p, char *addr, int n);
-int pipe_read(struct pipe *p, char *addr, int n);
+int pipe_alloc(struct fd **, struct fd **);
+void pipe_close(struct pipe *, int);
+int pipe_write(struct pipe *, char *, int);
+int pipe_read(struct pipe *, char *, int);
 
 // fd.c
 struct stat;
@@ -91,15 +91,15 @@ void fd_init(void);
 int fd_ualloc(void);
 struct fd *fd_alloc(void);
 void fd_close(struct fd *);
-int fd_read(struct fd *fd, char *addr, int n);
-int fd_write(struct fd *fd, char *addr, int n);
-int fd_stat(struct fd *fd, struct stat *);
-void fd_incref(struct fd *fd);
+int fd_read(struct fd *, char *, int n);
+int fd_write(struct fd *, char *, int n);
+int fd_stat(struct fd *, struct stat *);
+void fd_incref(struct fd *);
 
 // ide.c
 void ide_init(void);
 void ide_intr(void);
-void *ide_start_rw(int diskno, uint secno, void *dst, uint nsecs, int read);
+void *ide_start_rw(int, uint, void *, uint, int);
 int ide_finish(void *);
 
 // bio.c
@@ -113,19 +113,19 @@ void brelse(struct buf *);
 // fs.c
 extern uint rootdev;
 void iinit(void);
-struct inode *iget(uint dev, uint inum);
-void ilock(struct inode *ip);
-void iunlock(struct inode *ip);
-void itrunc(struct inode *ip);
-void idecref(struct inode *ip);
-void iincref(struct inode *ip);
-void iput(struct inode *ip);
-struct inode *namei(char *path, int, uint *, char **, struct inode **);
-void stati(struct inode *ip, struct stat *st);
-int readi(struct inode *ip, char *xdst, uint off, uint n);
-int writei(struct inode *ip, char *addr, uint off, uint n);
+struct inode *iget(uint, uint);
+void ilock(struct inode *);
+void iunlock(struct inode *);
+void itrunc(struct inode *);
+void idecref(struct inode *);
+void iincref(struct inode *);
+void iput(struct inode *);
+struct inode *namei(char *, int, uint *, char **, struct inode **);
+void stati(struct inode *, struct stat *);
+int readi(struct inode *, char *, uint, uint);
+int writei(struct inode *, char *, uint, uint);
 struct inode *mknod(char *, short, short, short);
 struct inode *mknod1(struct inode *, char *, short, short, short);
-int unlink(char *cp);
-void iupdate(struct inode *ip);
-int link(char *file1, char *file2);
+int unlink(char *);
+void iupdate(struct inode *);
+int link(char *, char *);
