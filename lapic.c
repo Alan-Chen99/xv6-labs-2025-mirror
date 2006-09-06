@@ -38,8 +38,8 @@ enum {                       // LAPIC_SVR
   LAPIC_FOCUS = 0x00000200,  // Focus Processor Checking Disable
 };
 
-enum {                         // LAPIC_ICRLO
-                               // [14] IPI Trigger Mode Level (RW)
+enum { // LAPIC_ICRLO
+  // [14] IPI Trigger Mode Level (RW)
   LAPIC_DEASSERT = 0x00000000, // Deassert level-sensitive interrupt
   LAPIC_ASSERT = 0x00004000,   // Assert level-sensitive interrupt
 
@@ -65,8 +65,8 @@ enum {                           // LAPIC_ESR
   LAPIC_REGISTER = 0x00000080,   // Illegal Register Address
 };
 
-enum {                         // LAPIC_TIMER
-                               // [17] Timer Mode (RW)
+enum { // LAPIC_TIMER
+  // [17] Timer Mode (RW)
   LAPIC_ONESHOT = 0x00000000,  // One-shot
   LAPIC_PERIODIC = 0x00020000, // Periodic
 
