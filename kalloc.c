@@ -47,7 +47,7 @@ void kfree(char *cp, int len) {
   if (len % PAGE)
     panic("kfree");
 
-  // XXX fill with junk to help debug
+  // Fill with junk to catch dangling refs.
   for (i = 0; i < len; i++)
     cp[i] = 1;
 

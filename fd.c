@@ -48,7 +48,7 @@ struct fd *fd_alloc(void) {
 // Write to file descriptor;
 // addr is a kernel address, pointing into some process's p->mem.
 int fd_write(struct fd *fd, char *addr, int n) {
-  if (fd->writeable == 0)
+  if (fd->writable == 0)
     return -1;
   if (fd->type == FD_PIPE) {
     return pipe_write(fd->pipe, addr, n);
@@ -100,7 +100,7 @@ void fd_close(struct fd *fd) {
     release(&fd_table_lock);
 
     if (dummy.type == FD_PIPE) {
-      pipe_close(dummy.pipe, dummy.writeable);
+      pipe_close(dummy.pipe, dummy.writable);
     } else if (dummy.type == FD_FILE) {
       idecref(dummy.ip);
     } else {
