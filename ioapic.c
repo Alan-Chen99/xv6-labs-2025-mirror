@@ -21,7 +21,7 @@ struct ioapic {
 
 static uint ioapic_read(struct ioapic *io, int reg) {
   io->ioregsel = reg;
-  return (io->iowin);
+  return io->iowin;
 }
 
 static void ioapic_write(struct ioapic *io, int reg, uint val) {

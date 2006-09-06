@@ -72,7 +72,7 @@ int ide_probe_disk1(void) {
   // switch back to Device 0
   outb(0x1F6, 0xE0 | (0 << 4));
 
-  return (x < 1000);
+  return x < 1000;
 }
 
 void ide_start_request(void) {
