@@ -18,9 +18,7 @@ struct fd fds[NFD];
 
 void fd_init(void) { initlock(&fd_table_lock, "fd_table"); }
 
-/*
- * allocate a file descriptor number for curproc.
- */
+// Allocate a file descriptor number for curproc.
 int fd_ualloc(void) {
   int fd;
   struct proc *p = curproc[cpu()];
@@ -30,9 +28,7 @@ int fd_ualloc(void) {
   return -1;
 }
 
-/*
- * allocate a file descriptor structure
- */
+// Allocate a file descriptor structure
 struct fd *fd_alloc(void) {
   int i;
 
@@ -49,9 +45,8 @@ struct fd *fd_alloc(void) {
   return 0;
 }
 
-/*
- * addr is a kernel address, pointing into some process's p->mem.
- */
+// Write to file descriptor;
+// addr is a kernel address, pointing into some process's p->mem.
 int fd_write(struct fd *fd, char *addr, int n) {
   if (fd->writeable == 0)
     return -1;
@@ -71,6 +66,7 @@ int fd_write(struct fd *fd, char *addr, int n) {
   }
 }
 
+// Read from file descriptor.
 int fd_read(struct fd *fd, char *addr, int n) {
   if (fd->readable == 0)
     return -1;
@@ -89,6 +85,7 @@ int fd_read(struct fd *fd, char *addr, int n) {
   }
 }
 
+// Close file descriptor.
 void fd_close(struct fd *fd) {
   acquire(&fd_table_lock);
 
@@ -114,6 +111,7 @@ void fd_close(struct fd *fd) {
   }
 }
 
+// Get metadata about file descriptor.
 int fd_stat(struct fd *fd, struct stat *st) {
   if (fd->type == FD_FILE) {
     ilock(fd->ip);
@@ -124,6 +122,7 @@ int fd_stat(struct fd *fd, struct stat *st) {
     return -1;
 }
 
+// Increment file descriptor reference count.
 void fd_incref(struct fd *fd) {
   acquire(&fd_table_lock);
   if (fd->ref < 1 || fd->type == FD_CLOSED)

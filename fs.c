@@ -20,9 +20,7 @@ uint rootdev = 1;
 
 void iinit(void) { initlock(&inode_table_lock, "inode_table"); }
 
-/*
- * allocate a disk block
- */
+// Allocate a disk block.
 static uint balloc(uint dev) {
   int b;
   struct buf *bp;
@@ -82,11 +80,11 @@ static void bfree(int dev, uint b) {
   brelse(bp);
 }
 
-/*
- * fetch an inode, from the in-core table if it's already
- * in use, otherwise read from the disk.
- * returns an inode with busy set and incremented reference count.
- */
+// Find the inode with number inum on device dev
+// and return an in-memory copy.  Loads the inode
+// from disk into the in-core table if necessary.
+// The returned inode has busy set and has its ref count incremented.
+// Caller must iput the return value when done with it.
 struct inode *iget(uint dev, uint inum) {
   struct inode *ip, *nip;
   struct dinode *dip;

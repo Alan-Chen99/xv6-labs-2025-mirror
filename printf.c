@@ -27,9 +27,7 @@ static void printint(int fd, int xx, int base, int sgn) {
     putc(fd, buf[i]);
 }
 
-/*
- * printf to the stdout. only understands %d, %x, %p, %s.
- */
+// Print to the given fd. Only understands %d, %x, %p, %s.
 void printf(int fd, char *fmt, ...) {
   int i, state = 0, c;
   uint *ap = (uint *)(void *)&fmt + 1;

@@ -10,11 +10,9 @@ struct spinlock console_lock;
 int panicked = 0;
 int use_console_lock = 0;
 
-/*
- * copy console output to parallel port, which you can tell
- * .bochsrc to copy to the stdout:
- * parport1: enabled=1, file="/dev/stdout"
- */
+// Copy console output to parallel port, which you can tell
+// .bochsrc to copy to the stdout:
+//   parport1: enabled=1, file="/dev/stdout"
 static void lpt_putc(int c) {
   int i;
 
@@ -91,9 +89,7 @@ void printint(int xx, int base, int sgn) {
     cons_putc(buf[i]);
 }
 
-/*
- * print to the console. only understands %d, %x, %p, %s.
- */
+// Print to the console. only understands %d, %x, %p, %s.
 void cprintf(char *fmt, ...) {
   int i, state = 0, c, locking = 0;
   uint *ap = (uint *)(void *)&fmt + 1;
@@ -169,10 +165,10 @@ int console_write(int minor, char *buf, int n) {
   return n;
 }
 
-/* This is i8042reg.h + kbdreg.h from NetBSD. */
-#define KBSTATP 0x64 /* kbd controller status port(I) */
-#define KBS_DIB 0x01 /* kbd data in buffer */
-#define KBDATAP 0x60 /* kbd data port(I) */
+// This is i8042reg.h + kbdreg.h from NetBSD.
+#define KBSTATP 0x64 // kbd controller status port(I)
+#define KBS_DIB 0x01 // kbd data in buffer
+#define KBDATAP 0x60 // kbd data port(I)
 
 #define NO 0
 
@@ -293,8 +289,8 @@ static uchar normalmap[256] = {NO,
                                NO,
                                NO, // 0x50
                                [0x97] KEY_HOME,
-                               [0x9C] '\n' /*KP_Enter*/,
-                               [0xB5] '/' /*KP_Div*/,
+                               [0x9C] '\n', // KP_Enter
+                               [0xB5] '/',  // KP_Div
                                [0xC8] KEY_UP,
                                [0xC9] KEY_PGUP,
                                [0xCB] KEY_LF,
@@ -394,8 +390,8 @@ static uchar shiftmap[256] = {NO,
                               NO,
                               NO, // 0x50
                               [0x97] KEY_HOME,
-                              [0x9C] '\n' /*KP_Enter*/,
-                              [0xB5] '/' /*KP_Div*/,
+                              [0x9C] '\n', // KP_Enter
+                              [0xB5] '/',  // KP_Div
                               [0xC8] KEY_UP,
                               [0xC9] KEY_PGUP,
                               [0xCB] KEY_LF,
@@ -465,7 +461,7 @@ static uchar ctlmap[256] = {NO,
                             NO,
                             NO,
                             [0x97] KEY_HOME,
-                            [0xB5] C('/'),
+                            [0xB5] C('/'), // KP_Div
                             [0xC8] KEY_UP,
                             [0xC9] KEY_PGUP,
                             [0xCB] KEY_LF,
