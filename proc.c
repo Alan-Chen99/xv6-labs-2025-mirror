@@ -97,6 +97,7 @@ struct proc *copyproc(struct proc *p) {
   np->kstack = kalloc(KSTACKSIZE);
   if (np->kstack == 0) {
     kfree(np->mem, np->sz);
+    np->mem = 0;
     np->state = UNUSED;
     return 0;
   }
