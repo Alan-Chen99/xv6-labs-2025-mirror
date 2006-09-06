@@ -18,7 +18,7 @@ int main(void) {
   dup(0);
   dup(0);
 
-  while (1) {
+  for (;;) {
     pid = fork();
     if (pid < 0) {
       puts("init: fork failed\n");
