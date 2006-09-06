@@ -47,7 +47,7 @@ void main0(void) {
   kinit();   // physical memory allocator
   tvinit();  // trap vectors
   idtinit(); // this CPU's interrupt descriptor table
-  fd_init();
+  fileinit();
   iinit(); // i-node table
 
   // initialize process 0

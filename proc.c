@@ -117,7 +117,7 @@ struct proc *copyproc(struct proc *p) {
   for (i = 0; i < NOFILE; i++) {
     np->ofile[i] = p->ofile[i];
     if (np->ofile[i])
-      fd_incref(np->ofile[i]);
+      fileincref(np->ofile[i]);
   }
 
   np->cwd = p->cwd;
@@ -299,7 +299,7 @@ void proc_exit(void) {
   // Close all open files.
   for (fd = 0; fd < NOFILE; fd++) {
     if (cp->ofile[fd]) {
-      fd_close(cp->ofile[fd]);
+      fileclose(cp->ofile[fd]);
       cp->ofile[fd] = 0;
     }
   }

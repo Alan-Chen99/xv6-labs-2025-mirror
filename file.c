@@ -16,10 +16,10 @@ struct devsw devsw[NDEV];
 
 struct file file[NFILE];
 
-void fd_init(void) { initlock(&fd_table_lock, "fd_table"); }
+void fileinit(void) { initlock(&fd_table_lock, "fd_table"); }
 
 // Allocate a file descriptor number for curproc.
-int fd_ualloc(void) {
+int fdalloc(void) {
   int fd;
   struct proc *p = curproc[cpu()];
   for (fd = 0; fd < NOFILE; fd++)
@@ -29,7 +29,7 @@ int fd_ualloc(void) {
 }
 
 // Allocate a file descriptor structure
-struct file *fd_alloc(void) {
+struct file *filealloc(void) {
   int i;
 
   acquire(&fd_table_lock);
@@ -47,7 +47,7 @@ struct file *fd_alloc(void) {
 
 // Write to file descriptor;
 // addr is a kernel address, pointing into some process's p->mem.
-int fd_write(struct file *fd, char *addr, int n) {
+int filewrite(struct file *fd, char *addr, int n) {
   if (fd->writable == 0)
     return -1;
   if (fd->type == FD_PIPE) {
@@ -61,13 +61,13 @@ int fd_write(struct file *fd, char *addr, int n) {
     iunlock(fd->ip);
     return r;
   } else {
-    panic("fd_write");
+    panic("filewrite");
     return -1;
   }
 }
 
 // Read from file descriptor.
-int fd_read(struct file *fd, char *addr, int n) {
+int fileread(struct file *fd, char *addr, int n) {
   if (fd->readable == 0)
     return -1;
   if (fd->type == FD_PIPE) {
@@ -80,17 +80,17 @@ int fd_read(struct file *fd, char *addr, int n) {
     iunlock(fd->ip);
     return cc;
   } else {
-    panic("fd_read");
+    panic("fileread");
     return -1;
   }
 }
 
 // Close file descriptor.
-void fd_close(struct file *fd) {
+void fileclose(struct file *fd) {
   acquire(&fd_table_lock);
 
   if (fd->ref < 1 || fd->type == FD_CLOSED)
-    panic("fd_close");
+    panic("fileclose");
 
   if (--fd->ref == 0) {
     struct file dummy = *fd;
@@ -104,7 +104,7 @@ void fd_close(struct file *fd) {
     } else if (dummy.type == FD_FILE) {
       idecref(dummy.ip);
     } else {
-      panic("fd_close");
+      panic("fileclose");
     }
   } else {
     release(&fd_table_lock);
@@ -112,7 +112,7 @@ void fd_close(struct file *fd) {
 }
 
 // Get metadata about file descriptor.
-int fd_stat(struct file *fd, struct stat *st) {
+int filestat(struct file *fd, struct stat *st) {
   if (fd->type == FD_FILE) {
     ilock(fd->ip);
     stati(fd->ip, st);
@@ -123,10 +123,10 @@ int fd_stat(struct file *fd, struct stat *st) {
 }
 
 // Increment file descriptor reference count.
-void fd_incref(struct file *fd) {
+void fileincref(struct file *fd) {
   acquire(&fd_table_lock);
   if (fd->ref < 1 || fd->type == FD_CLOSED)
-    panic("fd_incref");
+    panic("fileincref");
   fd->ref++;
   release(&fd_table_lock);
 }
