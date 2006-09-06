@@ -284,7 +284,7 @@ int _gettoken(char *s, char **p1, char **p2) {
 
   if (s == 0) {
     if (debug > 1)
-      printf(2, "GETTOKEN NULL\n");
+      printf(2, "GETTOKEN 0\n");
     return 0;
   }
 
