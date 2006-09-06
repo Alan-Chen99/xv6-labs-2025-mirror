@@ -2,11 +2,11 @@
 
 struct mp {           // floating pointer
   uchar signature[4]; // "_MP_"
-  void *physaddr;     // physical address of MP configuration table
+  void *physaddr;     // phys addr of MP config table
   uchar length;       // 1
   uchar specrev;      // [14]
   uchar checksum;     // all bytes must add up to 0
-  uchar type;         // MP system configuration type
+  uchar type;         // MP system config type
   uchar imcrp;
   uchar reserved[3];
 };
@@ -76,7 +76,7 @@ enum {                // table entry types
   MPBP = 0x02, // bootstrap processor
 
   // PCMPiointr and PCMPlintr flags
-  MPPOMASK = 0x03, // polarity conforms to specifications of bus
+  MPPOMASK = 0x03, // polarity conforms to bus specs
   MPHIGH = 0x01,   // active high
   MPLOW = 0x03,    // active low
   MPELMASK = 0x0C, // trigger mode of APIC input signals

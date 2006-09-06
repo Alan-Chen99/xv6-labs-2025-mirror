@@ -108,19 +108,19 @@ void lapic_timerintr(void) { lapic_write(LAPIC_EOI, 0); }
 void lapic_init(int c) {
   uint r, lvt;
 
-  lapic_write(LAPIC_DFR, 0xFFFFFFFF);      // set destination format register
-  r = (lapic_read(LAPIC_ID) >> 24) & 0xFF; // read APIC ID
-  lapic_write(LAPIC_LDR, (1 << r)
-                             << 24); // set logical destination register to r
-  lapic_write(LAPIC_TPR, 0xFF);      // no interrupts for now
-  lapic_write(LAPIC_SVR,
-              LAPIC_ENABLE | (IRQ_OFFSET + IRQ_SPURIOUS)); // enable APIC
+  lapic_write(LAPIC_DFR, 0xFFFFFFFF);      // Set dst format register
+  r = (lapic_read(LAPIC_ID) >> 24) & 0xFF; // Read APIC ID
+  lapic_write(LAPIC_LDR, (1 << r) << 24);  // Set logical dst register to r
+  lapic_write(LAPIC_TPR, 0xFF);            // No interrupts for now
+
+  // Enable APIC
+  lapic_write(LAPIC_SVR, LAPIC_ENABLE | (IRQ_OFFSET + IRQ_SPURIOUS));
 
   // In virtual wire mode, set up the LINT0 and LINT1 as follows:
   lapic_write(LAPIC_LINT0, APIC_IMASK | APIC_EXTINT);
   lapic_write(LAPIC_LINT1, APIC_IMASK | APIC_NMI);
 
-  lapic_write(LAPIC_EOI, 0); // acknowledge any outstanding interrupts.
+  lapic_write(LAPIC_EOI, 0); // Ack any outstanding interrupts.
 
   lvt = (lapic_read(LAPIC_VER) >> 16) & 0xFF;
   if (lvt >= 4)
