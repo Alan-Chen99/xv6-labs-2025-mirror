@@ -105,7 +105,7 @@ void writetest1(void) {
   }
 
   n = 0;
-  while (1) {
+  for (;;) {
     i = read(fd, buf, 512);
     if (i == 0) {
       if (n == MAXFILE - 1) {
