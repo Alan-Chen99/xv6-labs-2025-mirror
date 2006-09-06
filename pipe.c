@@ -18,7 +18,7 @@ struct pipe {
   char data[PIPESIZE];
 };
 
-int pipe_alloc(struct fd **fd1, struct fd **fd2) {
+int pipe_alloc(struct file **fd1, struct file **fd2) {
   *fd1 = *fd2 = 0;
   struct pipe *p = 0;
 
