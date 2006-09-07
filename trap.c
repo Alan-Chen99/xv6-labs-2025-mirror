@@ -15,19 +15,18 @@ extern uint vectors[]; // in vectors.S: array of 256 entry pointers
 void tvinit(void) {
   int i;
 
-  for (i = 0; i < 256; i++) {
-    SETGATE(idt[i], 1, SEG_KCODE << 3, vectors[i], 0);
-  }
-  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE << 3, vectors[T_SYSCALL], 3);
+  for (i = 0; i < 256; i++)
+    SETGATE(idt[i], 0, SEG_KCODE << 3, vectors[i], 0);
+  SETGATE(idt[T_SYSCALL], 0, SEG_KCODE << 3, vectors[T_SYSCALL], 3);
 }
 
 void idtinit(void) { lidt(idt, sizeof idt); }
 
 void trap(struct trapframe *tf) {
   int v = tf->trapno;
+  struct proc *cp = curproc[cpu()];
 
   if (v == T_SYSCALL) {
-    struct proc *cp = curproc[cpu()];
     if (cp->killed)
       proc_exit();
     cp->tf = tf;
@@ -37,9 +36,15 @@ void trap(struct trapframe *tf) {
     return;
   }
 
-  if (v == (IRQ_OFFSET + IRQ_TIMER)) {
-    struct proc *cp = curproc[cpu()];
+  // Increment nlock to make sure interrupts stay off
+  // during interrupt handler.  Must decrement before
+  // returning.
+  cpus[cpu()].nlock++;
+
+  switch (v) {
+  case IRQ_OFFSET + IRQ_TIMER:
     lapic_timerintr();
+    cpus[cpu()].nlock--;
     if (cp) {
       // Force process exit if it has been killed
       // and the interrupt came from user space.
@@ -54,36 +59,34 @@ void trap(struct trapframe *tf) {
         yield();
     }
     return;
-  }
 
-  if (v == IRQ_OFFSET + IRQ_IDE) {
+  case IRQ_OFFSET + IRQ_IDE:
     ide_intr();
-    cli(); // prevent a waiting interrupt from overflowing stack
     lapic_eoi();
-    return;
-  }
+    break;
 
-  if (v == IRQ_OFFSET + IRQ_KBD) {
+  case IRQ_OFFSET + IRQ_KBD:
     kbd_intr();
-    cli(); // prevent a waiting interrupt from overflowing stack
     lapic_eoi();
-    return;
-  }
+    break;
 
-  if (v == IRQ_OFFSET + IRQ_SPURIOUS) {
+  case IRQ_OFFSET + IRQ_SPURIOUS:
     cprintf("spurious interrupt from cpu %d eip %x\n", cpu(), tf->eip);
-    return; // no eoi for this one.
+    break;
+
+  default:
+    if (curproc[cpu()]) {
+      // assume process caused unexpected trap,
+      // for example by dividing by zero or dereferencing a bad pointer
+      cprintf("pid %d: unhandled trap %d on cpu %d eip %x -- kill proc\n",
+              curproc[cpu()]->pid, v, cpu(), tf->eip);
+      proc_exit();
+    }
+
+    // otherwise it's our mistake
+    cprintf("unexpected trap %d from cpu %d eip %x\n", v, cpu(), tf->eip);
+    panic("trap");
   }
 
-  if (curproc[cpu()]) {
-    // assume process caused unexpected trap,
-    // for example by dividing by zero or dereferencing a bad pointer
-    cprintf("pid %d: unhandled trap %d on cpu %d eip %x -- kill proc\n",
-            curproc[cpu()]->pid, v, cpu(), tf->eip);
-    proc_exit();
-  }
-
-  // otherwise it's our mistake
-  cprintf("unexpected trap %d from cpu %d eip %x\n", v, cpu(), tf->eip);
-  panic("trap");
+  cpus[cpu()].nlock--;
 }
