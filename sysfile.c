@@ -202,7 +202,7 @@ int sys_mkdir(void) {
     return -1;
   }
 
-  dp->nlink += 1;
+  dp->nlink++;
   iupdate(dp);
 
   memset(de.name, '\0', DIRSIZ);
