@@ -165,7 +165,6 @@ int console_write(int minor, char *buf, int n) {
   return n;
 }
 
-// This is i8042reg.h + kbdreg.h from NetBSD.
 #define KBSTATP 0x64 // kbd controller status port(I)
 #define KBS_DIB 0x01 // kbd data in buffer
 #define KBDATAP 0x60 // kbd data port(I)
