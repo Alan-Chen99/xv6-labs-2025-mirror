@@ -78,7 +78,7 @@ void main0(void) {
   // enable interrupts on the local APIC
   lapic_enableintr();
 
-  // Enable interrupts on this processor.
+  // enable interrupts on this processor.
   cpus[cpu()].nlock--;
   sti();
 
