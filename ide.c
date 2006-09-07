@@ -46,6 +46,7 @@ static int ide_wait_ready(int check_error) {
 
 void ide_init(void) {
   initlock(&ide_lock, "ide");
+  irq_setmask_8259A(irq_mask_8259A & ~(1 << IRQ_IDE));
   ioapic_enable(IRQ_IDE, ncpu - 1);
   ide_wait_ready(0);
   disk_1_present = ide_probe_disk1();
