@@ -18,17 +18,7 @@ struct file file[NFILE];
 
 void fileinit(void) { initlock(&fd_table_lock, "fd_table"); }
 
-// Allocate a file descriptor number for curproc.
-int fdalloc(void) {
-  int fd;
-  struct proc *p = curproc[cpu()];
-  for (fd = 0; fd < NOFILE; fd++)
-    if (p->ofile[fd] == 0)
-      return fd;
-  return -1;
-}
-
-// Allocate a file descriptor structure
+// Allocate a file structure
 struct file *filealloc(void) {
   int i;
 
