@@ -60,7 +60,7 @@ void binit(void) {
 // Look through buffer cache for block n on device dev.
 // If not found, allocate fresh block.
 // In either case, return locked buffer.
-static struct buf *getblk(uint dev, uint sector) {
+static struct buf *bget(uint dev, uint sector) {
   struct buf *b;
 
   acquire(&buf_table_lock);
