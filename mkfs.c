@@ -47,7 +47,7 @@ uint xint(uint x) {
   return y;
 }
 
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   int i, cc, fd;
   uint bn, rootino, inum, off;
   struct dirent de;
@@ -106,6 +106,13 @@ main(int argc, char *argv[]) {
       perror(argv[i]);
       exit(1);
     }
+
+    // Skip leading _ in name when writing to file system.
+    // The binaries are named _rm, _cat, etc. to keep the
+    // build operating system from trying to execute them
+    // in place of system binaries like rm and cat.
+    if (argv[i][0] == '_')
+      ++argv[i];
 
     inum = ialloc(T_FILE);
 
