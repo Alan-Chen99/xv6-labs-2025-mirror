@@ -38,6 +38,10 @@ void kinit(void) {
   kfree(start, mem * PAGE);
 }
 
+// Free the len bytes of memory pointed at by cp,
+// which normally should have been returned by a
+// call to kalloc(cp).  (The exception is when
+// initializing the allocator; see kinit above.)
 void kfree(char *cp, int len) {
   struct run **rr;
   struct run *p = (struct run *)cp;

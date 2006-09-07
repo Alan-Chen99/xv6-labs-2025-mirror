@@ -126,7 +126,9 @@ struct proc *copyproc(struct proc *p) {
   return np;
 }
 
-uint growproc(int n) {
+// Grow current process's memory by n bytes.
+// Return old size on success, -1 on failure.
+int growproc(int n) {
   struct proc *cp = curproc[cpu()];
   char *newmem, *oldmem;
 
@@ -142,13 +144,14 @@ uint growproc(int n) {
   return cp->sz - n;
 }
 
-// Per-CPU process scheduler.
-// Each CPU calls scheduler() after setting itself up.
-// Scheduler never returns.  It loops, doing:
-//  - choose a process to run
-//  - longjmp to start running that process
-//  - eventually that process transfers control back
-//      via longjmp back to the top of scheduler.
+// PAGEBREAK: 42
+//  Per-CPU process scheduler.
+//  Each CPU calls scheduler() after setting itself up.
+//  Scheduler never returns.  It loops, doing:
+//   - choose a process to run
+//   - longjmp to start running that process
+//   - eventually that process transfers control back
+//       via longjmp back to the top of scheduler.
 void scheduler(void) {
   struct proc *p;
   int i;

@@ -1,3 +1,6 @@
+// Special assembly routines to access x86-specific
+// hardware instructions.
+
 static __inline uchar inb(int port) {
   uchar data;
   __asm __volatile("inb %w1,%0" : "=a"(data) : "d"(port));
@@ -94,6 +97,7 @@ static __inline void cli(void) { __asm__ volatile("cli"); }
 
 static __inline void sti(void) { __asm__ volatile("sti"); }
 
+// Layout of the trap frame on the stack upon entry to trap.
 struct trapframe {
   // registers as pushed by pusha
   uint edi;
