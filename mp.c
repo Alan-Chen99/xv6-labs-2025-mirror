@@ -162,7 +162,12 @@ void mp_init(void) {
   }
 }
 
-int mp_bcpu(void) { return bcpu - cpus; }
+int mp_bcpu(void) {
+  if (ismp)
+    return bcpu - cpus;
+  else
+    return 0;
+}
 
 extern void mpmain(void);
 
