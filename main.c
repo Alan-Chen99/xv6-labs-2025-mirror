@@ -122,7 +122,8 @@ void process0() {
   p0->cwd = iget(rootdev, 1);
   iunlock(p0->cwd);
 
-  // dummy user memory to make copyproc() happy
+  // dummy user memory to make copyproc() happy.
+  // must be big enough to hold the init binary.
   p0->sz = PAGE;
   p0->mem = kalloc(p0->sz);
 
