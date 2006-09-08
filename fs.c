@@ -150,7 +150,7 @@ loop:
   return nip;
 }
 
-// Copy ip->d, which has changed, to disk.
+// Copy inode in memory, which has changed, to disk.
 // Caller must have locked ip.
 void iupdate(struct inode *ip) {
   struct buf *bp;
