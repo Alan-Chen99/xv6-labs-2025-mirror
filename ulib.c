@@ -17,17 +17,17 @@ char *strcpy(char *s, char *t) {
 int strcmp(const char *p, const char *q) {
   while (*p && *p == *q)
     p++, q++;
-  return (int)((unsigned char)*p - (unsigned char)*q);
+  return (uchar)*p - (uchar)*q;
 }
 
-unsigned int strlen(char *s) {
+uint strlen(char *s) {
   int n = 0;
   for (n = 0; s[n]; n++)
     ;
   return n;
 }
 
-void *memset(void *dst, int c, unsigned int n) {
+void *memset(void *dst, int c, uint n) {
   char *d = (char *)dst;
 
   while (n-- > 0)

@@ -622,7 +622,7 @@ void concreate() {
   int i, pid, n, fd;
   char fa[40];
   struct {
-    unsigned short inum;
+    ushort inum;
     char name[14];
   } de;
 
