@@ -9,7 +9,7 @@
 char *sh_args[] = {"sh", 0};
 
 int main(void) {
-  int pid;
+  int pid, wpid;
 
   if (open("console", O_RDWR) < 0) {
     mknod("console", T_DEV, 1, 1);
@@ -19,6 +19,7 @@ int main(void) {
   dup(0); // stderr
 
   for (;;) {
+    puts("init: starting sh\n");
     pid = fork();
     if (pid < 0) {
       puts("init: fork failed\n");
@@ -28,8 +29,8 @@ int main(void) {
       exec("sh", sh_args);
       puts("init: exec sh failed\n");
       exit();
-    } else {
-      wait();
     }
+    while ((wpid = wait()) >= 0 && wpid != pid)
+      ;
   }
 }
