@@ -31,6 +31,6 @@ int main(void) {
       exit();
     }
     while ((wpid = wait()) >= 0 && wpid != pid)
-      ;
+      puts("zombie!\n");
   }
 }
