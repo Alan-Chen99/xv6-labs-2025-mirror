@@ -138,8 +138,7 @@ struct proc *copyproc(struct proc *p) {
       fileincref(np->ofile[i]);
   }
 
-  np->cwd = p->cwd;
-  iincref(p->cwd);
+  np->cwd = iincref(p->cwd);
 
   return np;
 }
