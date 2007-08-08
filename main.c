@@ -111,7 +111,7 @@ void mpmain(void) {
 }
 
 // proc[0] starts here, called by scheduler() in the ordinary way.
-void process0() {
+void process0(void) {
   struct proc *p0 = &proc[0];
   struct proc *p1;
   extern struct spinlock proc_table_lock;

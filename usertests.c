@@ -329,7 +329,7 @@ void mem(void) {
 
 // two processes write to the same file descriptor
 // is the offset shared? does inode locking work?
-void sharedfd() {
+void sharedfd(void) {
   int fd, pid, i, n, nc, np;
   char buf[10];
 
@@ -376,7 +376,7 @@ void sharedfd() {
 
 // two processes write two different files at the same
 // time, to test block allocation.
-void twofiles() {
+void twofiles(void) {
   int fd, pid, i, j, n, total;
   char *fname;
 
@@ -437,7 +437,7 @@ void twofiles() {
 }
 
 // two processes create and delete files in same directory
-void createdelete() {
+void createdelete(void) {
   int pid, i, fd;
   int n = 20;
   char name[32];
@@ -513,7 +513,7 @@ void createdelete() {
 }
 
 // can I unlink a file and still read it?
-void unlinkread() {
+void unlinkread(void) {
   int fd, fd1;
 
   printf(1, "unlinkread test\n");
@@ -556,7 +556,7 @@ void unlinkread() {
   printf(1, "unlinkread ok\n");
 }
 
-void linktest() {
+void linktest(void) {
   int fd;
 
   printf(1, "linktest\n");
@@ -617,7 +617,7 @@ void linktest() {
 }
 
 // test concurrent create of the same file
-void concreate() {
+void concreate(void) {
   char file[3];
   int i, pid, n, fd;
   char fa[40];
@@ -687,7 +687,7 @@ void concreate() {
 }
 
 // directory that uses indirect blocks
-void bigdir() {
+void bigdir(void) {
   int i, fd;
   char name[10];
 
@@ -727,7 +727,7 @@ void bigdir() {
   printf(1, "bigdir ok\n");
 }
 
-void subdir() {
+void subdir(void) {
   int fd, cc;
 
   printf(1, "subdir test\n");
@@ -886,7 +886,7 @@ void subdir() {
   printf(1, "subdir ok\n");
 }
 
-void bigfile() {
+void bigfile(void) {
   int fd, i, total, cc;
 
   printf(1, "bigfile test\n");
@@ -940,7 +940,7 @@ void bigfile() {
   printf(1, "bigfile test ok\n");
 }
 
-void fourteen() {
+void fourteen(void) {
   int fd;
 
   printf(1, "fourteen test\n");

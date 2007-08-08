@@ -487,7 +487,7 @@ int kbd_w;
 struct spinlock kbd_lock;
 static uint shift;
 
-void kbd_intr() {
+void kbd_intr(void) {
   uint st, data, c;
 
   acquire(&kbd_lock);
@@ -578,7 +578,7 @@ int console_read(int minor, char *dst, int n) {
   return target - n;
 }
 
-void console_init() {
+void console_init(void) {
   initlock(&console_lock, "console");
   initlock(&kbd_lock, "kbd");
 
