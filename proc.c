@@ -398,7 +398,7 @@ void procdump(void) {
     p = &proc[i];
     if (p->state == UNUSED)
       continue;
-    if (p->state >= 0 && p->state < NELEM(states))
+    if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
       state = states[p->state];
     else
       state = "???";
