@@ -21,7 +21,7 @@ void process0();
 // main that don't return int.  Really.
 void main0(void) {
   int i;
-  int bcpu;
+  static int bcpu; // cannot be on stack
   struct proc *p;
 
   // clear BSS
@@ -35,8 +35,8 @@ void main0(void) {
   bcpu = mp_bcpu();
 
   // switch to bootstrap processor's stack
-  asm volatile("movl %0, %%esp" : : "r"(cpus[0].mpstack + MPSTACK - 32));
-  asm volatile("movl %0, %%ebp" : : "r"(cpus[0].mpstack + MPSTACK));
+  asm volatile("movl %0, %%esp" : : "r"(cpus[bcpu].mpstack + MPSTACK - 32));
+  asm volatile("movl %0, %%ebp" : : "r"(cpus[bcpu].mpstack + MPSTACK));
 
   lapic_init(bcpu);
 
