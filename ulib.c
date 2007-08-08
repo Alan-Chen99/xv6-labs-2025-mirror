@@ -51,9 +51,9 @@ char *gets(char *buf, int max) {
     cc = read(0, &c, 1);
     if (cc < 1)
       break;
+    buf[i++] = c;
     if (c == '\n' || c == '\r')
       break;
-    buf[i++] = c;
   }
   buf[i] = '\0';
   return buf;
