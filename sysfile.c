@@ -292,7 +292,7 @@ int sys_exec(void) {
   struct elfhdr elf;
   struct proghdr ph;
   char *mem = 0;
-  char *path, *s;
+  char *path, *s, *last;
   uint argv;
 
   if (argstr(0, &path) < 0 || argint(1, (int *)&argv) < 0)
@@ -368,6 +368,12 @@ int sys_exec(void) {
     p2 += len + 1;
   }
   *(uint *)(mem + p1) = 0;
+
+  // Save name for debugging.
+  for (last = s = path; *s; s++)
+    if (*s == '/')
+      last = s + 1;
+  safestrcpy(cp->name, last, sizeof cp->name);
 
   // commit to the new image.
   kfree(cp->mem, cp->sz);
