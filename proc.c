@@ -387,8 +387,9 @@ int proc_wait(void) {
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 void procdump(void) {
-  static char *states[] = {"unused", "embryo", "sleep ",
-                           "runble", "run   ", "zombie"};
+  static char *states[] = {
+      [UNUSED] "unused",   [EMBRYO] "embryo",  [SLEEPING] "sleep ",
+      [RUNNABLE] "runble", [RUNNING] "run   ", [ZOMBIE] "zombie"};
   int i;
   struct proc *p;
   char *state;
@@ -397,10 +398,10 @@ void procdump(void) {
     p = &proc[i];
     if (p->state == UNUSED)
       continue;
-    if (p->state < 0 || p->state > ZOMBIE)
-      state = "???";
-    else
+    if (p->state >= 0 && p->state < NELEM(states))
       state = states[p->state];
+    else
+      state = "???";
     cprintf("%d %s %s\n", p->pid, state, p->name);
   }
 }
