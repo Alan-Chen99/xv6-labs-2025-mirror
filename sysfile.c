@@ -20,11 +20,11 @@
 static int argfd(int argno, int *pfd, struct file **pf) {
   int fd;
   struct file *f;
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
 
   if (argint(argno, &fd) < 0)
     return -1;
-  if (fd < 0 || fd >= NOFILE || (f = p->ofile[fd]) == 0)
+  if (fd < 0 || fd >= NOFILE || (f = cp->ofile[fd]) == 0)
     return -1;
   if (pfd)
     *pfd = fd;
@@ -37,10 +37,11 @@ static int argfd(int argno, int *pfd, struct file **pf) {
 // Takes over file reference from caller on success.
 static int fdalloc(struct file *f) {
   int fd;
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
+
   for (fd = 0; fd < NOFILE; fd++) {
-    if (p->ofile[fd] == 0) {
-      p->ofile[fd] = f;
+    if (cp->ofile[fd] == 0) {
+      cp->ofile[fd] = f;
       return fd;
     }
   }
@@ -51,7 +52,7 @@ int sys_pipe(void) {
   int *fd;
   struct file *rf = 0, *wf = 0;
   int fd0, fd1;
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
 
   if (argptr(0, (void *)&fd, 2 * sizeof fd[0]) < 0)
     return -1;
@@ -60,7 +61,7 @@ int sys_pipe(void) {
   fd0 = -1;
   if ((fd0 = fdalloc(rf)) < 0 || (fd1 = fdalloc(wf)) < 0) {
     if (fd0 >= 0)
-      p->ofile[fd0] = 0;
+      cp->ofile[fd0] = 0;
     fileclose(rf);
     fileclose(wf);
     return -1;
@@ -221,7 +222,7 @@ int sys_mkdir(void) {
 }
 
 int sys_chdir(void) {
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
   struct inode *ip;
   char *path;
 
@@ -241,9 +242,9 @@ int sys_chdir(void) {
     return -1;
   }
 
-  idecref(p->cwd);
-  p->cwd = ip;
-  iunlock(p->cwd);
+  idecref(cp->cwd);
+  cp->cwd = ip;
+  iunlock(cp->cwd);
   return 0;
 }
 

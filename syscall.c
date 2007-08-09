@@ -33,23 +33,23 @@ int fetchint(struct proc *p, uint addr, int *ip) {
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
 int fetchstr(struct proc *p, uint addr, char **pp) {
-  char *cp, *ep;
+  char *s, *ep;
 
   if (addr >= p->sz)
     return -1;
   *pp = p->mem + addr;
   ep = p->mem + p->sz;
-  for (cp = *pp; cp < ep; cp++)
-    if (*cp == 0)
-      return cp - *pp;
+  for (s = *pp; s < ep; s++)
+    if (*s == 0)
+      return s - *pp;
   return -1;
 }
 
 // Fetch the argno'th word-sized system call argument as an integer.
 int argint(int argno, int *ip) {
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
 
-  return fetchint(p, p->tf->esp + 4 + 4 * argno, ip);
+  return fetchint(cp, cp->tf->esp + 4 + 4 * argno, ip);
 }
 
 // Fetch the nth word-sized system call argument as a pointer
@@ -57,13 +57,13 @@ int argint(int argno, int *ip) {
 // lies within the process address space.
 int argptr(int argno, char **pp, int size) {
   int i;
-  struct proc *p = curproc[cpu()];
+  struct proc *cp = curproc[cpu()];
 
   if (argint(argno, &i) < 0)
     return -1;
-  if ((uint)i >= p->sz || (uint)i + size >= p->sz)
+  if ((uint)i >= cp->sz || (uint)i + size >= cp->sz)
     return -1;
-  *pp = p->mem + i;
+  *pp = cp->mem + i;
   return 0;
 }
 
