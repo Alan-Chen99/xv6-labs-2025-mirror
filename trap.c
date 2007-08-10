@@ -49,6 +49,7 @@ void trap(struct trapframe *tf) {
         proc_exit();
 
       // Force process to give up CPU and let others run.
+      // If locks were held with interrupts on, would need to check nlock.
       if (cp->state == RUNNING)
         yield();
     }
