@@ -18,8 +18,10 @@ void initlock(struct spinlock *lock, char *name) {
 
 // Record the current call stack in pcs[] by following the %ebp chain.
 void getcallerpcs(void *v, uint pcs[]) {
-  uint *ebp = (uint *)v - 2;
+  uint *ebp;
   int i;
+
+  ebp = (uint *)v - 2;
   for (i = 0; i < 10; i++) {
     if (ebp == 0 || ebp == (uint *)0xffffffff)
       break;
