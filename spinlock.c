@@ -34,8 +34,8 @@ void getcallerpcs(void *v, uint pcs[]) {
 
 // Acquire the lock.
 // Loops (spins) until the lock is acquired.
-// (Because contention is handled by spinning, must not
-// go to sleep holding any locks.)
+// (Because contention is handled by spinning,
+// must not go to sleep holding any locks.)
 void acquire(struct spinlock *lock) {
   if (holding(lock))
     panic("acquire");
