@@ -43,9 +43,7 @@ void kinit(void) {
 // call to kalloc(len).  (The exception is when
 // initializing the allocator; see kinit above.)
 void kfree(char *v, int len) {
-  struct run **rr;
-  struct run *p = (struct run *)v;
-  struct run *pend = (struct run *)(v + len);
+  struct run **rr, *p, *pend;
 
   if (len % PAGE)
     panic("kfree");
@@ -54,7 +52,8 @@ void kfree(char *v, int len) {
   memset(v, 1, len);
 
   acquire(&kalloc_lock);
-
+  p = (struct run *)v;
+  pend = (struct run *)(v + len);
   rr = &freelist;
   while (*rr) {
     struct run *rend = (struct run *)((char *)(*rr) + (*rr)->len);
@@ -94,7 +93,8 @@ out:
 // Returns a kernel-segment pointer.
 // Returns 0 if the memory cannot be allocated.
 char *kalloc(int n) {
-  struct run **rr;
+  char *p;
+  struct run *r, **rr;
 
   if (n % PAGE)
     panic("kalloc");
@@ -103,15 +103,15 @@ char *kalloc(int n) {
 
   rr = &freelist;
   while (*rr) {
-    struct run *r = *rr;
+    r = *rr;
     if (r->len == n) {
       *rr = r->next;
       release(&kalloc_lock);
       return (char *)r;
     }
     if (r->len > n) {
-      char *p = (char *)r + (r->len - n);
       r->len -= n;
+      p = (char *)r + r->len;
       release(&kalloc_lock);
       return p;
     }
