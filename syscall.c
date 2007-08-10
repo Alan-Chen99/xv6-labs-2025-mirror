@@ -47,7 +47,6 @@ int fetchstr(struct proc *p, uint addr, char **pp) {
 
 // Fetch the argno'th word-sized system call argument as an integer.
 int argint(int argno, int *ip) {
-  struct proc *cp = curproc[cpu()];
 
   return fetchint(cp, cp->tf->esp + 4 + 4 * argno, ip);
 }
@@ -57,7 +56,6 @@ int argint(int argno, int *ip) {
 // lies within the process address space.
 int argptr(int argno, char **pp, int size) {
   int i;
-  struct proc *cp = curproc[cpu()];
 
   if (argint(argno, &i) < 0)
     return -1;
@@ -75,7 +73,7 @@ int argstr(int argno, char **pp) {
   int addr;
   if (argint(argno, &addr) < 0)
     return -1;
-  return fetchstr(curproc[cpu()], addr, pp);
+  return fetchstr(cp, addr, pp);
 }
 
 extern int sys_chdir(void);
@@ -109,7 +107,6 @@ static int (*syscalls[])(void) = {
 };
 
 void syscall(void) {
-  struct proc *cp = curproc[cpu()];
   int num = cp->tf->eax;
 
   if (num >= 0 && num < NELEM(syscalls) && syscalls[num])

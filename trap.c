@@ -23,7 +23,6 @@ void idtinit(void) { lidt(idt, sizeof idt); }
 
 void trap(struct trapframe *tf) {
   int v = tf->trapno;
-  struct proc *cp = curproc[cpu()];
 
   if (v == T_SYSCALL) {
     if (cp->killed)

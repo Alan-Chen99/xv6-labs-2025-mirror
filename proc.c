@@ -51,7 +51,6 @@ void setupsegs(struct proc *p) {
 // Grow current process's memory by n bytes.
 // Return old size on success, -1 on failure.
 int growproc(int n) {
-  struct proc *cp = curproc[cpu()];
   char *newmem, *oldmem;
 
   newmem = kalloc(cp->sz + n);
@@ -169,14 +168,14 @@ void scheduler(void) {
       // before jumping back to us.
 
       setupsegs(p);
-      curproc[cpu()] = p;
+      cp = p;
       p->state = RUNNING;
       if (setjmp(&cpus[cpu()].jmpbuf) == 0)
         longjmp(&p->jmpbuf);
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      curproc[cpu()] = 0;
+      cp = 0;
 
       setupsegs(0);
     }
@@ -188,7 +187,6 @@ void scheduler(void) {
 // Enter scheduler.  Must already hold proc_table_lock
 // and have changed curproc[cpu()]->state.
 void sched(void) {
-  struct proc *cp = curproc[cpu()];
 
   if (cp->state == RUNNING)
     panic("sched running");
@@ -197,13 +195,12 @@ void sched(void) {
   if (cpus[cpu()].nlock != 1)
     panic("sched locks");
 
-  if (setjmp(&p->jmpbuf) == 0)
+  if (setjmp(&cp->jmpbuf) == 0)
     longjmp(&cpus[cpu()].jmpbuf);
 }
 
 // Give up the CPU for one scheduling round.
 void yield(void) {
-  struct proc *cp = curproc[cpu()];
 
   acquire(&proc_table_lock);
   cp->state = RUNNABLE;
@@ -218,13 +215,12 @@ void forkret(void) {
   release(&proc_table_lock);
 
   // Jump into assembly, never to return.
-  forkret1(curproc[cpu()]->tf);
+  forkret1(cp->tf);
 }
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when reawakened.
 void sleep(void *chan, struct spinlock *lk) {
-  struct proc *cp = curproc[cpu()];
 
   if (cp == 0)
     panic("sleep");
@@ -302,7 +298,6 @@ int proc_kill(int pid) {
 // until their parent calls wait() to find out they exited.
 void proc_exit(void) {
   struct proc *p;
-  struct proc *cp = curproc[cpu()];
   int fd;
 
   if (cp->pid == 1)
@@ -344,7 +339,6 @@ void proc_exit(void) {
 // Return -1 if this process has no children.
 int proc_wait(void) {
   struct proc *p;
-  struct proc *cp = curproc[cpu()];
   int i, havekids, pid;
 
   acquire(&proc_table_lock);

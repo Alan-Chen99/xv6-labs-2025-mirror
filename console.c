@@ -558,7 +558,7 @@ int console_read(int minor, char *dst, int n) {
   acquire(&kbd_lock);
   while (n > 0) {
     while (kbd_r == kbd_w) {
-      if (curproc[cpu()]->killed) {
+      if (cp->killed) {
         release(&kbd_lock);
         return -1;
       }

@@ -81,7 +81,7 @@ int pipe_write(struct pipe *p, char *addr, int n) {
 
   for (i = 0; i < n; i++) {
     while (((p->writep + 1) % PIPESIZE) == p->readp) {
-      if (p->readopen == 0 || curproc[cpu()]->killed) {
+      if (p->readopen == 0 || cp->killed) {
         release(&p->lock);
         return -1;
       }
@@ -103,7 +103,7 @@ int pipe_read(struct pipe *p, char *addr, int n) {
   acquire(&p->lock);
 
   while (p->readp == p->writep) {
-    if (p->writeopen == 0 || curproc[cpu()]->killed) {
+    if (p->writeopen == 0 || cp->killed) {
       release(&p->lock);
       return 0;
     }
