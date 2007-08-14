@@ -221,7 +221,6 @@ void forkret(void) {
 // Atomically release lock and sleep on chan.
 // Reacquires lock when reawakened.
 void sleep(void *chan, struct spinlock *lk) {
-
   if (cp == 0)
     panic("sleep");
 
