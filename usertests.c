@@ -471,8 +471,8 @@ void createdelete(void) {
 
   if (pid == 0)
     exit();
-  //  else
-  // exit();
+  else
+    wait();
 
   for (i = 0; i < N; i++) {
     name[0] = 'p';
