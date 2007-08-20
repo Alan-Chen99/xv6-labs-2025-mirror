@@ -187,7 +187,6 @@ void scheduler(void) {
 // Enter scheduler.  Must already hold proc_table_lock
 // and have changed curproc[cpu()]->state.
 void sched(void) {
-
   if (cp->state == RUNNING)
     panic("sched running");
   if (!holding(&proc_table_lock))
@@ -201,7 +200,6 @@ void sched(void) {
 
 // Give up the CPU for one scheduling round.
 void yield(void) {
-
   acquire(&proc_table_lock);
   cp->state = RUNNABLE;
   sched();
@@ -383,9 +381,10 @@ void procdump(void) {
   static char *states[] = {
       [UNUSED] "unused",   [EMBRYO] "embryo",  [SLEEPING] "sleep ",
       [RUNNABLE] "runble", [RUNNING] "run   ", [ZOMBIE] "zombie"};
-  int i;
+  int i, j;
   struct proc *p;
   char *state;
+  uint pc[10];
 
   for (i = 0; i < NPROC; i++) {
     p = &proc[i];
@@ -395,6 +394,12 @@ void procdump(void) {
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s\n", p->pid, state, p->name);
+    cprintf("%d %s %s", p->pid, state, p->name);
+    if (p->state == SLEEPING) {
+      getcallerpcs((uint *)p->jmpbuf.ebp + 2, pc);
+      for (j = 0; j < 10 && pc[j] != 0; j++)
+        cprintf(" %p", pc[j]);
+    }
+    cprintf("\n");
   }
 }
