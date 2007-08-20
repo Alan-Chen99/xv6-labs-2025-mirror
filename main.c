@@ -119,7 +119,7 @@ void process0(void) {
   release(&proc_table_lock);
 
   p0 = &proc[0];
-  p0->cwd = iget(rootdev, 1);
+  p0->cwd = igetroot();
   iunlock(p0->cwd);
 
   // Dummy user memory to make copyproc() happy.
