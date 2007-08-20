@@ -1,9 +1,9 @@
 // Special assembly routines to access x86-specific
 // hardware instructions.
 
-static __inline uchar inb(int port) {
+static __inline uchar inb(ushort port) {
   uchar data;
-  __asm __volatile("inb %w1,%0" : "=a"(data) : "d"(port));
+  __asm __volatile("in %1,%0" : "=a"(data) : "d"(port));
   return data;
 }
 
@@ -14,12 +14,12 @@ static __inline void insl(int port, void *addr, int cnt) {
                    : "memory", "cc");
 }
 
-static __inline void outb(int port, uchar data) {
-  __asm __volatile("outb %0,%w1" : : "a"(data), "d"(port));
+static __inline void outb(ushort port, uchar data) {
+  __asm __volatile("out %0,%1" : : "a"(data), "d"(port));
 }
 
-static __inline void outw(int port, ushort data) {
-  __asm __volatile("outw %0,%w1" : : "a"(data), "d"(port));
+static __inline void outw(ushort port, ushort data) {
+  __asm __volatile("out %0,%1" : : "a"(data), "d"(port));
 }
 
 static __inline void outsl(int port, const void *addr, int cnt) {
