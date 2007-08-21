@@ -24,6 +24,8 @@
 #include "dev.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
+static void itrunc(struct inode *);
+static void iupdate(struct inode *);
 
 // Blocks.
 
@@ -254,7 +256,7 @@ struct inode *ialloc(uint dev, short type) {
 }
 
 // Copy inode, which has changed, from memory to disk.
-void iupdate(struct inode *ip) {
+static void iupdate(struct inode *ip) {
   struct buf *bp;
   struct dinode *dip;
 
@@ -319,7 +321,7 @@ uint bmap(struct inode *ip, uint bn, int alloc) {
 }
 
 // Truncate inode (discard contents).
-void itrunc(struct inode *ip) {
+static void itrunc(struct inode *ip) {
   int i, j;
   struct buf *bp;
   uint *a;
@@ -415,13 +417,36 @@ int writei(struct inode *ip, char *src, uint off, uint n) {
 //
 // Directories are just inodes (files) filled with dirent structures.
 
+// Compare two names, which are strings with a max length of DIRSIZ.
+static int namecmp(const char *s, const char *t) {
+  int i;
+
+  for (i = 0; i < DIRSIZ; i++) {
+    if (s[i] != t[i])
+      return s[i] - t[i];
+    if (s[i] == 0)
+      break;
+  }
+  return 0;
+}
+
+// Copy one name to another.
+static void namecpy(char *s, const char *t) {
+  int i;
+
+  for (i = 0; i < DIRSIZ && t[i]; i++)
+    s[i] = t[i];
+  for (; i < DIRSIZ; i++)
+    s[i] = 0;
+}
+
 // Look for a directory entry in a directory.
 // If not found, return -1.
 // If found:
 //   set *poff to the byte offset of the directory entry
 //   set *pinum to the inode number
 //   return 0.
-struct inode *dirlookup(struct inode *dp, char *name, int namelen, uint *poff) {
+static struct inode *dirlookup(struct inode *dp, char *name, uint *poff) {
   uint off, inum;
   struct buf *bp;
   struct dirent *de;
@@ -435,8 +460,7 @@ struct inode *dirlookup(struct inode *dp, char *name, int namelen, uint *poff) {
          de < (struct dirent *)(bp->data + BSIZE); de++) {
       if (de->inum == 0)
         continue;
-      if (memcmp(name, de->name, namelen) == 0 &&
-          (namelen == DIRSIZ || de->name[namelen] == 0)) {
+      if (namecmp(name, de->name) == 0) {
         // entry matches path element
         if (poff)
           *poff = off + (uchar *)de - bp->data;
@@ -452,13 +476,13 @@ struct inode *dirlookup(struct inode *dp, char *name, int namelen, uint *poff) {
 
 // Write a new directory entry (name, ino) into the directory dp.
 // Caller must have locked dp.
-int dirlink(struct inode *dp, char *name, int namelen, uint ino) {
+static int dirlink(struct inode *dp, char *name, uint ino) {
   int off;
   struct dirent de;
   struct inode *ip;
 
   // Double-check that name is not present.
-  if ((ip = dirlookup(dp, name, namelen, 0)) != 0) {
+  if ((ip = dirlookup(dp, name, 0)) != 0) {
     idecref(ip);
     return -1;
   }
@@ -471,11 +495,8 @@ int dirlink(struct inode *dp, char *name, int namelen, uint ino) {
       break;
   }
 
+  namecpy(de.name, name);
   de.inum = ino;
-  if (namelen > DIRSIZ)
-    namelen = DIRSIZ;
-  memmove(de.name, name, namelen);
-  memset(de.name + namelen, 0, DIRSIZ - namelen);
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
     panic("dirwrite");
 
@@ -485,8 +506,8 @@ int dirlink(struct inode *dp, char *name, int namelen, uint ino) {
 // Create a new inode named name inside dp
 // and return its locked inode structure.
 // If name already exists, return 0.
-struct inode *dircreat(struct inode *dp, char *name, int namelen, short type,
-                       short major, short minor) {
+static struct inode *dircreat(struct inode *dp, char *name, short type,
+                              short major, short minor) {
   struct inode *ip;
 
   ip = ialloc(dp->dev, type);
@@ -499,7 +520,7 @@ struct inode *dircreat(struct inode *dp, char *name, int namelen, short type,
   ip->nlink = 1;
   iupdate(ip);
 
-  if (dirlink(dp, name, namelen, ip->inum) < 0) {
+  if (dirlink(dp, name, ip->inum) < 0) {
     ip->nlink = 0;
     iupdate(ip);
     iput(ip);
@@ -525,15 +546,24 @@ struct inode *dircreat(struct inode *dp, char *name, int namelen, short type,
 //   skipelem("///a/bb") = "b", with *name="a/bb", len=1
 //   skipelem("") = skipelem("////") = 0
 //
-static char *skipelem(char *path, char **name, int *len) {
+static char *skipelem(char *path, char *name) {
+  char *s;
+  int len;
+
   while (*path == '/')
     path++;
   if (*path == 0)
     return 0;
-  *name = path;
+  s = path;
   while (*path != '/' && *path != 0)
     path++;
-  *len = path - *name;
+  len = path - s;
+  if (len >= DIRSIZ)
+    memmove(name, s, DIRSIZ);
+  else {
+    memmove(name, s, len);
+    name[len] = 0;
+  }
   while (*path == '/')
     path++;
   return path;
@@ -548,10 +578,8 @@ static char *skipelem(char *path, char **name, int *len) {
 //   *ret_ip and *ret_last may be zero even if return value is zero.
 // NAMEI_DELETE: return locked parent inode, offset of dirent in *ret_off.
 //   return 0 if name doesn't exist.
-struct inode *_namei(char *path, int parent, char **pname, int *pnamelen) {
+struct inode *_namei(char *path, int parent, char *name) {
   struct inode *dp, *ip;
-  char *name;
-  int namelen;
   uint off;
 
   if (*path == '/')
@@ -560,22 +588,16 @@ struct inode *_namei(char *path, int parent, char **pname, int *pnamelen) {
     dp = iincref(cp->cwd);
   ilock(dp);
 
-  while ((path = skipelem(path, &name, &namelen)) != 0) {
-    // Truncate names in path to DIRSIZ chars.
-    if (namelen > DIRSIZ)
-      namelen = DIRSIZ;
-
+  while ((path = skipelem(path, name)) != 0) {
     if (dp->type != T_DIR)
       goto fail;
 
     if (parent && *path == '\0') {
       // Stop one level early.
-      *pname = name;
-      *pnamelen = namelen;
       return dp;
     }
 
-    if ((ip = dirlookup(dp, name, namelen, &off)) == 0)
+    if ((ip = dirlookup(dp, name, &off)) == 0)
       goto fail;
 
     iput(dp);
@@ -593,22 +615,24 @@ fail:
   return 0;
 }
 
-struct inode *namei(char *path) { return _namei(path, 0, 0, 0); }
+struct inode *namei(char *path) {
+  char name[DIRSIZ];
+  return _namei(path, 0, name);
+}
 
-struct inode *nameiparent(char *path, char **name, int *namelen) {
-  return _namei(path, 1, name, namelen);
+static struct inode *nameiparent(char *path, char *name) {
+  return _namei(path, 1, name);
 }
 
 // Create the path and return its locked inode structure.
 // If cp already exists, return 0.
 struct inode *mknod(char *path, short type, short major, short minor) {
   struct inode *ip, *dp;
-  char *name;
-  int namelen;
+  char name[DIRSIZ];
 
-  if ((dp = nameiparent(path, &name, &namelen)) == 0)
+  if ((dp = nameiparent(path, name)) == 0)
     return 0;
-  ip = dircreat(dp, name, namelen, type, major, minor);
+  ip = dircreat(dp, name, type, major, minor);
   iput(dp);
   return ip;
 }
@@ -618,26 +642,21 @@ int unlink(char *path) {
   struct inode *ip, *dp;
   struct dirent de;
   uint off;
-  char *name;
-  int namelen;
+  char name[DIRSIZ];
 
-  if ((dp = nameiparent(path, &name, &namelen)) == 0)
+  if ((dp = nameiparent(path, name)) == 0)
     return -1;
-  if ((ip = dirlookup(dp, name, namelen, &off)) == 0) {
+
+  // Cannot unlink "." or "..".
+  if (namecmp(name, ".") == 0 || namecmp(name, "..") == 0) {
     iput(dp);
     return -1;
   }
 
-  if (readi(dp, (char *)&de, off, sizeof(de)) != sizeof(de) || de.inum == 0)
-    panic("unlink no entry");
-
-  // Cannot remove "." or ".." - the 2 and 3 count the trailing NUL.
-  if (memcmp(de.name, ".", 2) == 0 || memcmp(de.name, "..", 3) == 0) {
-    idecref(ip);
+  if ((ip = dirlookup(dp, name, &off)) == 0) {
     iput(dp);
     return -1;
   }
-
   memset(&de, 0, sizeof(de));
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
     panic("unlink dir write");
@@ -656,8 +675,7 @@ int unlink(char *path) {
 // Create the path new as a link to the same inode as old.
 int link(char *old, char *new) {
   struct inode *ip, *dp;
-  char *name;
-  int namelen;
+  char name[DIRSIZ];
 
   if ((ip = namei(old)) == 0)
     return -1;
@@ -667,11 +685,11 @@ int link(char *old, char *new) {
   }
   iunlock(ip);
 
-  if ((dp = nameiparent(new, &name, &namelen)) == 0) {
+  if ((dp = nameiparent(new, name)) == 0) {
     idecref(ip);
     return -1;
   }
-  if (dp->dev != ip->dev || dirlink(dp, name, namelen, ip->inum) < 0) {
+  if (dp->dev != ip->dev || dirlink(dp, name, ip->inum) < 0) {
     idecref(ip);
     iput(dp);
     return -1;
@@ -688,21 +706,20 @@ int link(char *old, char *new) {
 
 int mkdir(char *path) {
   struct inode *dp, *ip;
-  char *name;
-  int namelen;
+  char name[DIRSIZ];
 
   // XXX write ordering is screwy here- do we care?
-  if ((dp = nameiparent(path, &name, &namelen)) == 0)
+  if ((dp = nameiparent(path, name)) == 0)
     return -1;
 
-  if ((ip = dircreat(dp, name, namelen, T_DIR, 0, 0)) == 0) {
+  if ((ip = dircreat(dp, name, T_DIR, 0, 0)) == 0) {
     iput(dp);
     return -1;
   }
   dp->nlink++;
   iupdate(dp);
 
-  if (dirlink(ip, ".", 1, ip->inum) < 0 || dirlink(ip, "..", 2, dp->inum) < 0)
+  if (dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
     panic("mkdir");
   iput(dp);
   iput(ip);
@@ -712,13 +729,12 @@ int mkdir(char *path) {
 
 struct inode *create(char *path) {
   struct inode *dp, *ip;
-  char *name;
-  int namelen;
+  char name[DIRSIZ];
 
-  if ((dp = nameiparent(path, &name, &namelen)) == 0)
+  if ((dp = nameiparent(path, name)) == 0)
     return 0;
 
-  if ((ip = dirlookup(dp, name, namelen, 0)) != 0) {
+  if ((ip = dirlookup(dp, name, 0)) != 0) {
     iput(dp);
     ilock(ip);
     if (ip->type == T_DIR) {
@@ -727,7 +743,7 @@ struct inode *create(char *path) {
     }
     return ip;
   }
-  if ((ip = dircreat(dp, name, namelen, T_FILE, 0, 0)) == 0) {
+  if ((ip = dircreat(dp, name, T_FILE, 0, 0)) == 0) {
     iput(dp);
     return 0;
   }
