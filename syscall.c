@@ -47,7 +47,6 @@ int fetchstr(struct proc *p, uint addr, char **pp) {
 
 // Fetch the argno'th word-sized system call argument as an integer.
 int argint(int argno, int *ip) {
-
   return fetchint(cp, cp->tf->esp + 4 + 4 * argno, ip);
 }
 

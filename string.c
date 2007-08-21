@@ -64,3 +64,11 @@ char *safestrcpy(char *s, const char *t, int n) {
   *s = 0;
   return os;
 }
+
+int strlen(const char *s) {
+  int n;
+
+  for (n = 0; s[n]; n++)
+    ;
+  return n;
+}
