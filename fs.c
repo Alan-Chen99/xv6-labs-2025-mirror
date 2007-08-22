@@ -483,11 +483,11 @@ static void namecpy(char *s, const char *t) {
 int dirlink(struct inode *dp, char *name, uint ino) {
   int off;
   struct dirent de;
-  struct uinode *ip;
+  struct uinode *ipu;
 
   // Check that name is not present.
-  if ((ip = dirlookup(dp, name, 0)) != 0) {
-    iput(ip);
+  if ((ipu = dirlookup(dp, name, 0)) != 0) {
+    iput(ipu);
     return -1;
   }
 
@@ -548,43 +548,39 @@ static char *skipelem(char *path, char *name) {
 // and write the final path element to name, which
 // should have room for DIRSIZ bytes.
 static struct uinode *_namei(char *path, int parent, char *name) {
-  struct uinode *dp, *ip;
-  struct inode *dpl;
+  struct uinode *dpu, *ipu;
+  struct inode *dp;
   uint off;
 
   if (*path == '/')
-    dp = iget(ROOTDEV, 1);
+    dpu = iget(ROOTDEV, 1);
   else
-    dp = idup(cp->cwd);
+    dpu = idup(cp->cwd);
 
   while ((path = skipelem(path, name)) != 0) {
-    dpl = ilock(dp);
-    if (dpl->type != T_DIR) {
-      iunlock(dpl);
-      iput(dp);
+    dp = ilock(dpu);
+    if (dp->type != T_DIR) {
+      iput(iunlock(dp));
       return 0;
     }
 
     if (parent && *path == '\0') {
       // Stop one level early.
-      iunlock(dpl);
-      return dp;
+      iunlock(dp);
+      return dpu;
     }
 
-    if ((ip = dirlookup(dpl, name, &off)) == 0) {
-      iunlock(dpl);
-      iput(dp);
-      iput(ip);
+    if ((ipu = dirlookup(dp, name, &off)) == 0) {
+      iput(iunlock(dp));
+      iput(ipu);
       return 0;
     }
-
-    iunlock(dpl);
-    iput(dp);
-    dp = ip;
+    iput(iunlock(dp));
+    dpu = ipu;
   }
   if (parent)
     return 0;
-  return dp;
+  return dpu;
 }
 
 struct uinode *namei(char *path) {
