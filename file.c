@@ -11,14 +11,13 @@
 #include "fs.h"
 #include "fsvar.h"
 
-struct spinlock file_table_lock;
 struct devsw devsw[NDEV];
-
+struct spinlock file_table_lock;
 struct file file[NFILE];
 
 void fileinit(void) { initlock(&file_table_lock, "file_table"); }
 
-// Allocate a file structure
+// Allocate a file structure.
 struct file *filealloc(void) {
   int i;
 
@@ -47,16 +46,17 @@ void fileincref(struct file *f) {
 // Read from file f.  Addr is kernel address.
 int fileread(struct file *f, char *addr, int n) {
   int r;
+  struct inode *ip;
 
   if (f->readable == 0)
     return -1;
   if (f->type == FD_PIPE)
     return pipe_read(f->pipe, addr, n);
-  if (f->type == FD_FILE) {
-    ilock(f->ip);
-    if ((r = readi(f->ip, addr, f->off, n)) > 0)
+  if (f->type == FD_INODE) {
+    ip = ilock(f->ip);
+    if ((r = readi(ip, addr, f->off, n)) > 0)
       f->off += r;
-    iunlock(f->ip);
+    iunlock(ip);
     return r;
   }
   panic("fileread");
@@ -65,16 +65,17 @@ int fileread(struct file *f, char *addr, int n) {
 // Write to file f.  Addr is kernel address.
 int filewrite(struct file *f, char *addr, int n) {
   int r;
+  struct inode *ip;
 
   if (f->writable == 0)
     return -1;
   if (f->type == FD_PIPE)
     return pipe_write(f->pipe, addr, n);
-  if (f->type == FD_FILE) {
-    ilock(f->ip);
-    if ((r = writei(f->ip, addr, f->off, n)) > 0)
+  if (f->type == FD_INODE) {
+    ip = ilock(f->ip);
+    if ((r = writei(ip, addr, f->off, n)) > 0)
       f->off += r;
-    iunlock(f->ip);
+    iunlock(ip);
     return r;
   }
   panic("filewrite");
@@ -82,10 +83,12 @@ int filewrite(struct file *f, char *addr, int n) {
 
 // Get metadata about file f.
 int filestat(struct file *f, struct stat *st) {
-  if (f->type == FD_FILE) {
-    ilock(f->ip);
-    stati(f->ip, st);
-    iunlock(f->ip);
+  struct inode *ip;
+
+  if (f->type == FD_INODE) {
+    ip = ilock(f->ip);
+    stati(ip, st);
+    iunlock(ip);
     return 0;
   }
   return -1;
@@ -94,6 +97,7 @@ int filestat(struct file *f, struct stat *st) {
 // Close file f.  (Decrement ref count, close when reaches 0.)
 void fileclose(struct file *f) {
   struct file ff;
+
   acquire(&file_table_lock);
 
   if (f->ref < 1 || f->type == FD_CLOSED)
@@ -111,8 +115,8 @@ void fileclose(struct file *f) {
 
   if (ff.type == FD_PIPE)
     pipe_close(ff.pipe, ff.writable);
-  else if (ff.type == FD_FILE)
-    idecref(ff.ip);
+  else if (ff.type == FD_INODE)
+    iput(ff.ip);
   else
     panic("fileclose");
 }

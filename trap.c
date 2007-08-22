@@ -19,7 +19,7 @@ void tvinit(void) {
   SETGATE(idt[T_SYSCALL], 0, SEG_KCODE << 3, vectors[T_SYSCALL], DPL_USER);
 }
 
-void idtinit(void) { lidt(idt, sizeof idt); }
+void idtinit(void) { lidt(idt, sizeof(idt)); }
 
 void trap(struct trapframe *tf) {
   if (tf->trapno == T_SYSCALL) {
@@ -72,9 +72,8 @@ void trap(struct trapframe *tf) {
   default:
     if (cp) {
       // Assume process divided by zero or dereferenced null, etc.
-      cprintf(
-          "pid %d %s: unhandled trap %d err %d on cpu %d eip %x -- kill proc\n",
-          cp->pid, cp->name, tf->trapno, tf->err, cpu(), tf->eip);
+      cprintf("pid %d %s: trap %d err %d on cpu %d eip %x -- kill proc\n",
+              cp->pid, cp->name, tf->trapno, tf->err, cpu(), tf->eip);
       proc_exit();
     }
 

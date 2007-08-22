@@ -32,6 +32,11 @@ void getcallerpcs(void *v, uint pcs[]) {
     pcs[i] = 0;
 }
 
+// Check whether this cpu is holding the lock.
+int holding(struct spinlock *lock) {
+  return lock->locked && lock->cpu == cpu() + 10;
+}
+
 // Acquire the lock.
 // Loops (spins) until the lock is acquired.
 // (Because contention is handled by spinning,
@@ -74,9 +79,4 @@ void release(struct spinlock *lock) {
   lock->locked = 0;
   if (--cpus[cpu()].nlock == 0)
     sti();
-}
-
-// Check whether this cpu is holding the lock.
-int holding(struct spinlock *lock) {
-  return lock->locked && lock->cpu == cpu() + 10;
 }
