@@ -106,7 +106,7 @@ struct proc *copyproc(struct proc *p) {
   np->tf = (struct trapframe *)(np->kstack + KSTACKSIZE) - 1;
 
   if (p) { // Copy process state from p.
-    np->ppid = p->pid;
+    np->parent = p;
     memmove(np->tf, p->tf, sizeof(*np->tf));
 
     np->sz = p->sz;
@@ -334,15 +334,13 @@ void proc_exit(void) {
 
   acquire(&proc_table_lock);
 
-  // Wake up waiting parent.
-  for (p = proc; p < &proc[NPROC]; p++)
-    if (p->pid == cp->ppid)
-      wakeup1(p);
+  // Parent might be sleeping in proc_wait.
+  wakeup1(cp->parent);
 
   // Pass abandoned children to init.
   for (p = proc; p < &proc[NPROC]; p++) {
-    if (p->ppid == cp->pid) {
-      p->ppid = initproc->pid;
+    if (p->parent == cp) {
+      p->parent = initproc;
       if (p->state == ZOMBIE)
         wakeup1(initproc);
     }
@@ -369,7 +367,7 @@ int proc_wait(void) {
       p = &proc[i];
       if (p->state == UNUSED)
         continue;
-      if (p->ppid == cp->pid) {
+      if (p->parent == cp) {
         if (p->state == ZOMBIE) {
           // Found one.
           kfree(p->mem, p->sz);
@@ -377,7 +375,7 @@ int proc_wait(void) {
           pid = p->pid;
           p->state = UNUSED;
           p->pid = 0;
-          p->ppid = 0;
+          p->parent = 0;
           p->name[0] = 0;
           release(&proc_table_lock);
           return pid;
