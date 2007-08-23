@@ -11,6 +11,8 @@ struct spinlock proc_table_lock;
 
 struct proc proc[NPROC];
 struct proc *curproc[NCPU];
+static struct proc *initproc;
+
 int nextpid = 1;
 extern void forkret(void);
 extern void forkret1(struct trapframe *);
@@ -148,7 +150,7 @@ void userinit(void) {
   p->tf->eflags = FL_IF;
   p->tf->esp = p->sz;
 
-  // Push dummy return address to placate gcc.
+  // Make return address readable; needed for some gcc.
   p->tf->esp -= 4;
   *(uint *)(p->mem + p->tf->esp) = 0xefefefef;
 
@@ -156,6 +158,8 @@ void userinit(void) {
   memmove(p->mem, _binary_initcode_start, (int)_binary_initcode_size);
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->state = RUNNABLE;
+
+  initproc = p;
 }
 
 // PAGEBREAK: 42
@@ -314,7 +318,7 @@ void proc_exit(void) {
   struct proc *p;
   int fd;
 
-  if (cp->pid == 1)
+  if (cp == initproc)
     panic("init exiting");
 
   // Close all open files.
@@ -330,17 +334,19 @@ void proc_exit(void) {
 
   acquire(&proc_table_lock);
 
-  // Wake up our parent.
+  // Wake up waiting parent.
   for (p = proc; p < &proc[NPROC]; p++)
     if (p->pid == cp->ppid)
       wakeup1(p);
 
-  // Reparent our children to process 1.
-  for (p = proc; p < &proc[NPROC]; p++)
+  // Pass abandoned children to init.
+  for (p = proc; p < &proc[NPROC]; p++) {
     if (p->ppid == cp->pid) {
-      p->ppid = 1;
-      wakeup1(&proc[1]); // init
+      p->ppid = initproc->pid;
+      if (p->state == ZOMBIE)
+        wakeup1(initproc);
     }
+  }
 
   // Jump into the scheduler, never to return.
   cp->killed = 0;
