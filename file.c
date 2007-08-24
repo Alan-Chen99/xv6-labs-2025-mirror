@@ -46,17 +46,16 @@ void fileincref(struct file *f) {
 // Read from file f.  Addr is kernel address.
 int fileread(struct file *f, char *addr, int n) {
   int r;
-  struct inode *ip;
 
   if (f->readable == 0)
     return -1;
   if (f->type == FD_PIPE)
     return pipe_read(f->pipe, addr, n);
   if (f->type == FD_INODE) {
-    ip = ilock(f->ip);
-    if ((r = readi(ip, addr, f->off, n)) > 0)
+    ilock(f->ip);
+    if ((r = readi(f->ip, addr, f->off, n)) > 0)
       f->off += r;
-    iunlock(ip);
+    iunlock(f->ip);
     return r;
   }
   panic("fileread");
@@ -65,17 +64,16 @@ int fileread(struct file *f, char *addr, int n) {
 // Write to file f.  Addr is kernel address.
 int filewrite(struct file *f, char *addr, int n) {
   int r;
-  struct inode *ip;
 
   if (f->writable == 0)
     return -1;
   if (f->type == FD_PIPE)
     return pipe_write(f->pipe, addr, n);
   if (f->type == FD_INODE) {
-    ip = ilock(f->ip);
-    if ((r = writei(ip, addr, f->off, n)) > 0)
+    ilock(f->ip);
+    if ((r = writei(f->ip, addr, f->off, n)) > 0)
       f->off += r;
-    iunlock(ip);
+    iunlock(f->ip);
     return r;
   }
   panic("filewrite");
@@ -83,12 +81,10 @@ int filewrite(struct file *f, char *addr, int n) {
 
 // Get metadata about file f.
 int filestat(struct file *f, struct stat *st) {
-  struct inode *ip;
-
   if (f->type == FD_INODE) {
-    ip = ilock(f->ip);
-    stati(ip, st);
-    iunlock(ip);
+    ilock(f->ip);
+    stati(f->ip, st);
+    iunlock(f->ip);
     return 0;
   }
   return -1;

@@ -121,7 +121,7 @@ void iinit(void) { initlock(&icache.lock, "icache.lock"); }
 
 // Find the inode with number inum on device dev
 // and return the in-memory copy. h
-static struct uinode *iget(uint dev, uint inum) {
+static struct inode *iget(uint dev, uint inum) {
   struct inode *ip, *empty;
 
   acquire(&icache.lock);
@@ -132,7 +132,7 @@ static struct uinode *iget(uint dev, uint inum) {
     if (ip->ref > 0 && ip->dev == dev && ip->inum == inum) {
       ip->ref++;
       release(&icache.lock);
-      return (struct uinode *)ip;
+      return ip;
     }
     if (empty == 0 && ip->ref == 0) // Remember empty slot.
       empty = ip;
@@ -149,33 +149,25 @@ static struct uinode *iget(uint dev, uint inum) {
   ip->flags = 0;
   release(&icache.lock);
 
-  return (struct uinode *)ip;
+  return ip;
 }
 
 // Increment reference count for ip.
 // Returns ip to enable ip = idup(ip1) idiom.
-struct uinode *idup(struct uinode *uip) {
-  struct inode *ip;
-
-  ip = (struct inode *)uip;
+struct inode *idup(struct inode *ip) {
   acquire(&icache.lock);
   ip->ref++;
   release(&icache.lock);
-  return uip;
+  return ip;
 }
 
 // Lock the given inode.
-struct inode *ilock(struct uinode *uip) {
+void ilock(struct inode *ip) {
   struct buf *bp;
   struct dinode *dip;
-  struct inode *ip;
 
-  ip = (struct inode *)uip;
-  if (ip == 0)
-    return 0;
-
-  if (ip->ref < 1)
-    panic("ilock: no refs");
+  if (ip == 0 || ip->ref < 1)
+    panic("ilock");
 
   acquire(&icache.lock);
   while (ip->flags & I_BUSY)
@@ -197,29 +189,21 @@ struct inode *ilock(struct uinode *uip) {
     if (ip->type == 0)
       panic("ilock: no type");
   }
-  return ip;
 }
 
 // Unlock the given inode.
-struct uinode *iunlock(struct inode *ip) {
-  if (ip == 0)
-    return 0;
-
-  if (!(ip->flags & I_BUSY) || ip->ref < 1)
+void iunlock(struct inode *ip) {
+  if (ip == 0 || !(ip->flags & I_BUSY) || ip->ref < 1)
     panic("iunlock");
 
   acquire(&icache.lock);
   ip->flags &= ~I_BUSY;
   wakeup(ip);
   release(&icache.lock);
-  return (struct uinode *)ip;
 }
 
 // Caller holds reference to unlocked ip.  Drop reference.
-void iput(struct uinode *uip) {
-  struct inode *ip;
-
-  ip = (struct inode *)uip;
+void iput(struct inode *ip) {
   acquire(&icache.lock);
   if (ip->ref == 1 && (ip->flags & I_VALID) && ip->nlink == 0) {
     // inode is no longer used: truncate and free inode.
@@ -238,8 +222,13 @@ void iput(struct uinode *uip) {
   release(&icache.lock);
 }
 
+void iunlockput(struct inode *ip) {
+  iunlock(ip);
+  iput(ip);
+}
+
 // Allocate a new inode with the given type on device dev.
-struct uinode *ialloc(uint dev, short type) {
+struct inode *ialloc(uint dev, short type) {
   int inum, ninodes;
   struct buf *bp;
   struct dinode *dip;
@@ -444,7 +433,7 @@ int namecmp(const char *s, const char *t) {
 // Look for a directory entry in a directory.
 // If found, set *poff to byte offset of entry.
 // Caller must have already locked dp.
-struct uinode *dirlookup(struct inode *dp, char *name, uint *poff) {
+struct inode *dirlookup(struct inode *dp, char *name, uint *poff) {
   uint off, inum;
   struct buf *bp;
   struct dirent *de;
@@ -486,11 +475,11 @@ static void namecpy(char *s, const char *t) {
 int dirlink(struct inode *dp, char *name, uint ino) {
   int off;
   struct dirent de;
-  struct uinode *ipu;
+  struct inode *ip;
 
   // Check that name is not present.
-  if ((ipu = dirlookup(dp, name, 0)) != 0) {
-    iput(ipu);
+  if ((ip = dirlookup(dp, name, 0)) != 0) {
+    iput(ip);
     return -1;
   }
 
@@ -550,48 +539,47 @@ static char *skipelem(char *path, char *name) {
 // If parent is set, return the inode for the parent
 // and write the final path element to name, which
 // should have room for DIRSIZ bytes.
-static struct uinode *_namei(char *path, int parent, char *name) {
-  struct uinode *dpu, *ipu;
-  struct inode *dp;
+static struct inode *_namei(char *path, int parent, char *name) {
+  struct inode *ip, *next;
   uint off;
 
   if (*path == '/')
-    dpu = iget(ROOTDEV, 1);
+    ip = iget(ROOTDEV, 1);
   else
-    dpu = idup(cp->cwd);
+    ip = idup(cp->cwd);
 
   while ((path = skipelem(path, name)) != 0) {
-    dp = ilock(dpu);
-    if (dp->type != T_DIR) {
-      iput(iunlock(dp));
+    ilock(ip);
+    if (ip->type != T_DIR) {
+      iunlockput(ip);
       return 0;
     }
 
     if (parent && *path == '\0') {
       // Stop one level early.
-      iunlock(dp);
-      return dpu;
+      iunlock(ip);
+      return ip;
     }
 
-    if ((ipu = dirlookup(dp, name, &off)) == 0) {
-      iput(iunlock(dp));
+    if ((next = dirlookup(ip, name, &off)) == 0) {
+      iunlockput(ip);
       return 0;
     }
-    iput(iunlock(dp));
-    dpu = ipu;
+    iunlockput(ip);
+    ip = next;
   }
   if (parent) {
-    iput(dpu);
+    iput(ip);
     return 0;
   }
-  return dpu;
+  return ip;
 }
 
-struct uinode *namei(char *path) {
+struct inode *namei(char *path) {
   char name[DIRSIZ];
   return _namei(path, 0, name);
 }
 
-struct uinode *nameiparent(char *path, char *name) {
+struct inode *nameiparent(char *path, char *name) {
   return _namei(path, 1, name);
 }
