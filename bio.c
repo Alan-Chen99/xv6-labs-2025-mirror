@@ -92,8 +92,7 @@ loop:
   panic("bget: no buffers");
 }
 
-// Return a B_BUSY buf with the contents of the indicated
-// disk sector.
+// Return a B_BUSY buf with the contents of the indicated disk sector.
 struct buf *bread(uint dev, uint sector) {
   struct buf *b;
 
@@ -108,8 +107,7 @@ struct buf *bread(uint dev, uint sector) {
   return b;
 }
 
-// Write buf's contents to disk.
-// Must be locked.
+// Write buf's contents to disk.  Must be locked.
 void bwrite(struct buf *b) {
   if ((b->flags & B_BUSY) == 0)
     panic("bwrite");
