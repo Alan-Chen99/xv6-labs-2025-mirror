@@ -1,37 +1,37 @@
 // Special assembly routines to access x86-specific
 // hardware instructions.
 
-static __inline uchar inb(ushort port) {
+static inline uchar inb(ushort port) {
   uchar data;
-  __asm __volatile("in %1,%0" : "=a"(data) : "d"(port));
+  asm volatile("in %1,%0" : "=a"(data) : "d"(port));
   return data;
 }
 
-static __inline void insl(int port, void *addr, int cnt) {
-  __asm __volatile("cld\n\trepne\n\tinsl"
-                   : "=D"(addr), "=c"(cnt)
-                   : "d"(port), "0"(addr), "1"(cnt)
-                   : "memory", "cc");
+static inline void insl(int port, void *addr, int cnt) {
+  asm volatile("cld\n\trepne\n\tinsl"
+               : "=D"(addr), "=c"(cnt)
+               : "d"(port), "0"(addr), "1"(cnt)
+               : "memory", "cc");
 }
 
-static __inline void outb(ushort port, uchar data) {
-  __asm __volatile("out %0,%1" : : "a"(data), "d"(port));
+static inline void outb(ushort port, uchar data) {
+  asm volatile("out %0,%1" : : "a"(data), "d"(port));
 }
 
-static __inline void outw(ushort port, ushort data) {
-  __asm __volatile("out %0,%1" : : "a"(data), "d"(port));
+static inline void outw(ushort port, ushort data) {
+  asm volatile("out %0,%1" : : "a"(data), "d"(port));
 }
 
-static __inline void outsl(int port, const void *addr, int cnt) {
-  __asm __volatile("cld\n\trepne\n\toutsl"
-                   : "=S"(addr), "=c"(cnt)
-                   : "d"(port), "0"(addr), "1"(cnt)
-                   : "cc");
+static inline void outsl(int port, const void *addr, int cnt) {
+  asm volatile("cld\n\trepne\n\toutsl"
+               : "=S"(addr), "=c"(cnt)
+               : "d"(port), "0"(addr), "1"(cnt)
+               : "cc");
 }
 
 struct segdesc;
 
-static __inline void lgdt(struct segdesc *p, int size) {
+static inline void lgdt(struct segdesc *p, int size) {
   volatile ushort pd[3];
 
   pd[0] = size - 1;
@@ -43,7 +43,7 @@ static __inline void lgdt(struct segdesc *p, int size) {
 
 struct gatedesc;
 
-static __inline void lidt(struct gatedesc *p, int size) {
+static inline void lidt(struct gatedesc *p, int size) {
   volatile ushort pd[3];
 
   pd[0] = size - 1;
@@ -53,22 +53,20 @@ static __inline void lidt(struct gatedesc *p, int size) {
   asm volatile("lidt (%0)" : : "r"(pd));
 }
 
-static __inline void ltr(ushort sel) {
-  __asm __volatile("ltr %0" : : "r"(sel));
-}
+static inline void ltr(ushort sel) { asm volatile("ltr %0" : : "r"(sel)); }
 
-static __inline uint read_eflags(void) {
+static inline uint read_eflags(void) {
   uint eflags;
-  __asm __volatile("pushfl; popl %0" : "=r"(eflags));
+  asm volatile("pushfl; popl %0" : "=r"(eflags));
   return eflags;
 }
 
-static __inline void write_eflags(uint eflags) {
-  __asm __volatile("pushl %0; popfl" : : "r"(eflags));
+static inline void write_eflags(uint eflags) {
+  asm volatile("pushl %0; popfl" : : "r"(eflags));
 }
 
-static __inline void cpuid(uint info, uint *eaxp, uint *ebxp, uint *ecxp,
-                           uint *edxp) {
+static inline void cpuid(uint info, uint *eaxp, uint *ebxp, uint *ecxp,
+                         uint *edxp) {
   uint eax, ebx, ecx, edx;
   asm volatile("cpuid"
                : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
@@ -83,19 +81,20 @@ static __inline void cpuid(uint info, uint *eaxp, uint *ebxp, uint *ecxp,
     *edxp = edx;
 }
 
-static __inline uint cmpxchg(uint oldval, uint newval,
-                             volatile uint *lock_addr) {
+static inline uint cmpxchg(uint oldval, uint newval, volatile uint *lock_addr) {
   uint result;
-  __asm__ __volatile__("lock; cmpxchgl %2, %0"
-                       : "+m"(*lock_addr), "=a"(result)
-                       : "r"(newval), "1"(oldval)
-                       : "cc");
+
+  // The + in "+m" denotes a read-modify-write operand.
+  asm volatile("lock; cmpxchgl %2, %0"
+               : "+m"(*lock_addr), "=a"(result)
+               : "r"(newval), "1"(oldval)
+               : "cc");
   return result;
 }
 
-static __inline void cli(void) { __asm__ volatile("cli"); }
+static inline void cli(void) { asm volatile("cli"); }
 
-static __inline void sti(void) { __asm__ volatile("sti"); }
+static inline void sti(void) { asm volatile("sti"); }
 
 // Layout of the trap frame on the stack upon entry to trap.
 struct trapframe {
