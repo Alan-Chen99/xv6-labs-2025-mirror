@@ -227,7 +227,8 @@ void iunlockput(struct inode *ip) {
   iput(ip);
 }
 
-// Allocate a new inode with the given type on device dev.
+// PAGEBREAK!
+//  Allocate a new inode with the given type on device dev.
 struct inode *ialloc(uint dev, short type) {
   int inum, ninodes;
   struct buf *bp;
@@ -271,12 +272,13 @@ void iupdate(struct inode *ip) {
   brelse(bp);
 }
 
-// Inode contents
+// PAGEBREAK!
+//  Inode contents
 //
-// The contents (data) associated with each inode is stored
-// in a sequence of blocks on the disk.  The first NDIRECT blocks
-// are stored in ip->addrs[].  The next NINDIRECT blocks are
-// listed in the block ip->addrs[INDIRECT].
+//  The contents (data) associated with each inode is stored
+//  in a sequence of blocks on the disk.  The first NDIRECT blocks
+//  are stored in ip->addrs[].  The next NINDIRECT blocks are
+//  listed in the block ip->addrs[INDIRECT].
 
 // Return the disk block address of the nth block in inode ip.
 // If there is no such block, alloc controls whether one is allocated.
@@ -479,7 +481,8 @@ int dirlink(struct inode *dp, char *name, uint ino) {
   return 0;
 }
 
-// Paths
+// PAGEBREAK!
+//  Paths
 
 // Copy the next path element from path into name.
 // Return a pointer to the element following the copied one.
@@ -513,6 +516,17 @@ static char *skipelem(char *path, char *name) {
   while (*path == '/')
     path++;
   return path;
+}
+
+static struct inode *_namei(char *, int, char *);
+
+struct inode *namei(char *path) {
+  char name[DIRSIZ];
+  return _namei(path, 0, name);
+}
+
+struct inode *nameiparent(char *path, char *name) {
+  return _namei(path, 1, name);
 }
 
 // Look up and return the inode for a path name.
@@ -553,13 +567,4 @@ static struct inode *_namei(char *path, int parent, char *name) {
     return 0;
   }
   return ip;
-}
-
-struct inode *namei(char *path) {
-  char name[DIRSIZ];
-  return _namei(path, 0, name);
-}
-
-struct inode *nameiparent(char *path, char *name) {
-  return _namei(path, 1, name);
 }
