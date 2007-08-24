@@ -52,3 +52,8 @@ int sys_sbrk(void) {
   setupsegs(cp);
   return addr;
 }
+
+int sys_yield(void) {
+  yield();
+  return 0;
+}
