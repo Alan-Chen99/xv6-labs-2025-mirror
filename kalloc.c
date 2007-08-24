@@ -89,7 +89,7 @@ char *kalloc(int n) {
   char *p;
   struct run *r, **rr;
 
-  if (n % PAGE)
+  if (n % PAGE || n <= 0)
     panic("kalloc");
 
   acquire(&kalloc_lock);
