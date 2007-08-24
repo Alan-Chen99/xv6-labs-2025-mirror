@@ -47,7 +47,7 @@ int growproc(int n) {
 
   newmem = kalloc(cp->sz + n);
   if (newmem == 0)
-    return 0xffffffff;
+    return -1;
   memmove(newmem, cp->mem, cp->sz);
   memset(newmem + cp->sz, 0, n);
   oldmem = cp->mem;
@@ -145,8 +145,10 @@ void userinit(void) {
   p->mem = kalloc(p->sz);
   p->cwd = namei("/");
   memset(p->tf, 0, sizeof(*p->tf));
-  p->tf->es = p->tf->ds = p->tf->ss = (SEG_UDATA << 3) | DPL_USER;
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+  p->tf->es = p->tf->ds;
+  p->tf->ss = p->tf->ds;
   p->tf->eflags = FL_IF;
   p->tf->esp = p->sz;
 
@@ -154,6 +156,7 @@ void userinit(void) {
   p->tf->esp -= 4;
   *(uint *)(p->mem + p->tf->esp) = 0xefefefef;
 
+  // On entry to user space, start executing at beginning of initcode.S.
   p->tf->eip = 0;
   memmove(p->mem, _binary_initcode_start, (int)_binary_initcode_size);
   safestrcpy(p->name, "initcode", sizeof(p->name));
@@ -274,7 +277,7 @@ void sleep(void *chan, struct spinlock *lk) {
 // PAGEBREAK!
 //  Wake up all processes sleeping on chan.
 //  Proc_table_lock must be held.
-void wakeup1(void *chan) {
+static void wakeup1(void *chan) {
   struct proc *p;
 
   for (p = proc; p < &proc[NPROC]; p++)
