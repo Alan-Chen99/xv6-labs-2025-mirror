@@ -18,7 +18,7 @@ extern char edata[], end[];
 // main that don't return int.  Really.
 void main0(void) {
   int i;
-  static int bcpu; // cannot be on stack
+  static volatile int bcpu; // cannot be on stack
 
   // clear BSS
   memset(edata, 0, end - edata);
@@ -30,7 +30,7 @@ void main0(void) {
   mp_init(); // collect info about this machine
   bcpu = mp_bcpu();
 
-  // switch to bootstrap processor's stack
+  // Switch to bootstrap processor's stack
   asm volatile("movl %0, %%esp" : : "r"(cpus[bcpu].mpstack + MPSTACK - 32));
   asm volatile("movl %0, %%ebp" : : "r"(cpus[bcpu].mpstack + MPSTACK));
 
@@ -68,14 +68,10 @@ void main0(void) {
 // Additional processors start here.
 void mpmain(void) {
   cprintf("cpu%d: starting\n", cpu());
-  idtinit(); // CPU's idt
-  if (cpu() == 0)
-    panic("mpmain on cpu 0");
+  idtinit();
   lapic_init(cpu());
   lapic_timerinit();
   lapic_enableintr();
-
-  // make sure there's a TSS
   setupsegs(0);
 
   cpuid(0, 0, 0, 0, 0); // memory barrier
