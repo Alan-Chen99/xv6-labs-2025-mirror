@@ -3,79 +3,77 @@
 #include "user.h"
 #include "fs.h"
 
-void pname(char *n) {
-  int i;
+char *fmtname(char *path) {
+  static char buf[DIRSIZ + 1];
+  char *p;
 
-  for (i = 0; (i < DIRSIZ) && (n[i] != '\0'); i++) {
-    printf(1, "%c", n[i]);
-  }
-  for (; i < DIRSIZ; i++)
-    printf(1, " ");
+  // Find first character after last slash.
+  for (p = path + strlen(path); p >= path && *p != '/'; p--)
+    ;
+  p++;
+
+  // Return blank-padded name.
+  if (strlen(p) >= DIRSIZ)
+    return p;
+  memmove(buf, p, strlen(p));
+  memset(buf + strlen(p), ' ', DIRSIZ - strlen(p));
+  return buf;
 }
 
-int main(int argc, char *argv[]) {
+void ls(char *path) {
   char buf[512], *p;
   int fd;
-  uint off, sz;
   struct dirent de;
   struct stat st;
 
-  if (argc > 2) {
-    puts("Usage: ls [dir]\n");
-    exit();
-  }
-
-  if (argc == 2) {
-    fd = open(argv[1], 0);
-    if (fd < 0) {
-      printf(2, "ls: cannot open %s\n", argv[1]);
-      exit();
-    }
-  } else {
-    fd = open(".", 0);
-    if (fd < 0) {
-      printf(2, "ls: cannot open .\n");
-      exit();
-    }
+  if ((fd = open(path, 0)) < 0) {
+    printf(2, "ls: cannot open %s\n", path);
+    return;
   }
 
   if (fstat(fd, &st) < 0) {
-    printf(2, "ls: cannot stat dir\n");
-    exit();
+    printf(2, "ls: cannot stat %s\n", path);
+    close(fd);
+    return;
   }
 
   switch (st.type) {
   case T_FILE:
-    pname(argv[1]);
-    printf(1, "%d %d %d\n", st.type, st.ino, st.size);
+    printf(1, "%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
     break;
+
   case T_DIR:
-    sz = st.size;
-    for (off = 0; off < sz; off += sizeof(de)) {
-      if (read(fd, &de, sizeof(de)) != sizeof(de)) {
-        printf(1, "ls: read error\n");
-        break;
+    if (strlen(path) + 1 + DIRSIZ + 1 > sizeof buf) {
+      printf(1, "ls: path too long\n");
+      break;
+    }
+    strcpy(buf, path);
+    p = buf + strlen(buf);
+    *p++ = '/';
+    while (read(fd, &de, sizeof(de)) == sizeof(de)) {
+      if (de.inum == 0)
+        continue;
+      memmove(p, de.name, DIRSIZ);
+      p[DIRSIZ] = 0;
+      if (stat(buf, &st) < 0) {
+        printf(1, "ls: cannot stat %s\n", buf);
+        continue;
       }
-      if (de.inum != 0) {
-        p = buf;
-        if (argc == 2) {
-          strcpy(p, argv[1]);
-          p += strlen(p);
-          if (*(p - 1) != '/')
-            *p++ = '/';
-        }
-        memmove(p, de.name, DIRSIZ);
-        p[DIRSIZ] = 0;
-        if (stat(buf, &st) < 0) {
-          printf(1, "stat: failed %s\n", de.name);
-          continue;
-        }
-        pname(de.name);
-        printf(1, "%d %d %d\n", st.type, de.inum, st.size);
-      }
+      printf(1, "%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
     }
     break;
   }
   close(fd);
+}
+
+int main(int argc, char *argv[]) {
+  int i;
+
+  if (argc < 2) {
+    ls(".");
+    exit();
+  }
+  for (i = 1; i < argc; i++)
+    ls(argv[i]);
   exit();
 }
