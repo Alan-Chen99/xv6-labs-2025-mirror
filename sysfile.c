@@ -279,7 +279,7 @@ int sys_mknod(void) {
   struct inode *ip;
   char *path;
   int len;
-  int type, major, minor;
+  int major, minor;
 
   if ((len = argstr(0, &path)) < 0 || argint(1, &major) < 0 ||
       argint(2, &minor) < 0 || (ip = mkpath(path, 0, T_DEV, major, minor)) == 0)
