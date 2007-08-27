@@ -192,7 +192,7 @@ int sys_unlink(void) {
   return 0;
 }
 
-static struct inode *mkpath(char *path, int canexist, short type, short major,
+static struct inode *create(char *path, int canexist, short type, short major,
                             short minor) {
   uint off;
   struct inode *ip, *dp;
@@ -219,8 +219,6 @@ static struct inode *mkpath(char *path, int canexist, short type, short major,
   ilock(ip);
   ip->major = major;
   ip->minor = minor;
-  ip->size = 0;
-  ip->nlink = 1;
   iupdate(ip);
 
   if (dirlink(dp, name, ip->inum) < 0) {
@@ -235,7 +233,7 @@ static struct inode *mkpath(char *path, int canexist, short type, short major,
     iupdate(dp);
     // No ip->nlink++ for ".": avoid cyclic ref count.
     if (dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
-      panic("mkpath dots");
+      panic("create dots");
   }
   iunlockput(dp);
   return ip;
@@ -251,7 +249,7 @@ int sys_open(void) {
     return -1;
 
   if (omode & O_CREATE) {
-    if ((ip = mkpath(path, 1, T_FILE, 0, 0)) == 0)
+    if ((ip = create(path, 1, T_FILE, 0, 0)) == 0)
       return -1;
   } else {
     if ((ip = namei(path)) == 0)
@@ -274,16 +272,8 @@ int sys_open(void) {
   f->type = FD_INODE;
   f->ip = ip;
   f->off = 0;
-  if (omode & O_RDWR) {
-    f->readable = 1;
-    f->writable = 1;
-  } else if (omode & O_WRONLY) {
-    f->readable = 0;
-    f->writable = 1;
-  } else {
-    f->readable = 1;
-    f->writable = 0;
-  }
+  f->readable = !(omode & O_WRONLY);
+  f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
 
   return fd;
 }
@@ -295,7 +285,7 @@ int sys_mknod(void) {
   int major, minor;
 
   if ((len = argstr(0, &path)) < 0 || argint(1, &major) < 0 ||
-      argint(2, &minor) < 0 || (ip = mkpath(path, 0, T_DEV, major, minor)) == 0)
+      argint(2, &minor) < 0 || (ip = create(path, 0, T_DEV, major, minor)) == 0)
     return -1;
   iunlockput(ip);
   return 0;
@@ -305,7 +295,7 @@ int sys_mkdir(void) {
   char *path;
   struct inode *ip;
 
-  if (argstr(0, &path) < 0 || (ip = mkpath(path, 0, T_DIR, 0, 0)) == 0)
+  if (argstr(0, &path) < 0 || (ip = create(path, 0, T_DIR, 0, 0)) == 0)
     return -1;
   iunlockput(ip);
   return 0;
