@@ -35,7 +35,6 @@ void main0(void) {
   asm volatile("movl %0, %%ebp" : : "r"(cpus[bcpu].mpstack + MPSTACK));
 
   lapic_init(bcpu);
-
   cprintf("\ncpu%d: starting xv6\n\n", cpu());
 
   pinit();        // process table
@@ -51,10 +50,7 @@ void main0(void) {
   console_init(); // I/O devices & their interrupts
   ide_init();     // disk
   mp_startthem(); // other CPUs
-  if (ismp) {
-    lapic_timerinit();  // smp timer
-    lapic_enableintr(); // local interrupts
-  } else
+  if (!ismp)
     pit8253_timerinit(); // uniprocessor timer
   userinit();            // first user process
 
@@ -70,8 +66,6 @@ void mpmain(void) {
   cprintf("cpu%d: starting\n", cpu());
   idtinit();
   lapic_init(cpu());
-  lapic_timerinit();
-  lapic_enableintr();
   setupsegs(0);
 
   cpuid(0, 0, 0, 0, 0); // memory barrier
