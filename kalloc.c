@@ -87,18 +87,15 @@ out:
 // Returns 0 if the memory cannot be allocated.
 char *kalloc(int n) {
   char *p;
-  struct run *r, **rr;
+  struct run *r, **rp;
 
   if (n % PAGE || n <= 0)
     panic("kalloc");
 
   acquire(&kalloc_lock);
-
-  rr = &freelist;
-  while (*rr) {
-    r = *rr;
+  for (rp = &freelist; (r = *rp) != 0; rp = &r->next) {
     if (r->len == n) {
-      *rr = r->next;
+      *rp = r->next;
       release(&kalloc_lock);
       return (char *)r;
     }
@@ -108,9 +105,9 @@ char *kalloc(int n) {
       release(&kalloc_lock);
       return p;
     }
-    rr = &(*rr)->next;
   }
   release(&kalloc_lock);
+
   cprintf("kalloc: out of memory\n");
   return 0;
 }
