@@ -73,7 +73,7 @@ int sys_dup(void) {
     return -1;
   if ((fd = fdalloc(f)) < 0)
     return -1;
-  fileincref(f);
+  filedup(f);
   return fd;
 }
 
