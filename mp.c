@@ -71,38 +71,36 @@ static int mp_detect(void) {
   uint length;
 
   if ((mp = mp_search()) == 0 || mp->physaddr == 0)
-    return 1;
+    return -1;
 
   pcmp = (struct mpctb *)mp->physaddr;
-  if (memcmp(pcmp, "PCMP", 4))
-    return 2;
+  if (memcmp(pcmp, "PCMP", 4) != 0)
+    return -1;
+  if (pcmp->version != 1 && pcmp->version != 4)
+    return -1;
 
   length = pcmp->length;
   sum = 0;
   for (p = (uchar *)pcmp; length; length--)
     sum += *p++;
-
-  if (sum || (pcmp->version != 1 && pcmp->version != 4))
-    return 3;
+  if (sum != 0)
+    return -1;
 
   return 0;
 }
 
 void mp_init(void) {
-  int r;
+  int i, r;
   uchar *p, *e;
   struct mpctb *mpctb;
   struct mppe *proc;
   struct mpbe *bus;
   struct mpioapic *ioapic;
   struct mpie *intr;
-  int i;
-  uchar byte;
 
   ncpu = 0;
-  if ((r = mp_detect()) != 0) {
+  if (mp_detect() < 0)
     return;
-  }
 
   ismp = 1;
 
@@ -154,11 +152,10 @@ void mp_init(void) {
   }
 
   if (mp->imcrp) {
-    // It appears that Bochs doesn't support IMCR, so code won't run.
-    outb(0x22, 0x70); // Select IMCR
-    byte = inb(0x23); // Current contents
-    byte |= 0x01;     // Mask external INTR
-    outb(0x23, byte); // Disconnect 8259s/NMI
+    // Bochs doesn't support IMCR, so this doesn't run on Bochs.
+    // But it would on real hardware.
+    outb(0x22, 0x70);          // Select IMCR
+    outb(0x23, inb(0x23) | 1); // Mask external interrupts.
   }
 }
 
