@@ -131,7 +131,7 @@ struct {
 void iinit(void) { initlock(&icache.lock, "icache.lock"); }
 
 // Find the inode with number inum on device dev
-// and return the in-memory copy. h
+// and return the in-memory copy.
 static struct inode *iget(uint dev, uint inum) {
   struct inode *ip, *empty;
 
@@ -233,6 +233,7 @@ void iput(struct inode *ip) {
   release(&icache.lock);
 }
 
+// Common idiom: unlock, then put.
 void iunlockput(struct inode *ip) {
   iunlock(ip);
   iput(ip);
@@ -249,7 +250,7 @@ struct inode *ialloc(uint dev, short type) {
   readsb(dev, &sb);
   for (inum = 1; inum < sb.ninodes; inum++) { // loop over inode blocks
     bp = bread(dev, IBLOCK(inum));
-    dip = &((struct dinode *)(bp->data))[inum % IPB];
+    dip = (struct dinode *)(bp->data) + inum % IPB;
     if (dip->type == 0) { // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
@@ -268,7 +269,7 @@ void iupdate(struct inode *ip) {
   struct dinode *dip;
 
   bp = bread(ip->dev, IBLOCK(ip->inum));
-  dip = &((struct dinode *)(bp->data))[ip->inum % IPB];
+  dip = (struct dinode *)(bp->data) + ip->inum % IPB;
   dip->type = ip->type;
   dip->major = ip->major;
   dip->minor = ip->minor;
@@ -284,7 +285,7 @@ void iupdate(struct inode *ip) {
 //
 //  The contents (data) associated with each inode is stored
 //  in a sequence of blocks on the disk.  The first NDIRECT blocks
-//  are stored in ip->addrs[].  The next NINDIRECT blocks are
+//  are listed in ip->addrs[].  The next NINDIRECT blocks are
 //  listed in the block ip->addrs[INDIRECT].
 
 // Return the disk block address of the nth block in inode ip.
@@ -378,7 +379,7 @@ int readi(struct inode *ip, char *dst, uint off, uint n) {
     return devsw[ip->major].read(ip->minor, dst, n);
   }
 
-  if (off + n < off)
+  if (off > ip->size || off + n < off)
     return -1;
   if (off + n > ip->size)
     n = ip->size - off;
@@ -475,7 +476,7 @@ int dirlink(struct inode *dp, char *name, uint ino) {
   // Look for an empty dirent.
   for (off = 0; off < dp->size; off += sizeof(de)) {
     if (readi(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
-      panic("dirwrite read");
+      panic("dirlink read");
     if (de.inum == 0)
       break;
   }
@@ -483,7 +484,7 @@ int dirlink(struct inode *dp, char *name, uint ino) {
   strncpy(de.name, name, DIRSIZ);
   de.inum = ino;
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
-    panic("dirwrite");
+    panic("dirlink");
 
   return 0;
 }
@@ -499,7 +500,7 @@ int dirlink(struct inode *dp, char *name, uint ino) {
 //
 // Examples:
 //   skipelem("a/bb/c", name) = "bb/c", setting name = "a"
-//   skipelem("///a/bb", name) = "bb", setting name="a"
+//   skipelem("///a//bb", name) = "bb", setting name = "a"
 //   skipelem("", name) = skipelem("////", name) = 0
 //
 static char *skipelem(char *path, char *name) {
@@ -525,24 +526,12 @@ static char *skipelem(char *path, char *name) {
   return path;
 }
 
-static struct inode *_namei(char *, int, char *);
-
-struct inode *namei(char *path) {
-  char name[DIRSIZ];
-  return _namei(path, 0, name);
-}
-
-struct inode *nameiparent(char *path, char *name) {
-  return _namei(path, 1, name);
-}
-
 // Look up and return the inode for a path name.
 // If parent is set, return the inode for the parent
 // and write the final path element to name, which
 // should have room for DIRSIZ bytes.
 static struct inode *_namei(char *path, int parent, char *name) {
   struct inode *ip, *next;
-  uint off;
 
   if (*path == '/')
     ip = iget(ROOTDEV, 1);
@@ -555,14 +544,12 @@ static struct inode *_namei(char *path, int parent, char *name) {
       iunlockput(ip);
       return 0;
     }
-
     if (parent && *path == '\0') {
       // Stop one level early.
       iunlock(ip);
       return ip;
     }
-
-    if ((next = dirlookup(ip, name, &off)) == 0) {
+    if ((next = dirlookup(ip, name, 0)) == 0) {
       iunlockput(ip);
       return 0;
     }
@@ -574,4 +561,12 @@ static struct inode *_namei(char *path, int parent, char *name) {
     return 0;
   }
   return ip;
+}
+
+struct inode *namei(char *path) {
+  char name[DIRSIZ];
+  return _namei(path, 0, name);
+}
+struct inode *nameiparent(char *path, char *name) {
+  return _namei(path, 1, name);
 }
