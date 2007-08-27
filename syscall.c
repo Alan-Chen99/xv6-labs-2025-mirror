@@ -92,10 +92,10 @@ extern int sys_open(void);
 extern int sys_pipe(void);
 extern int sys_read(void);
 extern int sys_sbrk(void);
+extern int sys_sleep(void);
 extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
-extern int sys_yield(void);
 
 static int (*syscalls[])(void) = {
     [SYS_chdir] sys_chdir, [SYS_close] sys_close,   [SYS_dup] sys_dup,
@@ -103,8 +103,8 @@ static int (*syscalls[])(void) = {
     [SYS_fstat] sys_fstat, [SYS_getpid] sys_getpid, [SYS_kill] sys_kill,
     [SYS_link] sys_link,   [SYS_mkdir] sys_mkdir,   [SYS_mknod] sys_mknod,
     [SYS_open] sys_open,   [SYS_pipe] sys_pipe,     [SYS_read] sys_read,
-    [SYS_sbrk] sys_sbrk,   [SYS_unlink] sys_unlink, [SYS_wait] sys_wait,
-    [SYS_write] sys_write, [SYS_yield] sys_yield,
+    [SYS_sbrk] sys_sbrk,   [SYS_sleep] sys_sleep,   [SYS_unlink] sys_unlink,
+    [SYS_wait] sys_wait,   [SYS_write] sys_write,
 };
 
 void syscall(void) {
