@@ -3,6 +3,7 @@
 
 static inline uchar inb(ushort port) {
   uchar data;
+
   asm volatile("in %1,%0" : "=a"(data) : "d"(port));
   return data;
 }
@@ -68,6 +69,7 @@ static inline void write_eflags(uint eflags) {
 static inline void cpuid(uint info, uint *eaxp, uint *ebxp, uint *ecxp,
                          uint *edxp) {
   uint eax, ebx, ecx, edx;
+
   asm volatile("cpuid"
                : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
                : "a"(info));
