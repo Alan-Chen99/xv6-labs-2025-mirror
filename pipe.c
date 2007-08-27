@@ -23,12 +23,10 @@ int pipe_alloc(struct file **f0, struct file **f1) {
 
   p = 0;
   *f0 = *f1 = 0;
-  if ((*f0 = filealloc()) == 0)
-    goto oops;
-  if ((*f1 = filealloc()) == 0)
-    goto oops;
+  if ((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
+    goto bad;
   if ((p = (struct pipe *)kalloc(PAGE)) == 0)
-    goto oops;
+    goto bad;
   p->readopen = 1;
   p->writeopen = 1;
   p->writep = 0;
@@ -44,7 +42,7 @@ int pipe_alloc(struct file **f0, struct file **f1) {
   (*f1)->pipe = p;
   return 0;
 
-oops:
+bad:
   if (p)
     kfree((char *)p, PAGE);
   if (*f0) {
@@ -99,10 +97,10 @@ int pipe_read(struct pipe *p, char *addr, int n) {
   int i;
 
   acquire(&p->lock);
-  while (p->readp == p->writep) {
-    if (p->writeopen == 0 || cp->killed) {
+  while (p->readp == p->writep && p->writeopen) {
+    if (cp->killed) {
       release(&p->lock);
-      return 0;
+      return -1;
     }
     sleep(&p->readp, &p->lock);
   }
