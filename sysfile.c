@@ -219,6 +219,7 @@ static struct inode *create(char *path, int canexist, short type, short major,
   ilock(ip);
   ip->major = major;
   ip->minor = minor;
+  ip->nlink = 1;
   iupdate(ip);
 
   if (dirlink(dp, name, ip->inum) < 0) {
