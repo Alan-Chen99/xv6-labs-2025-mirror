@@ -90,7 +90,7 @@ static int mp_detect(void) {
 }
 
 void mp_init(void) {
-  int i, r;
+  int i;
   uchar *p, *e;
   struct mpctb *mpctb;
   struct mppe *proc;
@@ -109,9 +109,9 @@ void mp_init(void) {
   // is guaranteed to be in order such that only one pass is necessary.
 
   mpctb = (struct mpctb *)mp->physaddr;
-  lapicaddr = (uint *)mpctb->lapicaddr;
-  p = ((uchar *)mpctb) + sizeof(struct mpctb);
-  e = ((uchar *)mpctb) + mpctb->length;
+  lapic = (uint *)mpctb->lapicaddr;
+  p = (uchar *)mpctb + sizeof(*mpctb);
+  e = (uchar *)mpctb + mpctb->length;
 
   while (p < e) {
     switch (*p) {
