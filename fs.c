@@ -328,7 +328,6 @@ static uint bmap(struct inode *ip, uint bn, int alloc) {
   panic("bmap: out of range");
 }
 
-// PAGEBREAK: 30
 // Truncate inode (discard contents).
 static void itrunc(struct inode *ip) {
   int i, j;
