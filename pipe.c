@@ -17,7 +17,7 @@ struct pipe {
   char data[PIPESIZE];
 };
 
-int pipe_alloc(struct file **f0, struct file **f1) {
+int pipealloc(struct file **f0, struct file **f1) {
   struct pipe *p;
 
   p = 0;
@@ -55,7 +55,7 @@ bad:
   return -1;
 }
 
-void pipe_close(struct pipe *p, int writable) {
+void pipeclose(struct pipe *p, int writable) {
   acquire(&p->lock);
   if (writable) {
     p->writeopen = 0;
@@ -71,7 +71,7 @@ void pipe_close(struct pipe *p, int writable) {
 }
 
 // PAGEBREAK: 20
-int pipe_write(struct pipe *p, char *addr, int n) {
+int pipewrite(struct pipe *p, char *addr, int n) {
   int i;
 
   acquire(&p->lock);
@@ -92,7 +92,7 @@ int pipe_write(struct pipe *p, char *addr, int n) {
   return i;
 }
 
-int pipe_read(struct pipe *p, char *addr, int n) {
+int piperead(struct pipe *p, char *addr, int n) {
   int i;
 
   acquire(&p->lock);
