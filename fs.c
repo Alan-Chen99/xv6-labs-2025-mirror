@@ -525,9 +525,8 @@ static char *skipelem(char *path, char *name) {
 }
 
 // Look up and return the inode for a path name.
-// If parent is set, return the inode for the parent
-// and write the final path element to name, which
-// should have room for DIRSIZ bytes.
+// If parent != 0, return the inode for the parent and copy the final
+// path element into name, which must have room for DIRSIZ bytes.
 static struct inode *_namei(char *path, int parent, char *name) {
   struct inode *ip, *next;
 
@@ -565,6 +564,7 @@ struct inode *namei(char *path) {
   char name[DIRSIZ];
   return _namei(path, 0, name);
 }
+
 struct inode *nameiparent(char *path, char *name) {
   return _namei(path, 1, name);
 }
