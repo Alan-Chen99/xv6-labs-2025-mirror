@@ -40,7 +40,6 @@ void trap(struct trapframe *tf) {
   // during interrupt handler.  Decrement before returning.
   cpus[cpu()].nlock++;
 
-  // PAGEBREAK: 10
   switch (tf->trapno) {
   case IRQ_OFFSET + IRQ_TIMER:
     if (cpu() == 0) {
@@ -51,17 +50,14 @@ void trap(struct trapframe *tf) {
     }
     lapic_eoi();
     break;
-
   case IRQ_OFFSET + IRQ_IDE:
     ide_intr();
     lapic_eoi();
     break;
-
   case IRQ_OFFSET + IRQ_KBD:
     kbd_intr();
     lapic_eoi();
     break;
-
   case IRQ_OFFSET + IRQ_SPURIOUS:
     cprintf("spurious interrupt from cpu %d eip %x\n", cpu(), tf->eip);
     lapic_eoi();

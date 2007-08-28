@@ -55,7 +55,7 @@ int main(void) {
 }
 
 // Additional processors start here.
-void mpmain(void) {
+static void mpmain(void) {
   cprintf("cpu%d: starting\n", cpu());
   idtinit();
   lapic_init(cpu());
