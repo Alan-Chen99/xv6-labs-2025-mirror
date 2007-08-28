@@ -14,7 +14,7 @@
 
 void readseg(uint, uint, uint);
 
-void cmain(void) {
+void bootmain(void) {
   struct elfhdr *elf;
   struct proghdr *ph, *eph;
   void (*entry)(void);
