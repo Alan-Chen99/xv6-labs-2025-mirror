@@ -289,7 +289,7 @@ void wakeup(void *chan) {
 // Kill the process with the given pid.
 // Process won't actually exit until it returns
 // to user space (see trap in trap.c).
-int proc_kill(int pid) {
+int kill(int pid) {
   struct proc *p;
 
   acquire(&proc_table_lock);
@@ -310,7 +310,7 @@ int proc_kill(int pid) {
 // Exit the current process.  Does not return.
 // Exited processes remain in the zombie state
 // until their parent calls wait() to find out they exited.
-void proc_exit(void) {
+void exit(void) {
   struct proc *p;
   int fd;
 
@@ -351,7 +351,7 @@ void proc_exit(void) {
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
-int proc_wait(void) {
+int wait(void) {
   struct proc *p;
   int i, havekids, pid;
 

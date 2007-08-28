@@ -28,11 +28,11 @@ void idtinit(void) { lidt(idt, sizeof(idt)); }
 void trap(struct trapframe *tf) {
   if (tf->trapno == T_SYSCALL) {
     if (cp->killed)
-      proc_exit();
+      exit();
     cp->tf = tf;
     syscall();
     if (cp->killed)
-      proc_exit();
+      exit();
     return;
   }
 
@@ -81,7 +81,7 @@ void trap(struct trapframe *tf) {
   // (If it is still executing in the kernel, let it keep running
   // until it gets to the regular system call return.)
   if (cp && cp->killed && (tf->cs & 3) == DPL_USER)
-    proc_exit();
+    exit();
 
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.

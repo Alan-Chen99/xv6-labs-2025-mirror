@@ -14,18 +14,18 @@ int sys_fork(void) {
 }
 
 int sys_exit(void) {
-  proc_exit();
+  exit();
   return 0; // not reached
 }
 
-int sys_wait(void) { return proc_wait(); }
+int sys_wait(void) { return wait(); }
 
 int sys_kill(void) {
   int pid;
 
   if (argint(0, &pid) < 0)
     return -1;
-  return proc_kill(pid);
+  return kill(pid);
 }
 
 int sys_getpid(void) { return cp->pid; }
