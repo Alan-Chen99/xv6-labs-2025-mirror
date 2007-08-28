@@ -63,7 +63,7 @@ void runcmd(struct cmd *cmd) {
   struct redircmd *rcmd;
 
   if (cmd == 0)
-    return;
+    exit();
 
   switch (cmd->type) {
   default:
