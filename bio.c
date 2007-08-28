@@ -40,7 +40,8 @@ void binit(void) {
 
   initlock(&buf_table_lock, "buf_table");
 
-  // Create linked list of buffers
+  // PAGEBREAK!
+  //  Create linked list of buffers
   bufhead.prev = &bufhead;
   bufhead.next = &bufhead;
   for (b = buf; b < buf + NBUF; b++) {
