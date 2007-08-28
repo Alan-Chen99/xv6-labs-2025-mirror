@@ -187,7 +187,7 @@ void ilock(struct inode *ip) {
 
   if (!(ip->flags & I_VALID)) {
     bp = bread(ip->dev, IBLOCK(ip->inum));
-    dip = &((struct dinode *)(bp->data))[ip->inum % IPB];
+    dip = (struct dinode *)bp->data + ip->inum % IPB;
     ip->type = dip->type;
     ip->major = dip->major;
     ip->minor = dip->minor;
@@ -249,7 +249,7 @@ struct inode *ialloc(uint dev, short type) {
   readsb(dev, &sb);
   for (inum = 1; inum < sb.ninodes; inum++) { // loop over inode blocks
     bp = bread(dev, IBLOCK(inum));
-    dip = (struct dinode *)(bp->data) + inum % IPB;
+    dip = (struct dinode *)bp->data + inum % IPB;
     if (dip->type == 0) { // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
@@ -268,7 +268,7 @@ void iupdate(struct inode *ip) {
   struct dinode *dip;
 
   bp = bread(ip->dev, IBLOCK(ip->inum));
-  dip = (struct dinode *)(bp->data) + ip->inum % IPB;
+  dip = (struct dinode *)bp->data + ip->inum % IPB;
   dip->type = ip->type;
   dip->major = ip->major;
   dip->minor = ip->minor;

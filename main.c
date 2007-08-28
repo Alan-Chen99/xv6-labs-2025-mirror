@@ -5,14 +5,13 @@
 #include "proc.h"
 #include "x86.h"
 
-extern char edata[], end[];
-
-void bootothers(void);
+static void bootothers(void);
 
 // Bootstrap processor starts running C code here.
 int main(void) {
   int i;
   static volatile int bcpu; // cannot be on stack
+  extern char edata[], end[];
 
   // clear BSS
   memset(edata, 0, end - edata);
@@ -61,7 +60,6 @@ void mpmain(void) {
   idtinit();
   lapic_init(cpu());
   setupsegs(0);
-
   cpuid(0, 0, 0, 0, 0); // memory barrier
   cpus[cpu()].booted = 1;
 
@@ -72,7 +70,7 @@ void mpmain(void) {
   scheduler();
 }
 
-void bootothers(void) {
+static void bootothers(void) {
   extern uchar _binary_bootother_start[], _binary_bootother_size[];
   uchar *code;
   struct cpu *c;
@@ -85,7 +83,7 @@ void bootothers(void) {
     if (c == cpus + cpu()) // We've started already.
       continue;
 
-    // Set target %esp, %eip
+    // Fill in %esp, %eip and start code on cpu.
     *(void **)(code - 4) = c->mpstack + MPSTACK;
     *(void **)(code - 8) = mpmain;
     lapic_startap(c->apicid, (uint)code);
