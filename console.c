@@ -67,7 +67,7 @@ static void cga_putc(int c) {
   crt[pos] = ' ' | 0x0700;
 }
 
-static void cons_putc(int c) {
+void cons_putc(int c) {
   if (panicked) {
     cli();
     for (;;)
