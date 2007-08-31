@@ -18,8 +18,8 @@ void initlock(struct spinlock *lock, char *name) {
 
 // Acquire the lock.
 // Loops (spins) until the lock is acquired.
-// (Because contention is handled by spinning,
-// must not go to sleep holding any locks.)
+// Holding a lock for a long time may cause
+// other CPUs to waste time spinning to acquire it.
 void acquire(struct spinlock *lock) {
   if (holding(lock))
     panic("acquire");
