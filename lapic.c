@@ -113,6 +113,8 @@ void lapic_startap(uchar apicid, uint addr) {
   microdelay(10);
 
   // Send startup IPI (twice!) to enter bootstrap code.
+  // Regular hardware wants it twice, but Bochs complains.
+  // Too bad for Bochs.
   for (i = 0; i < 2; i++) {
     lapic[ICRHI] = apicid << 24;
     lapic[ICRLO] = STARTUP | (addr >> 12);
