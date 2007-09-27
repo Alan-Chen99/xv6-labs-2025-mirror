@@ -65,7 +65,7 @@ void setupsegs(struct proc *p) {
   c = &cpus[cpu()];
   c->ts.ss0 = SEG_PROCSTACK << 3;
   if (p)
-    c->ts.esp0 = (uint)(p->kstack + KSTACKSIZE);
+    c->ts.esp0 = (uint)(p->kstack + KSTACKTOP);
   else
     c->ts.esp0 = 0xffffffff;
 
@@ -106,7 +106,8 @@ struct proc *copyproc(struct proc *p) {
     np->state = UNUSED;
     return 0;
   }
-  np->tf = (struct trapframe *)(np->kstack + KSTACKSIZE) - 1;
+  *(void **)(np->kstack + KSTACKTOP) = np;
+  np->tf = (struct trapframe *)(np->kstack + KSTACKTOP) - 1;
 
   if (p) { // Copy process state from p.
     np->parent = p;
@@ -171,12 +172,10 @@ void userinit(void) {
 // Return currently running process.
 // XXX comment better
 struct proc *curproc(void) {
-  struct proc *p;
+  uint esp;
 
-  pushcli();
-  p = cpus[cpu()].curproc;
-  popcli();
-  return p;
+  asm volatile("movl %%esp, %0" : "=a"(esp));
+  return *(struct proc **)((esp & ~(KSTACKSIZE - 1)) + KSTACKTOP);
 }
 
 // PAGEBREAK: 42
@@ -205,14 +204,12 @@ void scheduler(void) {
       // Switch to chosen process.  It is the process's job
       // to release proc_table_lock and then reacquire it
       // before jumping back to us.
-      c->curproc = p;
       setupsegs(p);
       p->state = RUNNING;
       swtch(&c->context, &p->context);
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      c->curproc = 0;
       setupsegs(0);
     }
 
@@ -221,7 +218,7 @@ void scheduler(void) {
 }
 
 // Enter scheduler.  Must already hold proc_table_lock
-// and have changed curproc[cpu()]->state.
+// and have changed cp->state.
 void sched(void) {
   if (read_eflags() & FL_IF)
     panic("sched interruptible");
