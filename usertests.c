@@ -1185,9 +1185,6 @@ void forktest(void) {
 int main(int argc, char *argv[]) {
   printf(1, "usertests starting\n");
 
-  for (;;)
-    concreate();
-
   if (open("usertests.ran", 0) >= 0) {
     printf(1, "already ran user tests -- rebuild fs.img\n");
     exit();
@@ -1208,7 +1205,6 @@ int main(int argc, char *argv[]) {
   fourteen();
   bigfile();
   subdir();
-  bigdir(); // slow
   concreate();
   linktest();
   unlinkread();
@@ -1218,6 +1214,7 @@ int main(int argc, char *argv[]) {
   dirfile();
   iref();
   forktest();
+  bigdir(); // slow
 
   exectest();
 
