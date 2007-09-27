@@ -38,7 +38,6 @@ int sys_sbrk(void) {
     return -1;
   if ((addr = growproc(n)) < 0)
     return -1;
-  setupsegs(cp);
   return addr;
 }
 

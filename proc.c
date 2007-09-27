@@ -9,7 +9,6 @@
 struct spinlock proc_table_lock;
 
 struct proc proc[NPROC];
-struct proc *curproc[NCPU];
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -53,6 +52,7 @@ int growproc(int n) {
   cp->mem = newmem;
   kfree(oldmem, cp->sz);
   cp->sz += n;
+  setupsegs(cp);
   return cp->sz - n;
 }
 
@@ -61,6 +61,7 @@ int growproc(int n) {
 void setupsegs(struct proc *p) {
   struct cpu *c;
 
+  splhi();
   c = &cpus[cpu()];
   c->ts.ss0 = SEG_KDATA << 3;
   if (p)
@@ -83,6 +84,7 @@ void setupsegs(struct proc *p) {
 
   lgdt(c->gdt, sizeof(c->gdt));
   ltr(SEG_TSS << 3);
+  spllo();
 }
 
 // Create a new process copying p as the parent.
@@ -162,6 +164,17 @@ void userinit(void) {
   initproc = p;
 }
 
+// Return currently running process.
+// XXX comment better
+struct proc *curproc(void) {
+  struct proc *p;
+
+  splhi();
+  p = cpus[cpu()].curproc;
+  spllo();
+  return p;
+}
+
 // PAGEBREAK: 42
 //  Per-CPU process scheduler.
 //  Each CPU calls scheduler() after setting itself up.
@@ -172,12 +185,14 @@ void userinit(void) {
 //       via swtch back to the scheduler.
 void scheduler(void) {
   struct proc *p;
+  struct cpu *c;
   int i;
 
   for (;;) {
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);
 
+    c = &cpus[cpu()];
     for (i = 0; i < NPROC; i++) {
       p = &proc[i];
       if (p->state != RUNNABLE)
@@ -186,14 +201,14 @@ void scheduler(void) {
       // Switch to chosen process.  It is the process's job
       // to release proc_table_lock and then reacquire it
       // before jumping back to us.
-      cp = p;
+      c->curproc = p;
       setupsegs(p);
       p->state = RUNNING;
-      swtch(&cpus[cpu()].context, &p->context);
+      swtch(&c->context, &p->context);
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      cp = 0;
+      c->curproc = 0;
       setupsegs(0);
     }
 
@@ -204,11 +219,13 @@ void scheduler(void) {
 // Enter scheduler.  Must already hold proc_table_lock
 // and have changed curproc[cpu()]->state.
 void sched(void) {
+  if (read_eflags() & FL_IF)
+    panic("sched interruptible");
   if (cp->state == RUNNING)
     panic("sched running");
   if (!holding(&proc_table_lock))
     panic("sched proc_table_lock");
-  if (cpus[cpu()].nlock != 1)
+  if (cpus[cpu()].nsplhi != 1)
     panic("sched locks");
 
   swtch(&cp->context, &cpus[cpu()].context);
