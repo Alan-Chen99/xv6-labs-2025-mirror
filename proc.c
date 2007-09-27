@@ -165,7 +165,6 @@ void userinit(void) {
 }
 
 // Return currently running process.
-// XXX comment better
 struct proc *curproc(void) {
   struct proc *p;
 
@@ -188,11 +187,13 @@ void scheduler(void) {
   struct cpu *c;
   int i;
 
+  c = &cpus[cpu()];
   for (;;) {
+    // Enable interrupts on this processor.
+    sti();
+
     // Loop over process table looking for process to run.
     acquire(&proc_table_lock);
-
-    c = &cpus[cpu()];
     for (i = 0; i < NPROC; i++) {
       p = &proc[i];
       if (p->state != RUNNABLE)
@@ -211,7 +212,6 @@ void scheduler(void) {
       c->curproc = 0;
       setupsegs(0);
     }
-
     release(&proc_table_lock);
   }
 }
