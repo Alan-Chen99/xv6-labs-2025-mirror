@@ -61,7 +61,7 @@ int growproc(int n) {
 void setupsegs(struct proc *p) {
   struct cpu *c;
 
-  splhi();
+  pushcli();
   c = &cpus[cpu()];
   c->ts.ss0 = SEG_PROCSTACK << 3;
   if (p)
@@ -87,7 +87,7 @@ void setupsegs(struct proc *p) {
 
   lgdt(c->gdt, sizeof(c->gdt));
   ltr(SEG_TSS << 3);
-  spllo();
+  popcli();
 }
 
 // Create a new process copying p as the parent.
@@ -173,9 +173,9 @@ void userinit(void) {
 struct proc *curproc(void) {
   struct proc *p;
 
-  splhi();
+  pushcli();
   p = cpus[cpu()].curproc;
-  spllo();
+  popcli();
   return p;
 }
 
@@ -229,7 +229,7 @@ void sched(void) {
     panic("sched running");
   if (!holding(&proc_table_lock))
     panic("sched proc_table_lock");
-  if (cpus[cpu()].nsplhi != 1)
+  if (cpus[cpu()].ncli != 1)
     panic("sched locks");
 
   swtch(&cp->context, &cpus[cpu()].context);

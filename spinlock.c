@@ -21,7 +21,7 @@ void initlock(struct spinlock *lock, char *name) {
 // Holding a lock for a long time may cause
 // other CPUs to waste time spinning to acquire it.
 void acquire(struct spinlock *lock) {
-  splhi();
+  pushcli();
   if (holding(lock))
     panic("acquire");
 
@@ -53,7 +53,7 @@ void release(struct spinlock *lock) {
   cpuid(0, 0, 0, 0, 0); // memory barrier (see Ch 7, IA-32 manual vol 3)
 
   lock->locked = 0;
-  spllo();
+  popcli();
 }
 
 // Record the current call stack in pcs[] by following the %ebp chain.
@@ -80,16 +80,16 @@ int holding(struct spinlock *lock) {
 // XXX!
 // Better names?  Better functions?
 
-void splhi(void) {
+void pushcli(void) {
   cli();
-  cpus[cpu()].nsplhi++;
+  cpus[cpu()].ncli++;
 }
 
-void spllo(void) {
+void popcli(void) {
   if (read_eflags() & FL_IF)
-    panic("spllo - interruptible");
-  if (--cpus[cpu()].nsplhi < 0)
-    panic("spllo");
-  if (cpus[cpu()].nsplhi == 0)
+    panic("popcli - interruptible");
+  if (--cpus[cpu()].ncli < 0)
+    panic("popcli");
+  if (cpus[cpu()].ncli == 0)
     sti();
 }
