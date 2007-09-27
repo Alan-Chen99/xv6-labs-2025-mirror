@@ -40,14 +40,12 @@ int main(void) {
   userinit();     // first user process
 
   // Allocate scheduler stacks and boot the other CPUs.
-  for (i = 0; i < ncpu; i++) {
+  for (i = 0; i < ncpu; i++)
     cpus[i].stack = kalloc(KSTACKSIZE);
-    *(void **)(cpus[i].stack + KSTACKTOP) = 0;
-  }
   bootothers();
 
   // Switch to our scheduler stack and continue with mpmain.
-  asm volatile("movl %0, %%esp" : : "r"(cpus[bcpu].stack + KSTACKTOP));
+  asm volatile("movl %0, %%esp" : : "r"(cpus[bcpu].stack + KSTACKSIZE));
   mpmain();
 }
 
@@ -80,7 +78,7 @@ static void bootothers(void) {
       continue;
 
     // Fill in %esp, %eip and start code on cpu.
-    *(void **)(code - 4) = c->stack + KSTACKTOP;
+    *(void **)(code - 4) = c->stack + KSTACKSIZE;
     *(void **)(code - 8) = mpmain;
     lapic_startap(c->apicid, (uint)code);
 
