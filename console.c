@@ -260,7 +260,7 @@ void console_init(void) {
 
   devsw[CONSOLE].write = console_write;
   devsw[CONSOLE].read = console_read;
-  // use_console_lock = 1;
+  use_console_lock = 1;
 
   pic_enable(IRQ_KBD);
   ioapic_enable(IRQ_KBD, 0);
