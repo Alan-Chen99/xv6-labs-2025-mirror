@@ -72,6 +72,7 @@ static inline void write_eflags(uint eflags) {
   asm volatile("pushl %0; popfl" : : "r"(eflags));
 }
 
+// XXX: Kill this if not used.
 static inline void cpuid(uint info, uint *eaxp, uint *ebxp, uint *ecxp,
                          uint *edxp) {
   uint eax, ebx, ecx, edx;

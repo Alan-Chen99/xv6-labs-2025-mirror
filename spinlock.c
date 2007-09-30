@@ -10,6 +10,9 @@
 
 extern int use_console_lock;
 
+// Barrier to gcc's instruction reordering.
+static void inline gccbarrier(void) { asm volatile("" : : : "memory"); }
+
 void initlock(struct spinlock *lock, char *name) {
   lock->name = name;
   lock->locked = 0;
@@ -28,10 +31,6 @@ void acquire(struct spinlock *lock) {
   while (cmpxchg(0, 1, &lock->locked) == 1)
     ;
 
-  // Serialize instructions: now that lock is acquired, make sure
-  // we wait for all pending writes from other processors.
-  cpuid(0, 0, 0, 0, 0); // memory barrier (see Ch 7, IA-32 manual vol 3)
-
   // Record info about lock acquisition for debugging.
   // The +10 is only so that we can tell the difference
   // between forgetting to initialize lock->cpu
@@ -48,11 +47,9 @@ void release(struct spinlock *lock) {
   lock->pcs[0] = 0;
   lock->cpu = 0xffffffff;
 
-  // Serialize instructions: before unlocking the lock, make sure
-  // to flush any pending memory writes from this processor.
-  cpuid(0, 0, 0, 0, 0); // memory barrier (see Ch 7, IA-32 manual vol 3)
-
+  gccbarrier(); // Keep gcc from moving lock->locked = 0 earlier.
   lock->locked = 0;
+
   popcli();
 }
 
