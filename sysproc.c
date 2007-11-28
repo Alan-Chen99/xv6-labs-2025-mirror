@@ -5,12 +5,14 @@
 #include "proc.h"
 
 int sys_fork(void) {
+  int pid;
   struct proc *np;
 
   if ((np = copyproc(cp)) == 0)
     return -1;
+  pid = np->pid;
   np->state = RUNNABLE;
-  return np->pid;
+  return pid;
 }
 
 int sys_exit(void) {
