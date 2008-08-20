@@ -8,5 +8,3 @@ struct spinlock {
   uint pcs[10]; // The call stack (an array of program counters)
                 // that locked the lock.
 };
-
-// Blank page.

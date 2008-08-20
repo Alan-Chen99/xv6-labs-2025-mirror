@@ -28,3 +28,5 @@ void timer_init(void) {
   outb(IO_TIMER1, TIMER_DIV(100) / 256);
   pic_enable(IRQ_TIMER);
 }
+
+// Blank page
