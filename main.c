@@ -48,7 +48,7 @@ static void mpmain(void) {
   setupsegs(0);
   xchg(&cpus[cpu()].booted, 1);
 
-  cprintf("cpu%d: scheduling\n");
+  cprintf("cpu%d: scheduling\n", cpu());
   scheduler();
 }
 
