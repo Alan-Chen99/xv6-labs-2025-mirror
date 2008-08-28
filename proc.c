@@ -41,16 +41,15 @@ static struct proc *allocproc(void) {
 // Grow current process's memory by n bytes.
 // Return old size on success, -1 on failure.
 int growproc(int n) {
-  char *newmem, *oldmem;
+  char *newmem;
 
   newmem = kalloc(cp->sz + n);
   if (newmem == 0)
     return -1;
   memmove(newmem, cp->mem, cp->sz);
   memset(newmem + cp->sz, 0, n);
-  oldmem = cp->mem;
+  kfree(cp->mem, cp->sz);
   cp->mem = newmem;
-  kfree(oldmem, cp->sz);
   cp->sz += n;
   setupsegs(cp);
   return cp->sz - n;
