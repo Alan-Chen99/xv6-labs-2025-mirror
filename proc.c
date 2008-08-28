@@ -114,6 +114,7 @@ struct proc *copyproc(struct proc *p) {
       kfree(np->kstack, KSTACKSIZE);
       np->kstack = 0;
       np->state = UNUSED;
+      np->parent = 0;
       return 0;
     }
     memmove(np->mem, p->mem, np->sz);
