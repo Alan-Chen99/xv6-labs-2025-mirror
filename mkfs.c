@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   wsect(1, &sb);
 
   rootino = ialloc(T_DIR);
-  assert(rootino == 1);
+  assert(rootino == ROOTINO);
 
   bzero(&de, sizeof(de));
   de.inum = xshort(rootino);

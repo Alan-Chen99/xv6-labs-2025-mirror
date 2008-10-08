@@ -531,7 +531,7 @@ static struct inode *_namei(char *path, int parent, char *name) {
   struct inode *ip, *next;
 
   if (*path == '/')
-    ip = iget(ROOTDEV, 1);
+    ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(cp->cwd);
 
