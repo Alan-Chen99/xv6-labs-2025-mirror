@@ -91,8 +91,8 @@ int cpu(void) {
   // Cannot call cpu when interrupts are enabled:
   // result not guaranteed to last long enough to be used!
   // Would prefer to panic but even printing is chancy here:
-  // everything, including cprintf, calls cpu, at least indirectly
-  // through acquire and release.
+  // almost everything, including cprintf and panic, calls cpu,
+  // often indirectly through acquire and release.
   if (read_eflags() & FL_IF) {
     static int n;
     if (n++ == 0)
