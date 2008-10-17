@@ -179,6 +179,10 @@ int sys_unlink(void) {
   memset(&de, 0, sizeof(de));
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
     panic("unlink: writei");
+  if (ip->type == T_DIR) {
+    dp->nlink--;
+    iupdate(dp);
+  }
   iunlockput(dp);
 
   ip->nlink--;
@@ -226,8 +230,10 @@ static struct inode *create(char *path, int canexist, short type, short major,
   }
 
   if (dirlink(dp, name, ip->inum) < 0) {
-    dp->nlink--;
-    iupdate(dp);
+    if (type == T_DIR) {
+      dp->nlink--;
+      iupdate(dp);
+    }
     iunlockput(dp);
 
     ip->nlink = 0;
