@@ -329,6 +329,8 @@ static uint bmap(struct inode *ip, uint bn, int alloc) {
 }
 
 // Truncate inode (discard contents).
+// Only called after the last dirent referring
+// to this inode has been erased on disk.
 static void itrunc(struct inode *ip) {
   int i, j;
   struct buf *bp;
