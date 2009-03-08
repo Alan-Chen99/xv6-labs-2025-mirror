@@ -8,7 +8,7 @@ static inline uchar inb(ushort port) {
 }
 
 static inline void insl(int port, void *addr, int cnt) {
-  asm volatile("cld\n\trepne\n\tinsl"
+  asm volatile("cld; repne insl"
                : "=D"(addr), "=c"(cnt)
                : "d"(port), "0"(addr), "1"(cnt)
                : "memory", "cc");
@@ -23,7 +23,7 @@ static inline void outw(ushort port, ushort data) {
 }
 
 static inline void outsl(int port, const void *addr, int cnt) {
-  asm volatile("cld\n\trepne\n\toutsl"
+  asm volatile("cld; repne outsl"
                : "=S"(addr), "=c"(cnt)
                : "d"(port), "0"(addr), "1"(cnt)
                : "cc");
