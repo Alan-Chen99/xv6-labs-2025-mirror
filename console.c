@@ -25,7 +25,7 @@ int use_console_lock = 0;
 // Copy console output to parallel port, which you can tell
 // .bochsrc to copy to the stdout:
 //   parport1: enabled=1, file="/dev/stdout"
-static void lpt_putc(int c) {
+static void lptputc(int c) {
   int i;
 
   for (i = 0; !(inb(LPTPORT + 1) & 0x80) && i < 12800; i++)
@@ -37,7 +37,7 @@ static void lpt_putc(int c) {
   outb(LPTPORT + 2, 0x08);
 }
 
-static void cga_putc(int c) {
+static void cgaputc(int c) {
   int pos;
 
   // Cursor position: col + 80*row.
@@ -67,15 +67,15 @@ static void cga_putc(int c) {
   crt[pos] = ' ' | 0x0700;
 }
 
-void cons_putc(int c) {
+void consputc(int c) {
   if (panicked) {
     cli();
     for (;;)
       ;
   }
 
-  lpt_putc(c);
-  cga_putc(c);
+  lptputc(c);
+  cgaputc(c);
 }
 
 void printint(int xx, int base, int sgn) {
@@ -98,7 +98,7 @@ void printint(int xx, int base, int sgn) {
     buf[i++] = '-';
 
   while (--i >= 0)
-    cons_putc(buf[i]);
+    consputc(buf[i]);
 }
 
 // Print to the console. only understands %d, %x, %p, %s.
@@ -120,7 +120,7 @@ void cprintf(char *fmt, ...) {
       if (c == '%')
         state = '%';
       else
-        cons_putc(c);
+        consputc(c);
       break;
 
     case '%':
@@ -137,15 +137,15 @@ void cprintf(char *fmt, ...) {
         if (s == 0)
           s = "(null)";
         for (; *s; s++)
-          cons_putc(*s);
+          consputc(*s);
         break;
       case '%':
-        cons_putc('%');
+        consputc('%');
         break;
       default:
         // Print unknown % sequence to draw attention.
-        cons_putc('%');
-        cons_putc(c);
+        consputc('%');
+        consputc(c);
         break;
       }
       state = 0;
@@ -157,13 +157,13 @@ void cprintf(char *fmt, ...) {
     release(&console_lock);
 }
 
-int console_write(struct inode *ip, char *buf, int n) {
+int consolewrite(struct inode *ip, char *buf, int n) {
   int i;
 
   iunlock(ip);
   acquire(&console_lock);
   for (i = 0; i < n; i++)
-    cons_putc(buf[i] & 0xff);
+    consputc(buf[i] & 0xff);
   release(&console_lock);
   ilock(ip);
 
@@ -181,7 +181,7 @@ struct {
 
 #define C(x) ((x) - '@') // Control-x
 
-void console_intr(int (*getc)(void)) {
+void consoleintr(int (*getc)(void)) {
   int c;
 
   acquire(&input.lock);
@@ -194,19 +194,19 @@ void console_intr(int (*getc)(void)) {
       while (input.e != input.w &&
              input.buf[(input.e - 1) % INPUT_BUF] != '\n') {
         input.e--;
-        cons_putc(BACKSPACE);
+        consputc(BACKSPACE);
       }
       break;
     case C('H'): // Backspace
       if (input.e != input.w) {
         input.e--;
-        cons_putc(BACKSPACE);
+        consputc(BACKSPACE);
       }
       break;
     default:
       if (c != 0 && input.e - input.r < INPUT_BUF) {
         input.buf[input.e++ % INPUT_BUF] = c;
-        cons_putc(c);
+        consputc(c);
         if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF) {
           input.w = input.e;
           wakeup(&input.r);
@@ -218,7 +218,7 @@ void console_intr(int (*getc)(void)) {
   release(&input.lock);
 }
 
-int console_read(struct inode *ip, char *dst, int n) {
+int consoleread(struct inode *ip, char *dst, int n) {
   uint target;
   int c;
 
@@ -254,16 +254,16 @@ int console_read(struct inode *ip, char *dst, int n) {
   return target - n;
 }
 
-void console_init(void) {
+void consoleinit(void) {
   initlock(&console_lock, "console");
   initlock(&input.lock, "console input");
 
-  devsw[CONSOLE].write = console_write;
-  devsw[CONSOLE].read = console_read;
+  devsw[CONSOLE].write = consolewrite;
+  devsw[CONSOLE].read = consoleread;
   use_console_lock = 1;
 
-  pic_enable(IRQ_KBD);
-  ioapic_enable(IRQ_KBD, 0);
+  picenable(IRQ_KBD);
+  ioapicenable(IRQ_KBD, 0);
 }
 
 void panic(char *s) {

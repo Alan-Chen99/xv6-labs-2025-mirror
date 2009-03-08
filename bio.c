@@ -94,7 +94,7 @@ struct buf *bread(uint dev, uint sector) {
 
   b = bget(dev, sector);
   if (!(b->flags & B_VALID))
-    ide_rw(b);
+    iderw(b);
   return b;
 }
 
@@ -103,7 +103,7 @@ void bwrite(struct buf *b) {
   if ((b->flags & B_BUSY) == 0)
     panic("bwrite");
   b->flags |= B_DIRTY;
-  ide_rw(b);
+  iderw(b);
 }
 
 // Release the buffer buf.

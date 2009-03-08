@@ -43,7 +43,7 @@ static void lapicw(int index, int value) {
 }
 
 // PAGEBREAK!
-void lapic_init(int c) {
+void lapicinit(int c) {
   if (!lapic)
     return;
 
@@ -93,11 +93,11 @@ int cpu(void) {
   // Would prefer to panic but even printing is chancy here:
   // almost everything, including cprintf and panic, calls cpu,
   // often indirectly through acquire and release.
-  if (read_eflags() & FL_IF) {
+  if (readeflags() & FL_IF) {
     static int n;
     if (n++ == 0)
       cprintf("cpu called from %x with interrupts enabled\n",
-              ((uint *)read_ebp())[1]);
+              __builtin_return_address(0));
   }
 
   if (lapic)
@@ -106,7 +106,7 @@ int cpu(void) {
 }
 
 // Acknowledge interrupt.
-void lapic_eoi(void) {
+void lapiceoi(void) {
   if (lapic)
     lapicw(EOI, 0);
 }
@@ -125,7 +125,7 @@ static void microdelay(int us) {
 
 // Start additional processor running bootstrap code at addr.
 // See Appendix B of MultiProcessor Specification.
-void lapic_startap(uchar apicid, uint addr) {
+void lapicstartap(uchar apicid, uint addr) {
   int i;
   ushort *wrv;
 

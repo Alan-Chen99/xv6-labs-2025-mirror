@@ -10,24 +10,24 @@ static void mpmain(void) __attribute__((noreturn));
 
 // Bootstrap processor starts running C code here.
 int main(void) {
-  mp_init(); // collect info about this machine
-  lapic_init(mp_bcpu());
+  mpinit(); // collect info about this machine
+  lapicinit(mpbcpu());
   cprintf("\ncpu%d: starting xv6\n\n", cpu());
 
-  pinit();        // process table
-  binit();        // buffer cache
-  pic_init();     // interrupt controller
-  ioapic_init();  // another interrupt controller
-  kinit();        // physical memory allocator
-  tvinit();       // trap vectors
-  fileinit();     // file table
-  iinit();        // inode cache
-  console_init(); // I/O devices & their interrupts
-  ide_init();     // disk
+  pinit();       // process table
+  binit();       // buffer cache
+  picinit();     // interrupt controller
+  ioapicinit();  // another interrupt controller
+  kinit();       // physical memory allocator
+  tvinit();      // trap vectors
+  fileinit();    // file table
+  iinit();       // inode cache
+  consoleinit(); // I/O devices & their interrupts
+  ideinit();     // disk
   if (!ismp)
-    timer_init(); // uniprocessor timer
-  userinit();     // first user process
-  bootothers();   // start other processors
+    timerinit(); // uniprocessor timer
+  userinit();    // first user process
+  bootothers();  // start other processors
 
   // Finish setting up this processor in mpmain.
   mpmain();
@@ -38,8 +38,8 @@ int main(void) {
 static void mpmain(void) {
   cprintf("cpu%d: mpmain\n", cpu());
   idtinit();
-  if (cpu() != mp_bcpu())
-    lapic_init(cpu());
+  if (cpu() != mpbcpu())
+    lapicinit(cpu());
   setupsegs(0);
   xchg(&cpus[cpu()].booted, 1);
 
@@ -65,7 +65,7 @@ static void bootothers(void) {
     stack = kalloc(KSTACKSIZE);
     *(void **)(code - 4) = stack + KSTACKSIZE;
     *(void **)(code - 8) = mpmain;
-    lapic_startap(c->apicid, (uint)code);
+    lapicstartap(c->apicid, (uint)code);
 
     // Wait for cpu to get through bootstrap.
     while (c->booted == 0)

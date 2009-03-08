@@ -26,10 +26,10 @@ static struct spinlock ide_lock;
 static struct buf *ide_queue;
 
 static int disk_1_present;
-static void ide_start_request();
+static void idestart(struct buf *);
 
 // Wait for IDE disk to become ready.
-static int ide_wait_ready(int check_error) {
+static int idewait(int check_error) {
   int r;
 
   while (((r = inb(0x1f7)) & IDE_BSY) || !(r & IDE_DRDY))
@@ -39,13 +39,13 @@ static int ide_wait_ready(int check_error) {
   return 0;
 }
 
-void ide_init(void) {
+void ideinit(void) {
   int i;
 
   initlock(&ide_lock, "ide");
-  pic_enable(IRQ_IDE);
-  ioapic_enable(IRQ_IDE, ncpu - 1);
-  ide_wait_ready(0);
+  picenable(IRQ_IDE);
+  ioapicenable(IRQ_IDE, ncpu - 1);
+  idewait(0);
 
   // Check if disk 1 is present
   outb(0x1f6, 0xe0 | (1 << 4));
@@ -61,11 +61,11 @@ void ide_init(void) {
 }
 
 // Start the request for b.  Caller must hold ide_lock.
-static void ide_start_request(struct buf *b) {
+static void idestart(struct buf *b) {
   if (b == 0)
-    panic("ide_start_request");
+    panic("idestart");
 
-  ide_wait_ready(0);
+  idewait(0);
   outb(0x3f6, 0); // generate interrupt
   outb(0x1f2, 1); // number of sectors
   outb(0x1f3, b->sector & 0xff);
@@ -81,7 +81,7 @@ static void ide_start_request(struct buf *b) {
 }
 
 // Interrupt handler.
-void ide_intr(void) {
+void ideintr(void) {
   struct buf *b;
 
   acquire(&ide_lock);
@@ -91,7 +91,7 @@ void ide_intr(void) {
   }
 
   // Read data if needed.
-  if (!(b->flags & B_DIRTY) && ide_wait_ready(1) >= 0)
+  if (!(b->flags & B_DIRTY) && idewait(1) >= 0)
     insl(0x1f0, b->data, 512 / 4);
 
   // Wake process waiting for this buf.
@@ -101,7 +101,7 @@ void ide_intr(void) {
 
   // Start disk on next buf in queue.
   if ((ide_queue = b->qnext) != 0)
-    ide_start_request(ide_queue);
+    idestart(ide_queue);
 
   release(&ide_lock);
 }
@@ -110,15 +110,15 @@ void ide_intr(void) {
 //  Sync buf with disk.
 //  If B_DIRTY is set, write buf to disk, clear B_DIRTY, set B_VALID.
 //  Else if B_VALID is not set, read buf from disk, set B_VALID.
-void ide_rw(struct buf *b) {
+void iderw(struct buf *b) {
   struct buf **pp;
 
   if (!(b->flags & B_BUSY))
-    panic("ide_rw: buf not busy");
+    panic("iderw: buf not busy");
   if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID)
-    panic("ide_rw: nothing to do");
+    panic("iderw: nothing to do");
   if (b->dev != 0 && !disk_1_present)
-    panic("ide disk 1 not present");
+    panic("idrw: ide disk 1 not present");
 
   acquire(&ide_lock);
 
@@ -130,7 +130,7 @@ void ide_rw(struct buf *b) {
 
   // Start disk if necessary.
   if (ide_queue == b)
-    ide_start_request(b);
+    idestart(b);
 
   // Wait for request to finish.
   // Assuming will not sleep too long: ignore cp->killed.

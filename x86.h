@@ -36,13 +36,6 @@ static inline void stosb(void *addr, int data, int cnt) {
                : "memory", "cc");
 }
 
-static inline uint read_ebp(void) {
-  uint ebp;
-
-  asm volatile("movl %%ebp, %0" : "=a"(ebp));
-  return ebp;
-}
-
 struct segdesc;
 
 static inline void lgdt(struct segdesc *p, int size) {
@@ -69,14 +62,10 @@ static inline void lidt(struct gatedesc *p, int size) {
 
 static inline void ltr(ushort sel) { asm volatile("ltr %0" : : "r"(sel)); }
 
-static inline uint read_eflags(void) {
+static inline uint readeflags(void) {
   uint eflags;
   asm volatile("pushfl; popl %0" : "=r"(eflags));
   return eflags;
-}
-
-static inline void write_eflags(uint eflags) {
-  asm volatile("pushl %0; popfl" : : "r"(eflags));
 }
 
 static inline uint xchg(volatile uint *addr, uint newval) {
