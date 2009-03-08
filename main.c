@@ -10,11 +10,6 @@ static void mpmain(void) __attribute__((noreturn));
 
 // Bootstrap processor starts running C code here.
 int main(void) {
-  extern char edata[], end[];
-
-  // clear BSS
-  memset(edata, 0, end - edata);
-
   mp_init(); // collect info about this machine
   lapic_init(mp_bcpu());
   cprintf("\ncpu%d: starting xv6\n\n", cpu());
