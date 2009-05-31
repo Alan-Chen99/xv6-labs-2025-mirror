@@ -1,4 +1,5 @@
 #include "types.h"
+#include "x86.h"
 #include "defs.h"
 #include "param.h"
 #include "mmu.h"
@@ -11,6 +12,9 @@ int sys_fork(void) {
   if ((np = copyproc(cp)) == 0)
     return -1;
   pid = np->pid;
+
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
   np->state = RUNNABLE;
   return pid;
 }
@@ -38,7 +42,8 @@ int sys_sbrk(void) {
 
   if (argint(0, &n) < 0)
     return -1;
-  if ((addr = growproc(n)) < 0)
+  addr = cp->sz;
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
