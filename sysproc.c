@@ -5,19 +5,7 @@
 #include "mmu.h"
 #include "proc.h"
 
-int sys_fork(void) {
-  int pid;
-  struct proc *np;
-
-  if ((np = copyproc(cp)) == 0)
-    return -1;
-  pid = np->pid;
-
-  // Clear %eax so that fork returns 0 in the child.
-  np->tf->eax = 0;
-  np->state = RUNNABLE;
-  return pid;
-}
+int sys_fork(void) { return fork(); }
 
 int sys_exit(void) {
   exit();
