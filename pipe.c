@@ -45,14 +45,10 @@ int pipealloc(struct file **f0, struct file **f1) {
 bad:
   if (p)
     kfree((char *)p, PAGE);
-  if (*f0) {
-    (*f0)->type = FD_NONE;
+  if (*f0)
     fileclose(*f0);
-  }
-  if (*f1) {
-    (*f1)->type = FD_NONE;
+  if (*f1)
     fileclose(*f1);
-  }
   return -1;
 }
 
