@@ -5,6 +5,9 @@
 #include "proc.h"
 #include "x86.h"
 
+__thread struct cpu *c;
+__thread struct proc *cp;
+
 static void bootothers(void);
 static void mpmain(void) __attribute__((noreturn));
 
@@ -12,18 +15,20 @@ static void mpmain(void) __attribute__((noreturn));
 int main(void) {
   mpinit(); // collect info about this machine
   lapicinit(mpbcpu());
-  cprintf("\ncpu%d: starting xv6\n\n", cpu());
-
-  pinit();       // process table
-  binit();       // buffer cache
+  ksegment();
   picinit();     // interrupt controller
   ioapicinit();  // another interrupt controller
-  kinit();       // physical memory allocator
-  tvinit();      // trap vectors
-  fileinit();    // file table
-  iinit();       // inode cache
   consoleinit(); // I/O devices & their interrupts
-  ideinit();     // disk
+  uartinit();    // serial port
+  cprintf("\ncpu%d: starting xv6\n\n", cpu());
+
+  kinit();    // physical memory allocator
+  pinit();    // process table
+  tvinit();   // trap vectors
+  binit();    // buffer cache
+  fileinit(); // file table
+  iinit();    // inode cache
+  ideinit();  // disk
   if (!ismp)
     timerinit(); // uniprocessor timer
   userinit();    // first user process
@@ -36,12 +41,12 @@ int main(void) {
 // Bootstrap processor gets here after setting up the hardware.
 // Additional processors start here.
 static void mpmain(void) {
-  cprintf("cpu%d: mpmain\n", cpu());
-  idtinit();
   if (cpu() != mpbcpu())
     lapicinit(cpu());
-  setupsegs(0);
-  xchg(&cpus[cpu()].booted, 1);
+  ksegment();
+  cprintf("cpu%d: mpmain\n", cpu());
+  idtinit();
+  xchg(&c->booted, 1);
 
   cprintf("cpu%d: scheduling\n", cpu());
   scheduler();

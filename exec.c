@@ -102,7 +102,7 @@ int exec(char *path, char **argv) {
   cp->sz = sz;
   cp->tf->eip = elf.entry; // main
   cp->tf->esp = sp;
-  setupsegs(cp);
+  usegment();
   return 0;
 
 bad:
