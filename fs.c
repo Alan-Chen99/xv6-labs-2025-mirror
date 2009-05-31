@@ -127,7 +127,7 @@ struct {
   struct inode inode[NINODE];
 } icache;
 
-void iinit(void) { initlock(&icache.lock, "icache.lock"); }
+void iinit(void) { initlock(&icache.lock, "icache"); }
 
 // Find the inode with number inum on device dev
 // and return the in-memory copy.

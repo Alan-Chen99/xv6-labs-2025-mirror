@@ -39,7 +39,7 @@ struct {
 void binit(void) {
   struct buf *b;
 
-  initlock(&bcache.lock, "buf_table");
+  initlock(&bcache.lock, "bcache");
 
   // PAGEBREAK!
   //  Create linked list of buffers

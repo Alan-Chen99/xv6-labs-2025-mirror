@@ -17,9 +17,12 @@
 
 static ushort *crt = (ushort *)0xb8000; // CGA memory
 
-static struct spinlock console_lock;
-int panicked = 0;
-volatile int use_console_lock = 0;
+static struct {
+  struct spinlock lock;
+  int locking;
+} cons;
+
+static int panicked = 0;
 
 static void cgaputc(int c) {
   int pos;
@@ -91,9 +94,9 @@ void cprintf(char *fmt, ...) {
   uint *argp;
   char *s;
 
-  locking = use_console_lock;
+  locking = cons.locking;
   if (locking)
-    acquire(&console_lock);
+    acquire(&cons.lock);
 
   argp = (uint *)(void *)&fmt + 1;
   state = 0;
@@ -138,17 +141,17 @@ void cprintf(char *fmt, ...) {
   }
 
   if (locking)
-    release(&console_lock);
+    release(&cons.lock);
 }
 
 int consolewrite(struct inode *ip, char *buf, int n) {
   int i;
 
   iunlock(ip);
-  acquire(&console_lock);
+  acquire(&cons.lock);
   for (i = 0; i < n; i++)
     consputc(buf[i] & 0xff);
-  release(&console_lock);
+  release(&cons.lock);
   ilock(ip);
 
   return n;
@@ -239,12 +242,12 @@ int consoleread(struct inode *ip, char *dst, int n) {
 }
 
 void consoleinit(void) {
-  initlock(&console_lock, "console");
-  initlock(&input.lock, "console input");
+  initlock(&cons.lock, "console");
+  initlock(&input.lock, "input");
 
   devsw[CONSOLE].write = consolewrite;
   devsw[CONSOLE].read = consoleread;
-  use_console_lock = 1;
+  cons.locking = 1;
 
   picenable(IRQ_KBD);
   ioapicenable(IRQ_KBD, 0);
@@ -255,7 +258,7 @@ void panic(char *s) {
   uint pcs[10];
 
   cli();
-  use_console_lock = 0;
+  cons.locking = 0;
   cprintf("cpu%d: panic: ", cpu());
   cprintf(s);
   cprintf("\n");

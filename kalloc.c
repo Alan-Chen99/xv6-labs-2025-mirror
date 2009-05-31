@@ -10,13 +10,15 @@
 #include "param.h"
 #include "spinlock.h"
 
-struct spinlock kalloc_lock;
-
 struct run {
   struct run *next;
   int len; // bytes
 };
-struct run *freelist;
+
+struct {
+  struct spinlock lock;
+  struct run *freelist;
+} kmem;
 
 // Initialize free list of physical pages.
 // This code cheats by just considering one megabyte of
@@ -27,7 +29,7 @@ void kinit(void) {
   uint mem;
   char *start;
 
-  initlock(&kalloc_lock, "kalloc");
+  initlock(&kmem.lock, "kmem");
   start = (char *)&end;
   start = (char *)(((uint)start + PAGE) & ~(PAGE - 1));
   mem = 256; // assume computer has 256 pages of RAM
@@ -48,10 +50,10 @@ void kfree(char *v, int len) {
   // Fill with junk to catch dangling refs.
   memset(v, 1, len);
 
-  acquire(&kalloc_lock);
+  acquire(&kmem.lock);
   p = (struct run *)v;
   pend = (struct run *)(v + len);
-  for (rp = &freelist; (r = *rp) != 0 && r <= pend; rp = &r->next) {
+  for (rp = &kmem.freelist; (r = *rp) != 0 && r <= pend; rp = &r->next) {
     rend = (struct run *)((char *)r + r->len);
     if (r <= p && p < rend)
       panic("freeing free page");
@@ -76,7 +78,7 @@ void kfree(char *v, int len) {
   *rp = p;
 
 out:
-  release(&kalloc_lock);
+  release(&kmem.lock);
 }
 
 // Allocate n bytes of physical memory.
@@ -89,21 +91,21 @@ char *kalloc(int n) {
   if (n % PAGE || n <= 0)
     panic("kalloc");
 
-  acquire(&kalloc_lock);
-  for (rp = &freelist; (r = *rp) != 0; rp = &r->next) {
+  acquire(&kmem.lock);
+  for (rp = &kmem.freelist; (r = *rp) != 0; rp = &r->next) {
     if (r->len == n) {
       *rp = r->next;
-      release(&kalloc_lock);
+      release(&kmem.lock);
       return (char *)r;
     }
     if (r->len > n) {
       r->len -= n;
       p = (char *)r + r->len;
-      release(&kalloc_lock);
+      release(&kmem.lock);
       return p;
     }
   }
-  release(&kalloc_lock);
+  release(&kmem.lock);
 
   cprintf("kalloc: out of memory\n");
   return 0;
