@@ -79,8 +79,9 @@ static inline uint xchg(volatile uint *addr, uint newval) {
   return result;
 }
 
-static inline void setgs(ushort gs) {
-  asm volatile("movw %0, %%gs" : : "r"(gs));
+static inline void loadfsgs(ushort v) {
+  asm volatile("movw %0, %%fs" : : "r"(v));
+  asm volatile("movw %0, %%gs" : : "r"(v));
 }
 
 static inline void cli(void) { asm volatile("cli"); }
