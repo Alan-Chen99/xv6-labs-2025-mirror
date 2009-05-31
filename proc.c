@@ -23,7 +23,6 @@ void pinit(void) { initlock(&ptable.lock, "ptable"); }
 // If found, change state to EMBRYO and return it.
 // Otherwise return 0.
 static struct proc *allocproc(void) {
-  int i;
   struct proc *p;
 
   acquire(&ptable.lock);
@@ -192,7 +191,6 @@ void userinit(void) {
 //       via swtch back to the scheduler.
 void scheduler(void) {
   struct proc *p;
-  int i;
 
   for (;;) {
     // Enable interrupts on this processor, in lieu of saving intena.
@@ -299,7 +297,7 @@ void sleep(void *chan, struct spinlock *lk) {
 static void wakeup1(void *chan) {
   struct proc *p;
 
-  for (p = proc; p < &proc[NPROC]; p++)
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if (p->state == SLEEPING && p->chan == chan)
       p->state = RUNNABLE;
 }
@@ -378,7 +376,7 @@ void exit(void) {
 // Return -1 if this process has no children.
 int wait(void) {
   struct proc *p;
-  int i, havekids, pid;
+  int havekids, pid;
 
   acquire(&ptable.lock);
   for (;;) {
@@ -422,7 +420,7 @@ void procdump(void) {
   static char *states[] = {
       [UNUSED] "unused",   [EMBRYO] "embryo",  [SLEEPING] "sleep ",
       [RUNNABLE] "runble", [RUNNING] "run   ", [ZOMBIE] "zombie"};
-  int i, j;
+  int i;
   struct proc *p;
   char *state;
   uint pc[10];
@@ -437,8 +435,8 @@ void procdump(void) {
     cprintf("%d %s %s", p->pid, state, p->name);
     if (p->state == SLEEPING) {
       getcallerpcs((uint *)p->context->ebp + 2, pc);
-      for (j = 0; j < 10 && pc[j] != 0; j++)
-        cprintf(" %p", pc[j]);
+      for (i = 0; i < 10 && pc[i] != 0; i++)
+        cprintf(" %p", pc[i]);
     }
     cprintf("\n");
   }
