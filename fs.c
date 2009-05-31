@@ -288,36 +288,26 @@ void iupdate(struct inode *ip) {
 //  listed in the block ip->addrs[INDIRECT].
 
 // Return the disk block address of the nth block in inode ip.
-// If there is no such block, alloc controls whether one is allocated.
-static uint bmap(struct inode *ip, uint bn, int alloc) {
+// If there is no such block, bmap allocates one.
+static uint bmap(struct inode *ip, uint bn) {
   uint addr, *a;
   struct buf *bp;
 
   if (bn < NDIRECT) {
-    if ((addr = ip->addrs[bn]) == 0) {
-      if (!alloc)
-        return -1;
+    if ((addr = ip->addrs[bn]) == 0)
       ip->addrs[bn] = addr = balloc(ip->dev);
-    }
     return addr;
   }
   bn -= NDIRECT;
 
   if (bn < NINDIRECT) {
     // Load indirect block, allocating if necessary.
-    if ((addr = ip->addrs[NDIRECT]) == 0) {
-      if (!alloc)
-        return -1;
+    if ((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
-    }
     bp = bread(ip->dev, addr);
     a = (uint *)bp->data;
 
     if ((addr = a[bn]) == 0) {
-      if (!alloc) {
-        brelse(bp);
-        return -1;
-      }
       a[bn] = addr = balloc(ip->dev);
       bwrite(bp);
     }
@@ -386,7 +376,7 @@ int readi(struct inode *ip, char *dst, uint off, uint n) {
     n = ip->size - off;
 
   for (tot = 0; tot < n; tot += m, off += m, dst += m) {
-    bp = bread(ip->dev, bmap(ip, off / BSIZE, 0));
+    bp = bread(ip->dev, bmap(ip, off / BSIZE));
     m = min(n - tot, BSIZE - off % BSIZE);
     memmove(dst, bp->data + off % BSIZE, m);
     brelse(bp);
@@ -406,13 +396,13 @@ int writei(struct inode *ip, char *src, uint off, uint n) {
     return devsw[ip->major].write(ip, src, n);
   }
 
-  if (off + n < off)
+  if (off > ip->size || off + n < off)
     return -1;
   if (off + n > MAXFILE * BSIZE)
     n = MAXFILE * BSIZE - off;
 
   for (tot = 0; tot < n; tot += m, off += m, src += m) {
-    bp = bread(ip->dev, bmap(ip, off / BSIZE, 1));
+    bp = bread(ip->dev, bmap(ip, off / BSIZE));
     m = min(n - tot, BSIZE - off % BSIZE);
     memmove(bp->data + off % BSIZE, src, m);
     bwrite(bp);
@@ -443,7 +433,7 @@ struct inode *dirlookup(struct inode *dp, char *name, uint *poff) {
     panic("dirlookup not DIR");
 
   for (off = 0; off < dp->size; off += BSIZE) {
-    bp = bread(dp->dev, bmap(dp, off / BSIZE, 0));
+    bp = bread(dp->dev, bmap(dp, off / BSIZE));
     for (de = (struct dirent *)bp->data;
          de < (struct dirent *)(bp->data + BSIZE); de++) {
       if (de->inum == 0)
@@ -462,8 +452,8 @@ struct inode *dirlookup(struct inode *dp, char *name, uint *poff) {
   return 0;
 }
 
-// Write a new directory entry (name, ino) into the directory dp.
-int dirlink(struct inode *dp, char *name, uint ino) {
+// Write a new directory entry (name, inum) into the directory dp.
+int dirlink(struct inode *dp, char *name, uint inum) {
   int off;
   struct dirent de;
   struct inode *ip;
@@ -483,7 +473,7 @@ int dirlink(struct inode *dp, char *name, uint ino) {
   }
 
   strncpy(de.name, name, DIRSIZ);
-  de.inum = ino;
+  de.inum = inum;
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
     panic("dirlink");
 
@@ -502,6 +492,7 @@ int dirlink(struct inode *dp, char *name, uint ino) {
 // Examples:
 //   skipelem("a/bb/c", name) = "bb/c", setting name = "a"
 //   skipelem("///a//bb", name) = "bb", setting name = "a"
+//   skipelem("a", name) = "", setting name = "a"
 //   skipelem("", name) = skipelem("////", name) = 0
 //
 static char *skipelem(char *path, char *name) {
@@ -530,7 +521,7 @@ static char *skipelem(char *path, char *name) {
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
-static struct inode *_namei(char *path, int parent, char *name) {
+static struct inode *namex(char *path, int parent, char *name) {
   struct inode *ip, *next;
 
   if (*path == '/')
@@ -565,9 +556,9 @@ static struct inode *_namei(char *path, int parent, char *name) {
 
 struct inode *namei(char *path) {
   char name[DIRSIZ];
-  return _namei(path, 0, name);
+  return namex(path, 0, name);
 }
 
 struct inode *nameiparent(char *path, char *name) {
-  return _namei(path, 1, name);
+  return namex(path, 1, name);
 }
