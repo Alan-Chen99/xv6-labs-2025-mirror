@@ -207,7 +207,7 @@ void iunlock(struct inode *ip) {
     panic("iunlock");
 
   acquire(&icache.lock);
-  ip->flags = 0;
+  ip->flags &= ~I_BUSY;
   wakeup(ip);
   release(&icache.lock);
 }
@@ -225,7 +225,7 @@ void iput(struct inode *ip) {
     ip->type = 0;
     iupdate(ip);
     acquire(&icache.lock);
-    ip->flags &= ~I_BUSY;
+    ip->flags = 0;
     wakeup(ip);
   }
   ip->ref--;
