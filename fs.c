@@ -129,6 +129,49 @@ struct {
 
 void iinit(void) { initlock(&icache.lock, "icache"); }
 
+static struct inode *iget(uint dev, uint inum);
+
+// PAGEBREAK!
+//  Allocate a new inode with the given type on device dev.
+struct inode *ialloc(uint dev, short type) {
+  int inum;
+  struct buf *bp;
+  struct dinode *dip;
+  struct superblock sb;
+
+  readsb(dev, &sb);
+  for (inum = 1; inum < sb.ninodes; inum++) { // loop over inode blocks
+    bp = bread(dev, IBLOCK(inum));
+    dip = (struct dinode *)bp->data + inum % IPB;
+    if (dip->type == 0) { // a free inode
+      memset(dip, 0, sizeof(*dip));
+      dip->type = type;
+      bwrite(bp); // mark it allocated on the disk
+      brelse(bp);
+      return iget(dev, inum);
+    }
+    brelse(bp);
+  }
+  panic("ialloc: no inodes");
+}
+
+// Copy inode, which has changed, from memory to disk.
+void iupdate(struct inode *ip) {
+  struct buf *bp;
+  struct dinode *dip;
+
+  bp = bread(ip->dev, IBLOCK(ip->inum));
+  dip = (struct dinode *)bp->data + ip->inum % IPB;
+  dip->type = ip->type;
+  dip->major = ip->major;
+  dip->minor = ip->minor;
+  dip->nlink = ip->nlink;
+  dip->size = ip->size;
+  memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+  bwrite(bp);
+  brelse(bp);
+}
+
 // Find the inode with number inum on device dev
 // and return the in-memory copy.
 static struct inode *iget(uint dev, uint inum) {
@@ -239,47 +282,6 @@ void iunlockput(struct inode *ip) {
 }
 
 // PAGEBREAK!
-//  Allocate a new inode with the given type on device dev.
-struct inode *ialloc(uint dev, short type) {
-  int inum;
-  struct buf *bp;
-  struct dinode *dip;
-  struct superblock sb;
-
-  readsb(dev, &sb);
-  for (inum = 1; inum < sb.ninodes; inum++) { // loop over inode blocks
-    bp = bread(dev, IBLOCK(inum));
-    dip = (struct dinode *)bp->data + inum % IPB;
-    if (dip->type == 0) { // a free inode
-      memset(dip, 0, sizeof(*dip));
-      dip->type = type;
-      bwrite(bp); // mark it allocated on the disk
-      brelse(bp);
-      return iget(dev, inum);
-    }
-    brelse(bp);
-  }
-  panic("ialloc: no inodes");
-}
-
-// Copy inode, which has changed, from memory to disk.
-void iupdate(struct inode *ip) {
-  struct buf *bp;
-  struct dinode *dip;
-
-  bp = bread(ip->dev, IBLOCK(ip->inum));
-  dip = (struct dinode *)bp->data + ip->inum % IPB;
-  dip->type = ip->type;
-  dip->major = ip->major;
-  dip->minor = ip->minor;
-  dip->nlink = ip->nlink;
-  dip->size = ip->size;
-  memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
-  bwrite(bp);
-  brelse(bp);
-}
-
-// PAGEBREAK!
 //  Inode contents
 //
 //  The contents (data) associated with each inode is stored
@@ -306,7 +308,6 @@ static uint bmap(struct inode *ip, uint bn) {
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
     bp = bread(ip->dev, addr);
     a = (uint *)bp->data;
-
     if ((addr = a[bn]) == 0) {
       a[bn] = addr = balloc(ip->dev);
       bwrite(bp);
@@ -521,7 +522,7 @@ static char *skipelem(char *path, char *name) {
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
-static struct inode *namex(char *path, int parent, char *name) {
+static struct inode *namex(char *path, int nameiparent, char *name) {
   struct inode *ip, *next;
 
   if (*path == '/')
@@ -535,7 +536,7 @@ static struct inode *namex(char *path, int parent, char *name) {
       iunlockput(ip);
       return 0;
     }
-    if (parent && *path == '\0') {
+    if (nameiparent && *path == '\0') {
       // Stop one level early.
       iunlock(ip);
       return ip;
@@ -547,7 +548,7 @@ static struct inode *namex(char *path, int parent, char *name) {
     iunlockput(ip);
     ip = next;
   }
-  if (parent) {
+  if (nameiparent) {
     iput(ip);
     return 0;
   }

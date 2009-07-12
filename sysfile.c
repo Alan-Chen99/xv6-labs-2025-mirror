@@ -40,6 +40,18 @@ static int fdalloc(struct file *f) {
   return -1;
 }
 
+int sys_dup(void) {
+  struct file *f;
+  int fd;
+
+  if (argfd(0, 0, &f) < 0)
+    return -1;
+  if ((fd = fdalloc(f)) < 0)
+    return -1;
+  filedup(f);
+  return fd;
+}
+
 int sys_read(void) {
   struct file *f;
   int n;
@@ -58,18 +70,6 @@ int sys_write(void) {
   if (argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
     return -1;
   return filewrite(f, p, n);
-}
-
-int sys_dup(void) {
-  struct file *f;
-  int fd;
-
-  if (argfd(0, 0, &f) < 0)
-    return -1;
-  if ((fd = fdalloc(f)) < 0)
-    return -1;
-  filedup(f);
-  return fd;
 }
 
 int sys_close(void) {
@@ -203,17 +203,15 @@ static struct inode *create(char *path, short type, short major, short minor) {
   if ((ip = dirlookup(dp, name, &off)) != 0) {
     iunlockput(dp);
     ilock(ip);
-    if (ip->type != type || type != T_FILE) {
-      iunlockput(ip);
-      return 0;
-    }
-    return ip;
-  }
-
-  if ((ip = ialloc(dp->dev, type)) == 0) {
-    iunlockput(dp);
+    if (type == T_FILE && ip->type == T_FILE)
+      return ip;
+    iunlockput(ip);
     return 0;
   }
+
+  if ((ip = ialloc(dp->dev, type)) == 0)
+    panic("create: ialloc");
+
   ilock(ip);
   ip->major = major;
   ip->minor = minor;
@@ -274,6 +272,16 @@ int sys_open(void) {
   return fd;
 }
 
+int sys_mkdir(void) {
+  char *path;
+  struct inode *ip;
+
+  if (argstr(0, &path) < 0 || (ip = create(path, T_DIR, 0, 0)) == 0)
+    return -1;
+  iunlockput(ip);
+  return 0;
+}
+
 int sys_mknod(void) {
   struct inode *ip;
   char *path;
@@ -282,16 +290,6 @@ int sys_mknod(void) {
 
   if ((len = argstr(0, &path)) < 0 || argint(1, &major) < 0 ||
       argint(2, &minor) < 0 || (ip = create(path, T_DEV, major, minor)) == 0)
-    return -1;
-  iunlockput(ip);
-  return 0;
-}
-
-int sys_mkdir(void) {
-  char *path;
-  struct inode *ip;
-
-  if (argstr(0, &path) < 0 || (ip = create(path, T_DIR, 0, 0)) == 0)
     return -1;
   iunlockput(ip);
   return 0;
