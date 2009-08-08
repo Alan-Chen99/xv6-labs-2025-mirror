@@ -3,6 +3,7 @@
 #include "param.h"
 #include "mmu.h"
 #include "proc.h"
+#include "fs.h"
 #include "file.h"
 #include "spinlock.h"
 
@@ -68,7 +69,7 @@ void pipeclose(struct pipe *p, int writable) {
     release(&p->lock);
 }
 
-// PAGEBREAK: 30
+// PAGEBREAK: 40
 int pipewrite(struct pipe *p, char *addr, int n) {
   int i;
 

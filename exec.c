@@ -9,7 +9,7 @@
 int exec(char *path, char **argv) {
   char *mem, *s, *last;
   int i, argc, arglen, len, off;
-  uint sz, sp, argp;
+  uint sz, sp, argp, x;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -65,8 +65,9 @@ int exec(char *path, char **argv) {
       goto bad;
     if (ph.type != ELF_PROG_LOAD)
       continue;
-    if (ph.va + ph.memsz < ph.va || ph.va + ph.memsz > sz ||
-        ph.memsz < ph.filesz)
+    if (ph.va + ph.memsz < ph.va || ph.va + ph.memsz > sz)
+      goto bad;
+    if (ph.memsz < ph.filesz)
       goto bad;
     if (readi(ip, mem + ph.va, ph.offset, ph.filesz) != ph.filesz)
       goto bad;

@@ -91,7 +91,8 @@ void pipeclose(struct pipe *, int);
 int piperead(struct pipe *, char *, int);
 int pipewrite(struct pipe *, char *, int);
 
-// proc.c
+// PAGEBREAK: 16
+//  proc.c
 struct proc *copyproc(struct proc *);
 void exit(void);
 int fork(void);

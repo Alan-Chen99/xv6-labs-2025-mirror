@@ -88,8 +88,9 @@ static inline void cli(void) { asm volatile("cli"); }
 
 static inline void sti(void) { asm volatile("sti"); }
 
-// Layout of the trap frame built on the stack by the
-// hardware and by trapasm.S, and passed to trap().
+// PAGEBREAK: 36
+//  Layout of the trap frame built on the stack by the
+//  hardware and by trapasm.S, and passed to trap().
 struct trapframe {
   // registers as pushed by pusha
   uint edi;
