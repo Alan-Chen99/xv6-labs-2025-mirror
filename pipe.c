@@ -76,7 +76,7 @@ int pipewrite(struct pipe *p, char *addr, int n) {
   acquire(&p->lock);
   for (i = 0; i < n; i++) {
     while (p->nwrite == p->nread + PIPESIZE) { // DOC: pipewrite-full
-      if (p->readopen == 0 || cp->killed) {
+      if (p->readopen == 0 || proc->killed) {
         release(&p->lock);
         return -1;
       }
@@ -95,7 +95,7 @@ int piperead(struct pipe *p, char *addr, int n) {
 
   acquire(&p->lock);
   while (p->nread == p->nwrite && p->writeopen) { // DOC: pipe-empty
-    if (cp->killed) {
+    if (proc->killed) {
       release(&p->lock);
       return -1;
     }

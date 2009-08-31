@@ -37,7 +37,9 @@ int fetchstr(struct proc *p, uint addr, char **pp) {
 }
 
 // Fetch the nth 32-bit system call argument.
-int argint(int n, int *ip) { return fetchint(cp, cp->tf->esp + 4 + 4 * n, ip); }
+int argint(int n, int *ip) {
+  return fetchint(proc, proc->tf->esp + 4 + 4 * n, ip);
+}
 
 // Fetch the nth word-sized system call argument as a pointer
 // to a block of memory of size n bytes.  Check that the pointer
@@ -47,9 +49,9 @@ int argptr(int n, char **pp, int size) {
 
   if (argint(n, &i) < 0)
     return -1;
-  if ((uint)i >= cp->sz || (uint)i + size >= cp->sz)
+  if ((uint)i >= proc->sz || (uint)i + size >= proc->sz)
     return -1;
-  *pp = cp->mem + i;
+  *pp = proc->mem + i;
   return 0;
 }
 
@@ -61,7 +63,7 @@ int argstr(int n, char **pp) {
   int addr;
   if (argint(n, &addr) < 0)
     return -1;
-  return fetchstr(cp, addr, pp);
+  return fetchstr(proc, addr, pp);
 }
 
 extern int sys_chdir(void);
@@ -98,11 +100,11 @@ static int (*syscalls[])(void) = {
 void syscall(void) {
   int num;
 
-  num = cp->tf->eax;
+  num = proc->tf->eax;
   if (num >= 0 && num < NELEM(syscalls) && syscalls[num])
-    cp->tf->eax = syscalls[num]();
+    proc->tf->eax = syscalls[num]();
   else {
-    cprintf("%d %s: unknown sys call %d\n", cp->pid, cp->name, num);
-    cp->tf->eax = -1;
+    cprintf("%d %s: unknown sys call %d\n", proc->pid, proc->name, num);
+    proc->tf->eax = -1;
   }
 }

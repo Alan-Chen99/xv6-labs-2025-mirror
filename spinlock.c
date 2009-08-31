@@ -11,7 +11,7 @@
 void initlock(struct spinlock *lk, char *name) {
   lk->name = name;
   lk->locked = 0;
-  lk->cpu = 0xffffffff;
+  lk->cpu = 0;
 }
 
 // Acquire the lock.
@@ -30,10 +30,7 @@ void acquire(struct spinlock *lk) {
     ;
 
   // Record info about lock acquisition for debugging.
-  // The +10 is only so that we can tell the difference
-  // between forgetting to initialize lock->cpu
-  // and holding a lock on cpu 0.
-  lk->cpu = cpu() + 10;
+  lk->cpu = cpu;
   getcallerpcs(&lk, lk->pcs);
 }
 
@@ -43,7 +40,7 @@ void release(struct spinlock *lk) {
     panic("release");
 
   lk->pcs[0] = 0;
-  lk->cpu = 0xffffffff;
+  lk->cpu = 0;
 
   // The xchg serializes, so that reads before release are
   // not reordered after it.  The 1996 PentiumPro manual (Volume 3,
@@ -76,9 +73,7 @@ void getcallerpcs(void *v, uint pcs[]) {
 }
 
 // Check whether this cpu is holding the lock.
-int holding(struct spinlock *lock) {
-  return lock->locked && lock->cpu == cpu() + 10;
-}
+int holding(struct spinlock *lock) { return lock->locked && lock->cpu == cpu; }
 
 // Pushcli/popcli are like cli/sti except that they are matched:
 // it takes two popcli to undo two pushcli.  Also, if interrupts
@@ -89,15 +84,15 @@ void pushcli(void) {
 
   eflags = readeflags();
   cli();
-  if (c->ncli++ == 0)
-    c->intena = eflags & FL_IF;
+  if (cpu->ncli++ == 0)
+    cpu->intena = eflags & FL_IF;
 }
 
 void popcli(void) {
   if (readeflags() & FL_IF)
     panic("popcli - interruptible");
-  if (--c->ncli < 0)
+  if (--cpu->ncli < 0)
     panic("popcli");
-  if (c->ncli == 0 && c->intena)
+  if (cpu->ncli == 0 && cpu->intena)
     sti();
 }

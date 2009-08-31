@@ -51,8 +51,8 @@ struct proc {
 
 // Per-CPU state
 struct cpu {
-  uchar apicid;              // Local APIC ID
-  struct context *context;   // Switch here to enter scheduler
+  uchar id;                  // Local APIC ID; index into cpus[] below
+  struct context *scheduler; // Switch here to enter scheduler
   struct taskstate ts;       // Used by x86 to find stack for interrupt
   struct segdesc gdt[NSEGS]; // x86 global descriptor table
   volatile uint booted;      // Has the CPU started?
@@ -70,5 +70,5 @@ extern int ncpu;
 // pointed at by gs; the name __thread derives from the use
 // of the same mechanism to provide per-thread storage in
 // multithreaded user programs.
-extern __thread struct cpu *c;   // This cpu.
-extern __thread struct proc *cp; // Current process on this cpu.
+extern __thread struct cpu *cpu;   // This cpu.
+extern __thread struct proc *proc; // Current process on this cpu.
