@@ -113,13 +113,7 @@ void lapiceoi(void) {
 
 // Spin for a given number of microseconds.
 // On real hardware would want to tune this dynamically.
-void microdelay(int us) {
-  volatile int j = 0;
-
-  while (us-- > 0)
-    for (j = 0; j < 10000; j++)
-      ;
-}
+void microdelay(int us) {}
 
 #define IO_RTC 0x70
 
