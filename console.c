@@ -153,7 +153,12 @@ void consputc(int c) {
       ;
   }
 
-  uartputc(c);
+  if (c == BACKSPACE) {
+    uartputc('\b');
+    uartputc(' ');
+    uartputc('\b');
+  } else
+    uartputc(c);
   cgaputc(c);
 }
 
@@ -186,6 +191,7 @@ void consoleintr(int (*getc)(void)) {
       }
       break;
     case C('H'): // Backspace
+    case '\x7f':
       if (input.e != input.w) {
         input.e--;
         consputc(BACKSPACE);
@@ -193,6 +199,9 @@ void consoleintr(int (*getc)(void)) {
       break;
     default:
       if (c != 0 && input.e - input.r < INPUT_BUF) {
+        // The serial port produces 0x13, not 0x10
+        if (c == '\r')
+          c = '\n';
         input.buf[input.e++ % INPUT_BUF] = c;
         consputc(c);
         if (c == '\n' || c == C('D') || input.e == input.r + INPUT_BUF) {
