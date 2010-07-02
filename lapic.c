@@ -44,6 +44,7 @@ static void lapicw(int index, int value) {
 
 // PAGEBREAK!
 void lapicinit(int c) {
+  cprintf("lapicinit: %d 0x%x\n", c, lapic);
   if (!lapic)
     return;
 

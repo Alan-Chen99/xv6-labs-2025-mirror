@@ -31,6 +31,7 @@ static uchar sum(uchar *addr, int len) {
 static struct mp *mpsearch1(uchar *addr, int len) {
   uchar *e, *p;
 
+  cprintf("mpsearch1 0x%x %d\n", addr, len);
   e = addr + len;
   for (p = addr; p < e; p += sizeof(struct mp))
     if (memcmp(p, "_MP_", 4) == 0 && sum(p, sizeof(struct mp)) == 0)
