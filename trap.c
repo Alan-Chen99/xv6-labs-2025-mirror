@@ -64,6 +64,10 @@ void trap(struct trapframe *tf) {
     cprintf("cpu%d: spurious interrupt at %x:%x\n", cpu->id, tf->cs, tf->eip);
     lapiceoi();
     break;
+  case T_TLBFLUSH:
+    lapiceoi();
+    lcr3(rcr3());
+    break;
 
   // PAGEBREAK: 13
   default:

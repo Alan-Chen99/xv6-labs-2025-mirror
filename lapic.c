@@ -8,20 +8,23 @@
 #include "x86.h"
 
 // Local APIC registers, divided by 4 for use as uint[] indices.
-#define ID (0x0020 / 4)     // ID
-#define VER (0x0030 / 4)    // Version
-#define TPR (0x0080 / 4)    // Task Priority
-#define EOI (0x00B0 / 4)    // EOI
-#define SVR (0x00F0 / 4)    // Spurious Interrupt Vector
-#define ENABLE 0x00000100   // Unit Enable
-#define ESR (0x0280 / 4)    // Error Status
-#define ICRLO (0x0300 / 4)  // Interrupt Command
-#define INIT 0x00000500     // INIT/RESET
-#define STARTUP 0x00000600  // Startup IPI
-#define DELIVS 0x00001000   // Delivery status
-#define ASSERT 0x00004000   // Assert interrupt (vs deassert)
-#define LEVEL 0x00008000    // Level triggered
-#define BCAST 0x00080000    // Send to all APICs, including self.
+#define ID (0x0020 / 4)    // ID
+#define VER (0x0030 / 4)   // Version
+#define TPR (0x0080 / 4)   // Task Priority
+#define EOI (0x00B0 / 4)   // EOI
+#define SVR (0x00F0 / 4)   // Spurious Interrupt Vector
+#define ENABLE 0x00000100  // Unit Enable
+#define ESR (0x0280 / 4)   // Error Status
+#define ICRLO (0x0300 / 4) // Interrupt Command
+#define INIT 0x00000500    // INIT/RESET
+#define STARTUP 0x00000600 // Startup IPI
+#define DELIVS 0x00001000  // Delivery status
+#define ASSERT 0x00004000  // Assert interrupt (vs deassert)
+#define DEASSERT 0x00000000
+#define LEVEL 0x00008000 // Level triggered
+#define BCAST 0x00080000 // Send to all APICs, including self.
+#define BUSY 0x00001000
+#define FIXED 0x00000000
 #define ICRHI (0x0310 / 4)  // Interrupt Command [63:32]
 #define TIMER (0x0320 / 4)  // Local Vector Table 0 (TIMER)
 #define X1 0x0000000B       // divide counts by 1
@@ -40,6 +43,21 @@ volatile uint *lapic; // Initialized in mp.c
 static void lapicw(int index, int value) {
   lapic[index] = value;
   lapic[ID]; // wait for write to finish, by reading
+}
+
+static uint lapicr(uint off) { return lapic[off]; }
+
+static int apic_icr_wait() {
+  uint i = 100000;
+  while ((lapicr(ICRLO) & BUSY) != 0) {
+    nop_pause();
+    i--;
+    if (i == 0) {
+      cprintf("apic_icr_wait: wedged?\n");
+      return -1;
+    }
+  }
+  return 0;
 }
 
 // PAGEBREAK!
@@ -115,6 +133,16 @@ void lapiceoi(void) {
 // Spin for a given number of microseconds.
 // On real hardware would want to tune this dynamically.
 void microdelay(int us) {}
+
+// Send IPI
+void lapic_ipi(int cpu, int ino) {
+  lapicw(ICRHI, cpu << 24);
+  lapicw(ICRLO, FIXED | DEASSERT | ino);
+  if (apic_icr_wait() < 0)
+    panic("lapic_ipi: icr_wait failure");
+}
+
+void lapic_tlbflush(uint cpu) { lapic_ipi(cpu, T_TLBFLUSH); }
 
 #define IO_RTC 0x70
 
