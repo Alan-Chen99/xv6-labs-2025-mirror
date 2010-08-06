@@ -14,13 +14,13 @@ void mainc(void);
 int main(void) {
   mpinit(); // collect info about this machine
   lapicinit(mpbcpu());
-  ksegment();
+  ksegment();    // set up segments
   picinit();     // interrupt controller
   ioapicinit();  // another interrupt controller
   consoleinit(); // I/O devices & their interrupts
   uartinit();    // serial port
-  pminit();      // physical memory for kernel
-  jkstack();     // Jump to mainc on a properly-allocated stack
+  pminit();      // discover how much memory there is
+  jkstack();     // call mainc() on a properly-allocated stack
 }
 
 void jkstack(void) {
@@ -35,7 +35,7 @@ void jkstack(void) {
 
 void mainc(void) {
   cprintf("\ncpu%d: starting xv6\n\n", cpu->id);
-  kvmalloc(); // allocate the kernel page table
+  kvmalloc(); // initialze the kernel page table
   pinit();    // process table
   tvinit();   // trap vectors
   binit();    // buffer cache
@@ -51,18 +51,19 @@ void mainc(void) {
   mpmain();
 }
 
-// Bootstrap processor gets here after setting up the hardware.
-// Additional processors start here.
+// Common CPU setup code.
+// Bootstrap CPU comes here from mainc().
+// Other CPUs jump here from bootother.S.
 static void mpmain(void) {
   if (cpunum() != mpbcpu()) {
     ksegment();
     lapicinit(cpunum());
   }
-  vminit(); // Run with paging on each processor
+  vminit(); // turn on paging
   cprintf("cpu%d: starting\n", cpu->id);
-  idtinit();
+  idtinit(); // load idt register
   xchg(&cpu->booted, 1);
-  scheduler();
+  scheduler(); // start running processes
 }
 
 static void bootothers(void) {
@@ -75,6 +76,7 @@ static void bootothers(void) {
   // placed the start of bootother.S there.
   code = (uchar *)0x7000;
   memmove(code, _binary_bootother_start, (uint)_binary_bootother_size);
+
   for (c = cpus; c < cpus + ncpu; c++) {
     if (c == cpus + cpunum()) // We've started already.
       continue;
@@ -85,7 +87,7 @@ static void bootothers(void) {
     *(void **)(code - 8) = mpmain;
     lapicstartap(c->id, (uint)code);
 
-    // Wait for cpu to get through bootstrap.
+    // Wait for cpu to finish mpmain()
     while (c->booted == 0)
       ;
   }
