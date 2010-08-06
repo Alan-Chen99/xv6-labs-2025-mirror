@@ -1211,6 +1211,27 @@ void sbrktest(void) {
   printf(stdout, "sbrk test OK\n");
 }
 
+void stacktest(void) {
+  printf(stdout, "stack test\n");
+  char dummy = 1;
+  char *p = &dummy;
+  int ppid = getpid();
+  int pid = fork();
+  if (pid < 0) {
+    printf(stdout, "fork failed\n");
+    exit();
+  }
+  if (pid == 0) {
+    // should cause a trap:
+    p[-4096] = 'z';
+    kill(ppid);
+    printf(stdout, "stack test failed: page before stack was writeable\n");
+    exit();
+  }
+  wait();
+  printf(stdout, "stack test OK\n");
+}
+
 int main(int argc, char *argv[]) {
   printf(1, "usertests starting\n");
 
@@ -1220,6 +1241,7 @@ int main(int argc, char *argv[]) {
   }
   close(open("usertests.ran", O_CREATE));
 
+  stacktest();
   sbrktest();
 
   opentest();
