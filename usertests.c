@@ -302,8 +302,9 @@ void exitwait(void) {
 
 void mem(void) {
   void *m1, *m2;
-  int pid;
+  int pid, ppid;
 
+  ppid = getpid();
   if ((pid = fork()) == 0) {
     m1 = 0;
     while ((m2 = malloc(10001)) != 0) {
@@ -318,6 +319,7 @@ void mem(void) {
     m1 = malloc(1024 * 20);
     if (m1 == 0) {
       printf(1, "couldn't allocate mem?!!\n");
+      kill(ppid);
       exit();
     }
     free(m1);
@@ -1183,6 +1185,7 @@ void forktest(void) {
 
 void sbrktest(void) {
   int pid;
+  char *oldbrk = sbrk(0);
 
   printf(stdout, "sbrk test\n");
 
@@ -1263,6 +1266,25 @@ void sbrktest(void) {
     printf(stdout, "sbrk was able to re-allocate beyond 640K, c %x\n", c);
     exit();
   }
+
+  // can we read the kernel's memory?
+  for (a = (char *)(640 * 1024); a < (char *)2000000; a += 50000) {
+    int ppid = getpid();
+    int pid = fork();
+    if (pid < 0) {
+      printf(stdout, "fork failed\n");
+      exit();
+    }
+    if (pid == 0) {
+      printf(stdout, "oops could read %x = %x\n", a, *a);
+      kill(ppid);
+      exit();
+    }
+    wait();
+  }
+
+  if (sbrk(0) > oldbrk)
+    sbrk(-(sbrk(0) - oldbrk));
 
   printf(stdout, "sbrk test OK\n");
 }
