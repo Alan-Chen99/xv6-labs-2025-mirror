@@ -385,7 +385,6 @@ struct cmd *parseexec(char **ps, char *es) {
   int tok, argc;
   struct execcmd *cmd;
   struct cmd *ret;
-  int *x = (int *)peek;
 
   if (peek(ps, es, "("))
     return parseblock(ps, es);
