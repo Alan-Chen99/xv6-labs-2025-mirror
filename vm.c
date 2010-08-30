@@ -342,12 +342,11 @@ void pminit(void) {
 void kvmalloc(void) { kpgdir = setupkvm(); }
 
 // Turn on paging.
-void vminit(void) {
+void vmenable(void) {
   uint cr0;
 
-  lcr3(PADDR(kpgdir));
+  switchkvm(); // load kpgdir into cr3
   cr0 = rcr0();
-  cr0 |= CR0_PE | CR0_PG | CR0_AM | CR0_WP | CR0_NE | CR0_TS | CR0_EM | CR0_MP;
-  cr0 &= ~(CR0_TS | CR0_EM);
+  cr0 |= CR0_PG;
   lcr0(cr0);
 }
