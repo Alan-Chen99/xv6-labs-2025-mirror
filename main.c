@@ -35,7 +35,7 @@ void jkstack(void) {
 
 void mainc(void) {
   cprintf("\ncpu%d: starting xv6\n\n", cpu->id);
-  kvmalloc(); // initialze the kernel page table
+  kvmalloc(); // initialize the kernel page table
   pinit();    // process table
   tvinit();   // trap vectors
   binit();    // buffer cache
