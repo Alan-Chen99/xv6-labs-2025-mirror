@@ -24,7 +24,21 @@
 #define FL_VIP 0x00100000       // Virtual Interrupt Pending
 #define FL_ID 0x00200000        // ID flag
 
-// Segment Descriptor
+// Control Register flags
+#define CR0_PE 0x00000001 // Protection Enable
+#define CR0_MP 0x00000002 // Monitor coProcessor
+#define CR0_EM 0x00000004 // Emulation
+#define CR0_TS 0x00000008 // Task Switched
+#define CR0_ET 0x00000010 // Extension Type
+#define CR0_NE 0x00000020 // Numeric Errror
+#define CR0_WP 0x00010000 // Write Protect
+#define CR0_AM 0x00040000 // Alignment Mask
+#define CR0_NW 0x20000000 // Not Writethrough
+#define CR0_CD 0x40000000 // Cache Disable
+#define CR0_PG 0x80000000 // Paging
+
+// PAGEBREAK!
+//  Segment Descriptor
 struct segdesc {
   uint lim_15_0 : 16;  // Low bits of segment limit
   uint base_15_0 : 16; // Low bits of segment base address
@@ -56,7 +70,6 @@ struct segdesc {
                    1,                                                          \
                    1,                                                          \
                    (uint)(base) >> 24}
-
 #define SEG16(type, base, lim, dpl)                                            \
   (struct segdesc){(lim) & 0xffff,                                             \
                    (uint)(base) & 0xffff,                                      \
@@ -96,14 +109,13 @@ struct segdesc {
 #define STS_IG32 0xE // 32-bit Interrupt Gate
 #define STS_TG32 0xF // 32-bit Trap Gate
 
-// PAGEBREAK!
-//  A linear address 'la' has a three-part structure as follows:
+// A linear address 'la' has a three-part structure as follows:
 //
-//  +--------10------+-------10-------+---------12----------+
-//  | Page Directory |   Page Table   | Offset within Page  |
-//  |      Index     |      Index     |                     |
-//  +----------------+----------------+---------------------+
-//   \--- PDX(la) --/ \--- PTX(la) --/
+// +--------10------+-------10-------+---------12----------+
+// | Page Directory |   Page Table   | Offset within Page  |
+// |      Index     |      Index     |                     |
+// +----------------+----------------+---------------------+
+//  \--- PDX(la) --/ \--- PTX(la) --/
 
 // page directory index
 #define PDX(la) ((((uint)(la)) >> PDXSHIFT) & 0x3FF)
@@ -148,20 +160,6 @@ struct segdesc {
 
 typedef uint pte_t;
 
-// Control Register flags
-#define CR0_PE 0x00000001 // Protection Enable
-#define CR0_MP 0x00000002 // Monitor coProcessor
-#define CR0_EM 0x00000004 // Emulation
-#define CR0_TS 0x00000008 // Task Switched
-#define CR0_ET 0x00000010 // Extension Type
-#define CR0_NE 0x00000020 // Numeric Errror
-#define CR0_WP 0x00010000 // Write Protect
-#define CR0_AM 0x00040000 // Alignment Mask
-#define CR0_NW 0x20000000 // Not Writethrough
-#define CR0_CD 0x40000000 // Cache Disable
-#define CR0_PG 0x80000000 // Paging
-
-// PAGEBREAK: 40
 // Task state segment format
 struct taskstate {
   uint link;  // Old ts selector
