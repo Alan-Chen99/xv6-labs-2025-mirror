@@ -68,6 +68,37 @@ static inline uint readeflags(void) {
   return eflags;
 }
 
+static inline void loadgs(ushort v) {
+  asm volatile("movw %0, %%gs" : : "r"(v));
+}
+
+static inline void lebp(uint val) {
+  asm volatile("movl %0,%%ebp" : : "r"(val));
+}
+
+static inline uint rebp(void) {
+  uint val;
+  asm volatile("movl %%ebp,%0" : "=r"(val));
+  return val;
+}
+
+static inline void lesp(uint val) {
+  asm volatile("movl %0,%%esp" : : "r"(val));
+}
+
+static inline uint resp(void) {
+  uint val;
+  asm volatile("movl %%esp,%0" : "=r"(val));
+  return val;
+}
+
+static inline void cli(void) { asm volatile("cli"); }
+
+static inline void sti(void) { asm volatile("sti"); }
+
+static inline void nop_pause(void) { asm volatile("pause" : :); }
+
+// PAGEBREAK!
 static inline uint xchg(volatile uint *addr, uint newval) {
   uint result;
 
@@ -78,14 +109,6 @@ static inline uint xchg(volatile uint *addr, uint newval) {
                : "cc");
   return result;
 }
-
-static inline void loadgs(ushort v) {
-  asm volatile("movw %0, %%gs" : : "r"(v));
-}
-
-static inline void cli(void) { asm volatile("cli"); }
-
-static inline void sti(void) { asm volatile("sti"); }
 
 static inline void lcr0(uint val) {
   asm volatile("movl %0,%%cr0" : : "r"(val));
@@ -112,28 +135,6 @@ static inline uint rcr3(void) {
   asm volatile("movl %%cr3,%0" : "=r"(val));
   return val;
 }
-
-static inline void lebp(uint val) {
-  asm volatile("movl %0,%%ebp" : : "r"(val));
-}
-
-static inline uint rebp(void) {
-  uint val;
-  asm volatile("movl %%ebp,%0" : "=r"(val));
-  return val;
-}
-
-static inline void lesp(uint val) {
-  asm volatile("movl %0,%%esp" : : "r"(val));
-}
-
-static inline uint resp(void) {
-  uint val;
-  asm volatile("movl %%esp,%0" : "=r"(val));
-  return val;
-}
-
-static inline void nop_pause(void) { asm volatile("pause" : :); }
 
 // PAGEBREAK: 36
 //  Layout of the trap frame built on the stack by the
