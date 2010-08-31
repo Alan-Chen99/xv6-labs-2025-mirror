@@ -24,7 +24,7 @@ int main(void) {
 }
 
 void jkstack(void) {
-  char *kstack = kalloc(PGSIZE);
+  char *kstack = kalloc();
   if (!kstack)
     panic("jkstack\n");
   char *top = kstack + PGSIZE;
@@ -82,7 +82,7 @@ static void bootothers(void) {
       continue;
 
     // Fill in %esp, %eip and start code on cpu.
-    stack = kalloc(KSTACKSIZE);
+    stack = kalloc();
     *(void **)(code - 4) = stack + KSTACKSIZE;
     *(void **)(code - 8) = mpmain;
     lapicstartap(c->id, (uint)code);
