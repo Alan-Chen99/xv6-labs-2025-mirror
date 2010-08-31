@@ -19,7 +19,7 @@ int main(void) {
   ioapicinit();  // another interrupt controller
   consoleinit(); // I/O devices & their interrupts
   uartinit();    // serial port
-  pminit();      // discover how much memory there is
+  kinit();       // initialize memory allocator
   jkstack();     // call mainc() on a properly-allocated stack
 }
 
