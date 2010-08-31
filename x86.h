@@ -72,18 +72,10 @@ static inline void loadgs(ushort v) {
   asm volatile("movw %0, %%gs" : : "r"(v));
 }
 
-static inline void lebp(uint val) {
-  asm volatile("movl %0,%%ebp" : : "r"(val));
-}
-
 static inline uint rebp(void) {
   uint val;
   asm volatile("movl %%ebp,%0" : "=r"(val));
   return val;
-}
-
-static inline void lesp(uint val) {
-  asm volatile("movl %0,%%esp" : : "r"(val));
 }
 
 static inline uint resp(void) {
@@ -96,9 +88,6 @@ static inline void cli(void) { asm volatile("cli"); }
 
 static inline void sti(void) { asm volatile("sti"); }
 
-static inline void nop_pause(void) { asm volatile("pause" : :); }
-
-// PAGEBREAK!
 static inline uint xchg(volatile uint *addr, uint newval) {
   uint result;
 
@@ -110,6 +99,9 @@ static inline uint xchg(volatile uint *addr, uint newval) {
   return result;
 }
 
+static inline void nop_pause(void) { asm volatile("pause" : :); }
+
+// PAGEBREAK!
 static inline void lcr0(uint val) {
   asm volatile("movl %0,%%cr0" : : "r"(val));
 }
