@@ -1299,7 +1299,7 @@ void sbrktest(void) {
       sbrk((640 * 1024) - (uint)sbrk(0));
       write(fds[1], "x", 1);
       // sit around until killed
-      while (1)
+      for (;;)
         sleep(1000);
     }
     char scratch;
