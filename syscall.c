@@ -20,8 +20,6 @@ int fetchint(struct proc *p, uint addr, int *ip) {
   return 0;
 }
 
-// XXX should we copy the string?
-
 // Fetch the nul-terminated string at addr from process p.
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
@@ -54,8 +52,7 @@ int argptr(int n, char **pp, int size) {
     return -1;
   if ((uint)i >= proc->sz || (uint)i + size >= proc->sz)
     return -1;
-  // *pp = proc->mem + i;   // XXXXX
-  *pp = (char *)i; // XXXXX
+  *pp = (char *)i;
   return 0;
 }
 
