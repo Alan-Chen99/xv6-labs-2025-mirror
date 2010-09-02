@@ -129,7 +129,7 @@ static void cgaputc(int c) {
     pos += 80 - pos % 80;
   else if (c == BACKSPACE) {
     if (pos > 0)
-      crt[--pos] = ' ' | 0x0700;
+      --pos;
   } else
     crt[pos++] = (c & 0xff) | 0x0700; // black on white
 
@@ -162,7 +162,6 @@ void consputc(int c) {
   cgaputc(c);
 }
 
-// PAGEBREAK: 50
 #define INPUT_BUF 128
 struct {
   struct spinlock lock;
