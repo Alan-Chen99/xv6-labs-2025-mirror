@@ -99,8 +99,6 @@ static inline uint xchg(volatile uint *addr, uint newval) {
   return result;
 }
 
-static inline void nop_pause(void) { asm volatile("pause" : :); }
-
 // PAGEBREAK!
 static inline void lcr0(uint val) {
   asm volatile("movl %0,%%cr0" : : "r"(val));
