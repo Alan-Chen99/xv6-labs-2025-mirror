@@ -124,14 +124,15 @@ void userinit(void) {
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
 int growproc(int n) {
+  uint sz = proc->sz;
   if (n > 0) {
-    if (!allocuvm(proc->pgdir, (char *)proc->sz, n))
+    if (!(sz = allocuvm(proc->pgdir, sz, sz + n)))
       return -1;
   } else if (n < 0) {
-    if (!deallocuvm(proc->pgdir, (char *)(proc->sz + n), 0 - n))
+    if (!(sz = deallocuvm(proc->pgdir, sz, sz + n)))
       return -1;
   }
-  proc->sz += n;
+  proc->sz = sz;
   switchuvm(proc);
   return 0;
 }
