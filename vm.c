@@ -12,7 +12,7 @@ static pde_t *kpgdir; // for use in scheduler()
 
 // Set up CPU's kernel segment descriptors.
 // Run once at boot time on each CPU.
-void ksegment(void) {
+void seginit(void) {
   struct cpu *c;
 
   // Map virtual addresses to linear addresses using identity map.
