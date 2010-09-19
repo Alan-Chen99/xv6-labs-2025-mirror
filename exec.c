@@ -46,9 +46,6 @@ int exec(char *path, char **argv) {
   }
   iunlockput(ip);
 
-  // XXX rtm: what about the BSS? shouldn't there be some
-  // bzero()ing here?
-
   // Allocate and initialize stack at sz
   sz = spbottom = PGROUNDUP(sz);
   if (!(sz = allocuvm(pgdir, sz, sz + PGSIZE)))
