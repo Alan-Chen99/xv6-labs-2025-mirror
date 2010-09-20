@@ -1367,6 +1367,7 @@ void validatetest(void) {
   printf(stdout, "validate ok\n");
 }
 
+// does unintialized data start out zero?
 char uninit[10000];
 void bsstest(void) {
   int i;
@@ -1380,6 +1381,31 @@ void bsstest(void) {
   printf(stdout, "bss test ok\n");
 }
 
+// does exec do something sensible if the arguments
+// are larger than a page?
+void bigargtest(void) {
+  int pid, ppid;
+
+  ppid = getpid();
+  pid = fork();
+  if (pid == 0) {
+    char *args[100];
+    int i;
+    for (i = 0; i < 99; i++)
+      args[i] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                "xxxxxx";
+    args[99] = 0;
+    printf(stdout, "bigarg test\n");
+    exec("echo", args);
+    printf(stdout, "bigarg test ok\n");
+    exit();
+  } else if (pid < 0) {
+    printf(stdout, "bigargtest: fork failed\n");
+    exit();
+  }
+  wait();
+}
+
 int main(int argc, char *argv[]) {
   printf(1, "usertests starting\n");
 
@@ -1389,6 +1415,7 @@ int main(int argc, char *argv[]) {
   }
   close(open("usertests.ran", O_CREATE));
 
+  // bigargtest();
   bsstest();
   sbrktest();
   validatetest();
