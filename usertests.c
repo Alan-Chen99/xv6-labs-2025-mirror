@@ -1389,12 +1389,13 @@ void bigargtest(void) {
   ppid = getpid();
   pid = fork();
   if (pid == 0) {
-    char *args[100];
+    char *args[32];
     int i;
-    for (i = 0; i < 99; i++)
-      args[i] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                "xxxxxx";
-    args[99] = 0;
+    for (i = 0; i < 32 - 1; i++)
+      args[i] = "bigargs test: failed\n                                        "
+                "                                                              "
+                "               ";
+    args[32 - 1] = 0;
     printf(stdout, "bigarg test\n");
     exec("echo", args);
     printf(stdout, "bigarg test ok\n");
@@ -1415,7 +1416,7 @@ int main(int argc, char *argv[]) {
   }
   close(open("usertests.ran", O_CREATE));
 
-  // bigargtest();
+  bigargtest();
   bsstest();
   sbrktest();
   validatetest();

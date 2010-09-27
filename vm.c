@@ -6,8 +6,6 @@
 #include "proc.h"
 #include "elf.h"
 
-#define USERTOP 0xA0000
-
 static pde_t *kpgdir; // for use in scheduler()
 
 // Set up CPU's kernel segment descriptors.
@@ -114,7 +112,7 @@ void kvmalloc(void) { kpgdir = setupkvm(); }
 pde_t *setupkvm(void) {
   pde_t *pgdir;
   extern char etext[];
-  char *rwstart = PGROUNDDOWN(etext) - PGSIZE;
+  char *rwstart = PGROUNDDOWN(etext);
   uint rwlen = (uint)rwstart - 0x100000;
 
   // Allocate page directory
@@ -174,7 +172,9 @@ void switchuvm(struct proc *p) {
 // processes directly.
 char *uva2ka(pde_t *pgdir, char *uva) {
   pte_t *pte = walkpgdir(pgdir, uva, 0);
-  if (pte == 0)
+  if ((*pte & PTE_P) == 0)
+    return 0;
+  if ((*pte & PTE_U) == 0)
     return 0;
   uint pa = PTE_ADDR(*pte);
   return (char *)pa;
@@ -297,4 +297,26 @@ pde_t *copyuvm(pde_t *pgdir, uint sz) {
 bad:
   freevm(d);
   return 0;
+}
+
+// copy some data to user address va in page table pgdir.
+// most useful when pgdir is not the current page table.
+// returns 1 if everthing OK, 0 on error.
+// uva2ka ensures this only works for PTE_U pages.
+int copyout(pde_t *pgdir, uint va, void *xbuf, uint len) {
+  char *buf = (char *)xbuf;
+  while (len > 0) {
+    uint va0 = (uint)PGROUNDDOWN(va);
+    char *pa0 = uva2ka(pgdir, (char *)va0);
+    if (pa0 == 0)
+      return 0;
+    uint n = PGSIZE - (va - va0);
+    if (n > len)
+      n = len;
+    memmove(pa0 + (va - va0), buf, n);
+    len -= n;
+    buf += n;
+    va = va0 + PGSIZE;
+  }
+  return 1;
 }
