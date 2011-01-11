@@ -99,9 +99,10 @@ void mpinit(void) {
     switch (*p) {
     case MPPROC:
       proc = (struct mpproc *)p;
+      cprintf("mpproc %d\n", proc->apicid);
       if (ncpu != proc->apicid) {
-        cprintf("mpinit: ncpu=%d apicpid=%d\n", ncpu, proc->apicid);
-        panic("mpinit");
+        cprintf("mpinit: ncpu=%d apicid=%d\n", ncpu, proc->apicid);
+        ismp = 0;
       }
       if (proc->flags & MPBOOT)
         bcpu = &cpus[ncpu];
@@ -121,9 +122,17 @@ void mpinit(void) {
       continue;
     default:
       cprintf("mpinit: unknown config type %x\n", *p);
-      panic("mpinit");
+      ismp = 0;
     }
   }
+  if (!ismp) {
+    // Didn't like what we found; fall back to no MP.
+    ncpu = 1;
+    lapic = 0;
+    ioapicid = 0;
+    return;
+  }
+
   if (mp->imcrp) {
     // Bochs doesn't support IMCR, so this doesn't run on Bochs.
     // But it would on real hardware.
