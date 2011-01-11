@@ -121,7 +121,7 @@ void iderw(struct buf *b) {
   if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID)
     panic("iderw: nothing to do");
   if (b->dev != 0 && !havedisk1)
-    panic("idrw: ide disk 1 not present");
+    panic("iderw: ide disk 1 not present");
 
   acquire(&idelock);
 

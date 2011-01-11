@@ -21,8 +21,10 @@ extern char end[]; // first address after kernel loaded from ELF file
 
 // Initialize free list of physical pages.
 void kinit(void) {
+  char *p;
+
   initlock(&kmem.lock, "kmem");
-  char *p = (char *)PGROUNDUP((uint)end);
+  p = (char *)PGROUNDUP((uint)end);
   for (; p + PGSIZE - 1 < (char *)PHYSTOP; p += PGSIZE)
     kfree(p);
 }
@@ -35,7 +37,7 @@ void kinit(void) {
 void kfree(char *v) {
   struct run *r;
 
-  if (((uint)v) % PGSIZE || v < end || (uint)v >= PHYSTOP)
+  if ((uint)v % PGSIZE || v < end || (uint)v >= PHYSTOP)
     panic("kfree");
 
   // Fill with junk to catch dangling refs.
@@ -51,7 +53,7 @@ void kfree(char *v) {
 // Allocate one 4096-byte page of physical memory.
 // Returns a pointer that the kernel can use.
 // Returns 0 if the memory cannot be allocated.
-char *kalloc() {
+char *kalloc(void) {
   struct run *r;
 
   acquire(&kmem.lock);

@@ -25,15 +25,16 @@ static struct {
 static void printint(int xx, int base, int sgn) {
   static char digits[] = "0123456789abcdef";
   char buf[16];
-  int i = 0, neg = 0;
+  int i, neg;
   uint x;
 
-  if (sgn && xx < 0) {
+  if (sgn && (neg = xx < 0)) {
     neg = 1;
     x = -xx;
   } else
     x = xx;
 
+  i = 0;
   do {
     buf[i++] = digits[x % base];
   } while ((x /= base) != 0);

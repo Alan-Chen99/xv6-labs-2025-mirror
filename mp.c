@@ -100,7 +100,7 @@ void mpinit(void) {
     case MPPROC:
       proc = (struct mpproc *)p;
       if (ncpu != proc->apicid) {
-        cprintf("mpinit: ncpu=%d apicpid=%d", ncpu, proc->apicid);
+        cprintf("mpinit: ncpu=%d apicpid=%d\n", ncpu, proc->apicid);
         panic("mpinit");
       }
       if (proc->flags & MPBOOT)

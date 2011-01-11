@@ -118,10 +118,10 @@ struct segdesc {
 //  \--- PDX(la) --/ \--- PTX(la) --/
 
 // page directory index
-#define PDX(la) ((((uint)(la)) >> PDXSHIFT) & 0x3FF)
+#define PDX(la) (((uint)(la) >> PDXSHIFT) & 0x3FF)
 
 // page table index
-#define PTX(la) ((((uint)(la)) >> PTXSHIFT) & 0x3FF)
+#define PTX(la) (((uint)(la) >> PTXSHIFT) & 0x3FF)
 
 // construct linear address from indexes and offset
 #define PGADDR(d, t, o) ((uint)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
@@ -129,7 +129,7 @@ struct segdesc {
 // turn a kernel linear address into a physical address.
 // all of the kernel data structures have linear and
 // physical addresses that are equal.
-#define PADDR(a) ((uint)a)
+#define PADDR(a) ((uint)(a))
 
 // Page directory and page table constants.
 #define NPDENTRIES 1024 // page directory entries per page directory

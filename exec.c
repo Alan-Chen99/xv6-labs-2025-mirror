@@ -8,16 +8,17 @@
 
 int exec(char *path, char **argv) {
   char *s, *last;
-  int i, off;
-  uint sz = 0;
+  int i, off, argc;
+  uint sz, sp, strings[MAXARG];
   struct elfhdr elf;
-  struct inode *ip = 0;
+  struct inode *ip;
   struct proghdr ph;
-  pde_t *pgdir = 0, *oldpgdir;
+  pde_t *pgdir, *oldpgdir;
 
   if ((ip = namei(path)) == 0)
     return -1;
   ilock(ip);
+  pgdir = 0;
 
   // Check ELF header
   if (readi(ip, (char *)&elf, 0, sizeof(elf)) < sizeof(elf))
@@ -25,10 +26,11 @@ int exec(char *path, char **argv) {
   if (elf.magic != ELF_MAGIC)
     goto bad;
 
-  if (!(pgdir = setupkvm()))
+  if ((pgdir = setupkvm()) == 0)
     goto bad;
 
   // Load program into memory.
+  sz = 0;
   for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
     if (readi(ip, (char *)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
@@ -36,9 +38,9 @@ int exec(char *path, char **argv) {
       continue;
     if (ph.memsz < ph.filesz)
       goto bad;
-    if (!(sz = allocuvm(pgdir, sz, ph.va + ph.memsz)))
+    if ((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0)
       goto bad;
-    if (!loaduvm(pgdir, (char *)ph.va, ip, ph.offset, ph.filesz))
+    if (loaduvm(pgdir, (char *)ph.va, ip, ph.offset, ph.filesz) < 0)
       goto bad;
   }
   iunlockput(ip);
@@ -46,7 +48,7 @@ int exec(char *path, char **argv) {
 
   // Allocate a one-page stack at the next page boundary
   sz = PGROUNDUP(sz);
-  if (!(sz = allocuvm(pgdir, sz, sz + PGSIZE)))
+  if ((sz = allocuvm(pgdir, sz, sz + PGSIZE)) == 0)
     goto bad;
 
   // initialize stack content:
@@ -62,17 +64,15 @@ int exec(char *path, char **argv) {
   // argc                             -- argc argument to main()
   // ffffffff                         -- return PC for main() call
 
-  uint sp = sz;
+  sp = sz;
 
   // count arguments
-  int argc;
   for (argc = 0; argv[argc]; argc++)
     ;
   if (argc >= MAXARG)
     goto bad;
 
   // push strings and remember where they are
-  uint strings[MAXARG];
   for (i = argc - 1; i >= 0; --i) {
     sp -= strlen(argv[i]) + 1;
     strings[i] = sp;

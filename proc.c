@@ -104,7 +104,7 @@ void userinit(void) {
 
   p = allocproc();
   initproc = p;
-  if (!(p->pgdir = setupkvm()))
+  if ((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
@@ -126,12 +126,14 @@ void userinit(void) {
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
 int growproc(int n) {
-  uint sz = proc->sz;
+  uint sz;
+
+  sz = proc->sz;
   if (n > 0) {
-    if (!(sz = allocuvm(proc->pgdir, sz, sz + n)))
+    if ((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
   } else if (n < 0) {
-    if (!(sz = deallocuvm(proc->pgdir, sz, sz + n)))
+    if ((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
   }
   proc->sz = sz;
@@ -151,7 +153,7 @@ int fork(void) {
     return -1;
 
   // Copy process state from p.
-  if (!(np->pgdir = copyuvm(proc->pgdir, proc->sz))) {
+  if ((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0) {
     kfree(np->kstack);
     np->kstack = 0;
     np->state = UNUSED;

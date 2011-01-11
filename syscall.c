@@ -38,8 +38,7 @@ int fetchstr(struct proc *p, uint addr, char **pp) {
 
 // Fetch the nth 32-bit system call argument.
 int argint(int n, int *ip) {
-  int x = fetchint(proc, proc->tf->esp + 4 + 4 * n, ip);
-  return x;
+  return fetchint(proc, proc->tf->esp + 4 + 4 * n, ip);
 }
 
 // Fetch the nth word-sized system call argument as a pointer
