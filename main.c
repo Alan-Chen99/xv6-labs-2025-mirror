@@ -79,7 +79,8 @@ static void bootothers(void) {
   char *stack;
 
   // Write bootstrap code to unused memory at 0x7000.
-  // The linker has placed the image of bootother.S in _binary_bootother_start.
+  // The linker has placed the image of bootother.S in
+  // _binary_bootother_start.
   code = (uchar *)0x7000;
   memmove(code, _binary_bootother_start, (uint)_binary_bootother_size);
 
@@ -101,3 +102,6 @@ static void bootothers(void) {
       ;
   }
 }
+
+// PAGEBREAK!
+//  Blank page.
