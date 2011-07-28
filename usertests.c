@@ -3,6 +3,8 @@
 #include "user.h"
 #include "fs.h"
 #include "fcntl.h"
+#include "syscall.h"
+#include "traps.h"
 
 char buf[2048];
 char name[3];
@@ -304,6 +306,7 @@ void mem(void) {
   void *m1, *m2;
   int pid, ppid;
 
+  printf(1, "mem test\n");
   ppid = getpid();
   if ((pid = fork()) == 0) {
     m1 = 0;
@@ -1184,16 +1187,18 @@ void forktest(void) {
 }
 
 void sbrktest(void) {
-  int pid;
-  char *oldbrk = sbrk(0);
+  int fds[2], pid, pids[32], ppid;
+  char *a, *b, *c, *lastaddr, *oldbrk, *p, scratch;
+  uint amt;
 
   printf(stdout, "sbrk test\n");
+  oldbrk = sbrk(0);
 
   // can one sbrk() less than a page?
-  char *a = sbrk(0);
+  a = sbrk(0);
   int i;
   for (i = 0; i < 5000; i++) {
-    char *b = sbrk(1);
+    b = sbrk(1);
     if (b != a) {
       printf(stdout, "sbrk test failed %d %x %x\n", i, a, b);
       exit();
@@ -1206,7 +1211,7 @@ void sbrktest(void) {
     printf(stdout, "sbrk test fork failed\n");
     exit();
   }
-  char *c = sbrk(1);
+  c = sbrk(1);
   c = sbrk(1);
   if (c != a + 1) {
     printf(stdout, "sbrk test failed post-fork\n");
@@ -1218,13 +1223,13 @@ void sbrktest(void) {
 
   // can one allocate the full 640K?
   a = sbrk(0);
-  uint amt = (640 * 1024) - (uint)a;
-  char *p = sbrk(amt);
+  amt = (640 * 1024) - (uint)a;
+  p = sbrk(amt);
   if (p != a) {
     printf(stdout, "sbrk test failed 640K test, p %x a %x\n", p, a);
     exit();
   }
-  char *lastaddr = (char *)(640 * 1024 - 1);
+  lastaddr = (char *)(640 * 1024 - 1);
   *lastaddr = 99;
 
   // is one forbidden from allocating more than 640K?
@@ -1269,8 +1274,8 @@ void sbrktest(void) {
 
   // can we read the kernel's memory?
   for (a = (char *)(640 * 1024); a < (char *)2000000; a += 50000) {
-    int ppid = getpid();
-    int pid = fork();
+    ppid = getpid();
+    pid = fork();
     if (pid < 0) {
       printf(stdout, "fork failed\n");
       exit();
@@ -1283,31 +1288,123 @@ void sbrktest(void) {
     wait();
   }
 
+  // if we run the system out of memory, does it clean up the last
+  // failed allocation?
+  sbrk(-(sbrk(0) - oldbrk));
+  if (pipe(fds) != 0) {
+    printf(1, "pipe() failed\n");
+    exit();
+  }
+  for (i = 0; i < sizeof(pids) / sizeof(pids[0]); i++) {
+    if ((pids[i] = fork()) == 0) {
+      // allocate the full 640K
+      sbrk((640 * 1024) - (uint)sbrk(0));
+      write(fds[1], "x", 1);
+      // sit around until killed
+      for (;;)
+        sleep(1000);
+    }
+    if (pids[i] != -1)
+      read(fds[0], &scratch, 1);
+  }
+  // if those failed allocations freed up the pages they did allocate,
+  // we'll be able to allocate here
+  c = sbrk(4096);
+  for (i = 0; i < sizeof(pids) / sizeof(pids[0]); i++) {
+    if (pids[i] == -1)
+      continue;
+    kill(pids[i]);
+    wait();
+  }
+  if (c == (char *)0xffffffff) {
+    printf(stdout, "failed sbrk leaked memory\n");
+    exit();
+  }
+
   if (sbrk(0) > oldbrk)
     sbrk(-(sbrk(0) - oldbrk));
 
   printf(stdout, "sbrk test OK\n");
 }
 
-void stacktest(void) {
-  printf(stdout, "stack test\n");
-  char dummy = 1;
-  char *p = &dummy;
-  int ppid = getpid();
-  int pid = fork();
-  if (pid < 0) {
-    printf(stdout, "fork failed\n");
-    exit();
+void validateint(int *p) {
+  int res;
+  asm("mov %%esp, %%ebx\n\t"
+      "mov %3, %%esp\n\t"
+      "int %2\n\t"
+      "mov %%ebx, %%esp"
+      : "=a"(res)
+      : "a"(SYS_sleep), "n"(T_SYSCALL), "c"(p)
+      : "ebx");
+}
+
+void validatetest(void) {
+  int hi, pid;
+  uint p;
+
+  printf(stdout, "validate test\n");
+  hi = 1100 * 1024;
+
+  for (p = 0; p <= (uint)hi; p += 4096) {
+    if ((pid = fork()) == 0) {
+      // try to crash the kernel by passing in a badly placed integer
+      validateint((int *)p);
+      exit();
+    }
+    sleep(0);
+    sleep(0);
+    kill(pid);
+    wait();
+
+    // try to crash the kernel by passing in a bad string pointer
+    if (link("nosuchfile", (char *)p) != -1) {
+      printf(stdout, "link should not succeed\n");
+      exit();
+    }
   }
+
+  printf(stdout, "validate ok\n");
+}
+
+// does unintialized data start out zero?
+char uninit[10000];
+void bsstest(void) {
+  int i;
+
+  printf(stdout, "bss test\n");
+  for (i = 0; i < sizeof(uninit); i++) {
+    if (uninit[i] != '\0') {
+      printf(stdout, "bss test failed\n");
+      exit();
+    }
+  }
+  printf(stdout, "bss test ok\n");
+}
+
+// does exec do something sensible if the arguments
+// are larger than a page?
+void bigargtest(void) {
+  int pid, ppid;
+
+  ppid = getpid();
+  pid = fork();
   if (pid == 0) {
-    // should cause a trap:
-    p[-4096] = 'z';
-    kill(ppid);
-    printf(stdout, "stack test failed: page before stack was writeable\n");
+    char *args[32 + 1];
+    int i;
+    for (i = 0; i < 32; i++)
+      args[i] = "bigargs test: failed\n                                        "
+                "                                                              "
+                "               ";
+    args[32] = 0;
+    printf(stdout, "bigarg test\n");
+    exec("echo", args);
+    printf(stdout, "bigarg test ok\n");
+    exit();
+  } else if (pid < 0) {
+    printf(stdout, "bigargtest: fork failed\n");
     exit();
   }
   wait();
-  printf(stdout, "stack test OK\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -1319,8 +1416,10 @@ int main(int argc, char *argv[]) {
   }
   close(open("usertests.ran", O_CREATE));
 
-  stacktest();
+  bigargtest();
+  bsstest();
   sbrktest();
+  validatetest();
 
   opentest();
   writetest();

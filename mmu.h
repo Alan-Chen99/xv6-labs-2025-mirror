@@ -24,7 +24,21 @@
 #define FL_VIP 0x00100000       // Virtual Interrupt Pending
 #define FL_ID 0x00200000        // ID flag
 
-// Segment Descriptor
+// Control Register flags
+#define CR0_PE 0x00000001 // Protection Enable
+#define CR0_MP 0x00000002 // Monitor coProcessor
+#define CR0_EM 0x00000004 // Emulation
+#define CR0_TS 0x00000008 // Task Switched
+#define CR0_ET 0x00000010 // Extension Type
+#define CR0_NE 0x00000020 // Numeric Errror
+#define CR0_WP 0x00010000 // Write Protect
+#define CR0_AM 0x00040000 // Alignment Mask
+#define CR0_NW 0x20000000 // Not Writethrough
+#define CR0_CD 0x40000000 // Cache Disable
+#define CR0_PG 0x80000000 // Paging
+
+// PAGEBREAK!
+//  Segment Descriptor
 struct segdesc {
   uint lim_15_0 : 16;  // Low bits of segment limit
   uint base_15_0 : 16; // Low bits of segment base address
@@ -56,7 +70,6 @@ struct segdesc {
                    1,                                                          \
                    1,                                                          \
                    (uint)(base) >> 24}
-
 #define SEG16(type, base, lim, dpl)                                            \
   (struct segdesc){(lim) & 0xffff,                                             \
                    (uint)(base) & 0xffff,                                      \
@@ -82,8 +95,6 @@ struct segdesc {
 #define STA_R 0x2 // Readable (executable segments)
 #define STA_A 0x1 // Accessed
 
-//
-
 // System segment type bits
 #define STS_T16A 0x1 // Available 16-bit TSS
 #define STS_LDT 0x2  // Local Descriptor Table
@@ -107,10 +118,10 @@ struct segdesc {
 //  \--- PDX(la) --/ \--- PTX(la) --/
 
 // page directory index
-#define PDX(la) ((((uint)(la)) >> PDXSHIFT) & 0x3FF)
+#define PDX(la) (((uint)(la) >> PDXSHIFT) & 0x3FF)
 
 // page table index
-#define PTX(la) ((((uint)(la)) >> PTXSHIFT) & 0x3FF)
+#define PTX(la) (((uint)(la) >> PTXSHIFT) & 0x3FF)
 
 // construct linear address from indexes and offset
 #define PGADDR(d, t, o) ((uint)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
@@ -118,7 +129,7 @@ struct segdesc {
 // turn a kernel linear address into a physical address.
 // all of the kernel data structures have linear and
 // physical addresses that are equal.
-#define PADDR(a) ((uint)a)
+#define PADDR(a) ((uint)(a))
 
 // Page directory and page table constants.
 #define NPDENTRIES 1024 // page directory entries per page directory
@@ -149,20 +160,6 @@ struct segdesc {
 
 typedef uint pte_t;
 
-// Control Register flags
-#define CR0_PE 0x00000001 // Protection Enable
-#define CR0_MP 0x00000002 // Monitor coProcessor
-#define CR0_EM 0x00000004 // Emulation
-#define CR0_TS 0x00000008 // Task Switched
-#define CR0_ET 0x00000010 // Extension Type
-#define CR0_NE 0x00000020 // Numeric Errror
-#define CR0_WP 0x00010000 // Write Protect
-#define CR0_AM 0x00040000 // Alignment Mask
-#define CR0_NW 0x20000000 // Not Writethrough
-#define CR0_CD 0x40000000 // Cache Disable
-#define CR0_PG 0x80000000 // Paging
-
-// PAGEBREAK: 40
 // Task state segment format
 struct taskstate {
   uint link;  // Old ts selector

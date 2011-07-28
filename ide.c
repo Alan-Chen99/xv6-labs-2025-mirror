@@ -88,7 +88,7 @@ void ideintr(void) {
   acquire(&idelock);
   if ((b = idequeue) == 0) {
     release(&idelock);
-    cprintf("Spurious IDE interrupt.\n");
+    // cprintf("spurious IDE interrupt\n");
     return;
   }
   idequeue = b->qnext;
@@ -121,7 +121,7 @@ void iderw(struct buf *b) {
   if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID)
     panic("iderw: nothing to do");
   if (b->dev != 0 && !havedisk1)
-    panic("idrw: ide disk 1 not present");
+    panic("iderw: ide disk 1 not present");
 
   acquire(&idelock);
 
