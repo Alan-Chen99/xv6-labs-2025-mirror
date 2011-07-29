@@ -9,6 +9,7 @@
 #include "spinlock.h"
 #include "fs.h"
 #include "file.h"
+#include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
@@ -55,6 +56,9 @@ void cprintf(char *fmt, ...) {
   locking = cons.locking;
   if (locking)
     acquire(&cons.lock);
+
+  if (fmt == 0)
+    panic("null fmt");
 
   argp = (uint *)(void *)(&fmt + 1);
   state = 0;
@@ -115,7 +119,7 @@ void panic(char *s) {
 // PAGEBREAK: 50
 #define BACKSPACE 0x100
 #define CRTPORT 0x3d4
-static ushort *crt = (ushort *)0xb8000; // CGA memory
+static ushort *crt = (ushort *)P2V(0xb8000); // CGA memory
 
 static void cgaputc(int c) {
   int pos;

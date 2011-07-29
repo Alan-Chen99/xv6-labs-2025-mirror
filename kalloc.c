@@ -5,6 +5,7 @@
 #include "types.h"
 #include "defs.h"
 #include "param.h"
+#include "memlayout.h"
 #include "mmu.h"
 #include "spinlock.h"
 
@@ -18,14 +19,26 @@ struct {
 } kmem;
 
 extern char end[]; // first address after kernel loaded from ELF file
+char *newend;
+
+// simple page allocator to get off the ground during boot
+char *pgalloc(void) {
+  if (newend == 0)
+    newend = end;
+
+  void *p = (void *)PGROUNDUP((uint)newend);
+  memset(p, 0, PGSIZE);
+  newend = newend + PGSIZE;
+  return p;
+}
 
 // Initialize free list of physical pages.
 void kinit(void) {
   char *p;
 
   initlock(&kmem.lock, "kmem");
-  p = (char *)PGROUNDUP((uint)end);
-  for (; p + PGSIZE <= (char *)PHYSTOP; p += PGSIZE)
+  p = (char *)PGROUNDUP((uint)newend);
+  for (; p + PGSIZE <= (char *)p2v(PHYSTOP); p += PGSIZE)
     kfree(p);
 }
 
@@ -37,7 +50,7 @@ void kinit(void) {
 void kfree(char *v) {
   struct run *r;
 
-  if ((uint)v % PGSIZE || v < end || (uint)v >= PHYSTOP)
+  if ((uint)v % PGSIZE || v < end || v2p(v) >= PHYSTOP)
     panic("kfree");
 
   // Fill with junk to catch dangling refs.
@@ -61,5 +74,6 @@ char *kalloc(void) {
   if (r)
     kmem.freelist = r->next;
   release(&kmem.lock);
+  cprintf("kalloc: 0x%x\n", r);
   return (char *)r;
 }

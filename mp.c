@@ -5,6 +5,7 @@
 #include "types.h"
 #include "defs.h"
 #include "param.h"
+#include "memlayout.h"
 #include "mp.h"
 #include "x86.h"
 #include "mmu.h"
@@ -31,6 +32,7 @@ static uchar sum(uchar *addr, int len) {
 static struct mp *mpsearch1(uchar *addr, int len) {
   uchar *e, *p;
 
+  addr = p2v((uint)addr);
   e = addr + len;
   for (p = addr; p < e; p += sizeof(struct mp))
     if (memcmp(p, "_MP_", 4) == 0 && sum(p, sizeof(struct mp)) == 0)
@@ -71,7 +73,7 @@ static struct mpconf *mpconfig(struct mp **pmp) {
 
   if ((mp = mpsearch()) == 0 || mp->physaddr == 0)
     return 0;
-  conf = (struct mpconf *)mp->physaddr;
+  conf = (struct mpconf *)p2v((uint)mp->physaddr);
   if (memcmp(conf, "PCMP", 4) != 0)
     return 0;
   if (conf->version != 1 && conf->version != 4)
