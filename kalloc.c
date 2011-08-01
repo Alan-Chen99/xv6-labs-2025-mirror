@@ -74,6 +74,5 @@ char *kalloc(void) {
   if (r)
     kmem.freelist = r->next;
   release(&kmem.lock);
-  cprintf("kalloc: 0x%x\n", r);
   return (char *)r;
 }
