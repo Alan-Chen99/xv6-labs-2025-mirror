@@ -37,8 +37,16 @@
 #define CR0_CD 0x40000000 // Cache Disable
 #define CR0_PG 0x80000000 // Paging
 
+#define SEG_KCODE 1 // kernel code
+#define SEG_KDATA 2 // kernel data+stack
+#define SEG_KCPU 3  // kernel per-cpu data
+#define SEG_UCODE 4 // user code
+#define SEG_UDATA 5 // user data+stack
+#define SEG_TSS 6   // this process's task state
+
 // PAGEBREAK!
-//  Segment Descriptor
+#ifndef __ASSEMBLER__
+// Segment Descriptor
 struct segdesc {
   uint lim_15_0 : 16;  // Low bits of segment limit
   uint base_15_0 : 16; // Low bits of segment base address
@@ -84,6 +92,7 @@ struct segdesc {
                    1,                                                          \
                    0,                                                          \
                    (uint)(base) >> 24}
+#endif
 
 #define DPL_USER 0x3 // User DPL
 
@@ -150,6 +159,7 @@ struct segdesc {
 // Address in page table or page directory entry
 #define PTE_ADDR(pte) ((uint)(pte) & ~0xFFF)
 
+#ifndef __ASSEMBLER__
 typedef uint pte_t;
 
 // Task state segment format
@@ -227,3 +237,5 @@ struct gatedesc {
     (gate).p = 1;                                                              \
     (gate).off_31_16 = (uint)(off) >> 16;                                      \
   }
+
+#endif
