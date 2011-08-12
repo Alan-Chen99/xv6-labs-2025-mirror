@@ -105,6 +105,9 @@ int sys_link(void) {
     iunlockput(ip);
     return -1;
   }
+
+  begin_trans();
+
   ip->nlink++;
   iupdate(ip);
   iunlock(ip);
@@ -118,6 +121,9 @@ int sys_link(void) {
   }
   iunlockput(dp);
   iput(ip);
+
+  commit_trans();
+
   return 0;
 
 bad:
@@ -125,6 +131,7 @@ bad:
   ip->nlink--;
   iupdate(ip);
   iunlockput(ip);
+  commit_trans();
   return -1;
 }
 
@@ -175,6 +182,8 @@ int sys_unlink(void) {
     return -1;
   }
 
+  begin_trans();
+
   memset(&de, 0, sizeof(de));
   if (writei(dp, (char *)&de, off, sizeof(de)) != sizeof(de))
     panic("unlink: writei");
@@ -187,6 +196,9 @@ int sys_unlink(void) {
   ip->nlink--;
   iupdate(ip);
   iunlockput(ip);
+
+  commit_trans();
+
   return 0;
 }
 
@@ -229,6 +241,7 @@ static struct inode *create(char *path, short type, short major, short minor) {
     panic("create: dirlink");
 
   iunlockput(dp);
+
   return ip;
 }
 
@@ -241,7 +254,10 @@ int sys_open(void) {
   if (argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
   if (omode & O_CREATE) {
-    if ((ip = create(path, T_FILE, 0, 0)) == 0)
+    begin_trans();
+    ip = create(path, T_FILE, 0, 0);
+    commit_trans();
+    if (ip == 0)
       return -1;
   } else {
     if ((ip = namei(path)) == 0)
@@ -273,9 +289,13 @@ int sys_mkdir(void) {
   char *path;
   struct inode *ip;
 
-  if (argstr(0, &path) < 0 || (ip = create(path, T_DIR, 0, 0)) == 0)
+  begin_trans();
+  if (argstr(0, &path) < 0 || (ip = create(path, T_DIR, 0, 0)) == 0) {
+    commit_trans();
     return -1;
+  }
   iunlockput(ip);
+  commit_trans();
   return 0;
 }
 
@@ -285,10 +305,14 @@ int sys_mknod(void) {
   int len;
   int major, minor;
 
+  begin_trans();
   if ((len = argstr(0, &path)) < 0 || argint(1, &major) < 0 ||
-      argint(2, &minor) < 0 || (ip = create(path, T_DEV, major, minor)) == 0)
+      argint(2, &minor) < 0 || (ip = create(path, T_DEV, major, minor)) == 0) {
+    commit_trans();
     return -1;
+  }
   iunlockput(ip);
+  commit_trans();
   return 0;
 }
 
