@@ -39,13 +39,13 @@ static void bzero(int dev, int bno) {
 
   bp = bread(dev, bno);
   memset(bp->data, 0, BSIZE);
-  bwrite(bp);
+  log_write(bp);
   brelse(bp);
 }
 
 // Blocks.
 
-// Allocate a disk block.
+// Allocate a zeroed disk block.
 static uint balloc(uint dev) {
   int b, bi, m;
   struct buf *bp;
@@ -61,6 +61,7 @@ static uint balloc(uint dev) {
         bp->data[bi / 8] |= m;           // Mark block in use on disk.
         log_write(bp);
         brelse(bp);
+        bzero(dev, b + bi);
         return b + bi;
       }
     }
@@ -74,8 +75,6 @@ static void bfree(int dev, uint b) {
   struct buf *bp;
   struct superblock sb;
   int bi, m;
-
-  bzero(dev, b);
 
   readsb(dev, &sb);
   bp = bread(dev, BBLOCK(b, sb.ninodes));
