@@ -16,7 +16,7 @@ struct segdesc gdt[NSEGS];
 void seginit(void) {
   struct cpu *c;
 
-  // Map virtual addresses to linear addresses using identity map.
+  // Map "logical" addresses to virtual addresses using identity map.
   // Cannot share a CODE descriptor for both kernel and user
   // because it would have to have DPL_USR, but the CPU forbids
   // an interrupt from CPL=0 to DPL=3.
@@ -38,7 +38,7 @@ void seginit(void) {
 }
 
 // Return the address of the PTE in page table pgdir
-// that corresponds to linear address va.  If alloc!=0,
+// that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, char *(*alloc)(void)) {
   pde_t *pde;
@@ -60,16 +60,16 @@ static pte_t *walkpgdir(pde_t *pgdir, const void *va, char *(*alloc)(void)) {
   return &pgtab[PTX(va)];
 }
 
-// Create PTEs for linear addresses starting at la that refer to
+// Create PTEs for virtual addresses starting at la that refer to
 // physical addresses starting at pa. la and size might not
 // be page-aligned.
-static int mappages(pde_t *pgdir, void *la, uint size, uint pa, int perm,
+static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm,
                     char *(*alloc)(void)) {
   char *a, *last;
   pte_t *pte;
 
-  a = PGROUNDDOWN(la);
-  last = PGROUNDDOWN(la + size - 1);
+  a = PGROUNDDOWN(va);
+  last = PGROUNDDOWN(va + size - 1);
   for (;;) {
     pte = walkpgdir(pgdir, a, alloc);
     if (pte == 0)
@@ -85,14 +85,13 @@ static int mappages(pde_t *pgdir, void *la, uint size, uint pa, int perm,
   return 0;
 }
 
-// The mappings from logical to linear are one to one (i.e.,
+// The mappings from logical to virtual are one to one (i.e.,
 // segmentation doesn't do anything).
 // There is one page table per process, plus one that's used
 // when a CPU is not running any process (kpgdir).
 // A user process uses the same page table as the kernel; the
 // page protection bits prevent it from using anything other
 // than its memory.
-//
 //
 // setupkvm() and exec() set up every page table like this:
 //   0..USERTOP      : user memory (text, data, stack, heap), mapped to some
@@ -108,9 +107,9 @@ static int mappages(pde_t *pgdir, void *la, uint size, uint pa, int perm,
 // (which is inaccessible in user mode).  The user program sits in
 // the bottom of the address space, and the kernel at the top at KERNBASE.
 static struct kmap {
-  void *l;
-  uint p;
-  uint e;
+  void *virt;
+  uint phys_start;
+  uint phys_end;
   int perm;
 } kmap[] = {
     {P2V(0), 0, 1024 * 1024,
@@ -130,7 +129,8 @@ pde_t *setupkvm(char *(*alloc)(void)) {
   memset(pgdir, 0, PGSIZE);
   k = kmap;
   for (k = kmap; k < &kmap[NELEM(kmap)]; k++)
-    if (mappages(pgdir, k->l, k->e - k->p, (uint)k->p, k->perm, alloc) < 0)
+    if (mappages(pgdir, k->virt, k->phys_end - k->phys_start,
+                 (uint)k->phys_start, k->perm, alloc) < 0)
       return 0;
 
   return pgdir;
