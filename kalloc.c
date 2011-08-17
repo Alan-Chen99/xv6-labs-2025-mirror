@@ -19,7 +19,6 @@ struct {
 } kmem;
 
 extern char end[]; // first address after kernel loaded from ELF file
-extern uint maxpa; // Maximum physical address
 static char *newend;
 
 // simple page allocator to get off the ground during entry
@@ -43,7 +42,7 @@ void kinit(void) {
 
   initlock(&kmem.lock, "kmem");
   p = (char *)PGROUNDUP((uint)newend);
-  for (; p + PGSIZE <= (char *)p2v(maxpa); p += PGSIZE)
+  for (; p + PGSIZE <= (char *)p2v(PHYSTOP); p += PGSIZE)
     kfree(p);
 }
 
@@ -55,7 +54,7 @@ void kinit(void) {
 void kfree(char *v) {
   struct run *r;
 
-  if ((uint)v % PGSIZE || v < end || v2p(v) >= maxpa)
+  if ((uint)v % PGSIZE || v < end || v2p(v) >= PHYSTOP)
     panic("kfree");
 
   // Fill with junk to catch dangling refs.
