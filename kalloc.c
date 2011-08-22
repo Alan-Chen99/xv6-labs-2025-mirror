@@ -21,7 +21,7 @@ struct {
 extern char end[]; // first address after kernel loaded from ELF file
 static char *newend;
 
-// simple page allocator to get off the ground during entry
+// A simple page allocator to get off the ground during entry
 char *enter_alloc(void) {
   if (newend == 0)
     newend = end;
@@ -33,8 +33,6 @@ char *enter_alloc(void) {
   newend = newend + PGSIZE;
   return p;
 }
-
-uint detect_memory(void) { return 0xE000000; }
 
 // Initialize free list of physical pages.
 void kinit(void) {
