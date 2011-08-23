@@ -297,8 +297,14 @@ void yield(void) {
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
 void forkret(void) {
+  static int first = 1;
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
+
+  if (first) {
+    first = 0;
+    initlog();
+  }
 
   // Return to "caller", actually trapret (see allocproc).
 }
