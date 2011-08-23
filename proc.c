@@ -302,6 +302,9 @@ void forkret(void) {
   release(&ptable.lock);
 
   if (first) {
+    // Some initialization functions must be run in the context
+    // of a regular process (e.g., they call sleep), and thus cannot
+    // be run from main().
     first = 0;
     initlog();
   }
