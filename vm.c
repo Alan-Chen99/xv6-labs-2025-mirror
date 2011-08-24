@@ -94,7 +94,7 @@ static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm,
 // than its memory.
 //
 // setupkvm() and exec() set up every page table like this:
-//   0..USERTOP      : user memory (text, data, stack, heap), mapped to some
+//   0..KERNBASE      : user memory (text, data, stack, heap), mapped to some
 //   unused phys mem KERNBASE..KERNBASE+EXTMEM: mapped to 0..EXTMEM  (below
 //   extended memory) KERNBASE+EXTMEM..KERNBASE+end : mapped to EXTMEM..end
 //   (mapped without write permission) KERNBASE+end..KERBASE+PHYSTOP     :
@@ -206,7 +206,7 @@ int allocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
   char *mem;
   uint a;
 
-  if (newsz > USERTOP)
+  if (newsz >= KERNBASE)
     return 0;
   if (newsz < oldsz)
     return oldsz;
@@ -258,7 +258,7 @@ void freevm(pde_t *pgdir) {
 
   if (pgdir == 0)
     panic("freevm: no pgdir");
-  deallocuvm(pgdir, USERTOP, 0);
+  deallocuvm(pgdir, KERNBASE, 0);
   for (i = 0; i < NPDENTRIES; i++) {
     if (pgdir[i] & PTE_P) {
       char *v = p2v(PTE_ADDR(pgdir[i]));
