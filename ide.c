@@ -124,11 +124,11 @@ void iderw(struct buf *b) {
   if (b->dev != 0 && !havedisk1)
     panic("iderw: ide disk 1 not present");
 
-  acquire(&idelock);
+  acquire(&idelock); // DOC:acquire-lock
 
   // Append b to idequeue.
   b->qnext = 0;
-  for (pp = &idequeue; *pp; pp = &(*pp)->qnext)
+  for (pp = &idequeue; *pp; pp = &(*pp)->qnext) // DOC:insert-queue
     ;
   *pp = b;
 
