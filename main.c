@@ -55,7 +55,7 @@ static void mpmain(void) {
   scheduler();            // start running processes
 }
 
-pde_t enterpgdir[]; // For entry.S
+pde_t entrypgdir[]; // For entry.S
 
 // Start the non-boot (AP) processors.
 static void startothers(void) {
@@ -76,15 +76,15 @@ static void startothers(void) {
 
     // Tell entryother.S what stack to use, the address of mpenter and pgdir;
     // We cannot use kpgdir yet, because the AP processor is running in low
-    // memory, so we use enterpgdir for the APs too.  kalloc can return
+    // memory, so we use entrypgdir for the APs too.  kalloc can return
     // addresses above 4Mbyte (the machine may have much more physical memory
-    // than 4Mbyte), which aren't mapped by enterpgdir, so we must allocate a
+    // than 4Mbyte), which aren't mapped by entrypgdir, so we must allocate a
     // stack using enter_alloc(); This introduces the constraint that xv6 cannot
     // use kalloc until after these last enter_alloc invocations.
     stack = enter_alloc();
     *(void **)(code - 4) = stack + KSTACKSIZE;
     *(void **)(code - 8) = mpenter;
-    *(int **)(code - 12) = (void *)v2p(enterpgdir);
+    *(int **)(code - 12) = (void *)v2p(entrypgdir);
 
     lapicstartap(c->id, v2p(code));
 
@@ -98,7 +98,7 @@ static void startothers(void) {
 // Page directories (and page tables), must start on a page boundary,
 // hence the "__aligned__" attribute.
 // Use PTE_PS in page directory entry to enable 4Mbyte pages.
-__attribute__((__aligned__(PGSIZE))) pde_t enterpgdir[NPDENTRIES] = {
+__attribute__((__aligned__(PGSIZE))) pde_t entrypgdir[NPDENTRIES] = {
     // Map VA's [0, 4MB) to PA's [0, 4MB)
     [0] = (0) + PTE_P + PTE_W + PTE_PS,
     // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
