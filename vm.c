@@ -333,3 +333,14 @@ int copyout(pde_t *pgdir, uint va, void *p, uint len) {
   }
   return 0;
 }
+
+// Clear PTE_U on a page. Used to create an inaccessible
+// page beneath the user stack.
+void clear_pte_u(pde_t *pgdir, char *uva) {
+  pte_t *pte;
+
+  pte = walkpgdir(pgdir, uva, 0);
+  if (pte == 0)
+    panic("clear_pte_u");
+  *pte &= ~PTE_U;
+}

@@ -1469,7 +1469,7 @@ void bigargtest(void) {
                 "                                                              "
                 "                                   ";
     args[MAXARG - 1] = 0;
-    printf(stdout, "bigarg test %d\n", (MAXARG - 1) * strlen(args[0]));
+    printf(stdout, "bigarg test\n");
     exec("echo", args);
     printf(stdout, "bigarg test ok\n");
     fd = open("bigarg-ok", O_CREATE);
