@@ -122,7 +122,6 @@ static inline uint xchg(volatile uint *addr, uint newval) {
   return result;
 }
 
-// PAGEBREAK!
 static inline void lcr0(uint val) {
   asm volatile("movl %0,%%cr0" : : "r"(val));
 }
