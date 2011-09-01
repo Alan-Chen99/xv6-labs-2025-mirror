@@ -72,12 +72,10 @@ static void install_trans(void) {
   // if (log.lh.n > 0)
   //   cprintf("install_trans %d\n", log.lh.n);
   for (tail = 0; tail < log.lh.n; tail++) {
-    // cprintf("put entry %d to disk block %d\n", tail, log.lh.sector[tail]);
-    struct buf *lbuf =
-        bread(log.dev, log.start + tail + 1); // read i'th block from log
-    struct buf *dbuf = bread(log.dev, log.lh.sector[tail]); // read dst block
-    memmove(dbuf->data, lbuf->data, BSIZE);
-    bwrite(dbuf);
+    struct buf *lbuf = bread(log.dev, log.start + tail + 1); // read log block
+    struct buf *dbuf = bread(log.dev, log.lh.sector[tail]);  // read dst
+    memmove(dbuf->data, lbuf->data, BSIZE); // copy block to dst
+    bwrite(dbuf);                           // flush dst to disk
     brelse(lbuf);
     brelse(dbuf);
   }
@@ -97,7 +95,7 @@ static void read_head(void) {
   //   cprintf("read_head: %d\n", log.lh.n);
 }
 
-// Write the in-memory log header to disk, committing log entries till head
+// Write in-memory log header to disk, committing log entries till head
 static void write_head(void) {
   // if (log.lh.n > 0)
   //   cprintf("write_head: %d\n", log.lh.n);
@@ -131,7 +129,7 @@ void begin_trans(void) {
 
 void commit_trans(void) {
   if (log.lh.n > 0) {
-    write_head();    // This causes all blocks till log.head to be commited
+    write_head();    // Causes all blocks till log.head to be commited
     install_trans(); // Install all the transactions till head
     log.lh.n = 0;
     write_head(); // Reclaim log
