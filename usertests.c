@@ -1451,30 +1451,42 @@ void bsstest(void) {
   printf(stdout, "bss test ok\n");
 }
 
-// does exec do something sensible if the arguments
-// are larger than a page?
+// does exec return an error if the arguments
+// are larger than a page? or does it write
+// below the stack and wreck the instructions/data?
 void bigargtest(void) {
-  int pid, ppid;
+  int pid, ppid, fd;
 
+  unlink("bigarg-ok");
   ppid = getpid();
   pid = fork();
   if (pid == 0) {
-    char *args[32 + 1];
+    static char *args[MAXARG];
     int i;
-    for (i = 0; i < 32; i++)
+    for (i = 0; i < MAXARG - 1; i++)
       args[i] = "bigargs test: failed\n                                        "
                 "                                                              "
-                "               ";
-    args[32] = 0;
-    printf(stdout, "bigarg test\n");
+                "                                                              "
+                "                                   ";
+    args[MAXARG - 1] = 0;
+    printf(stdout, "bigarg test %d\n", (MAXARG - 1) * strlen(args[0]));
     exec("echo", args);
     printf(stdout, "bigarg test ok\n");
+    fd = open("bigarg-ok", O_CREATE);
+    close(fd);
     exit();
   } else if (pid < 0) {
     printf(stdout, "bigargtest: fork failed\n");
     exit();
   }
   wait();
+  fd = open("bigarg-ok", 0);
+  if (fd < 0) {
+    printf(stdout, "bigarg test failed!\n");
+    exit();
+  }
+  close(fd);
+  unlink("bigarg-ok");
 }
 
 // what happens when the file system runs out of blocks?
@@ -1543,6 +1555,7 @@ int main(int argc, char *argv[]) {
   }
   close(open("usertests.ran", O_CREATE));
 
+  bigargtest();
   bigwrite();
   bigargtest();
   bsstest();
