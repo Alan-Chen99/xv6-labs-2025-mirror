@@ -168,26 +168,18 @@ int sys_unlink(void) {
   ilock(dp);
 
   // Cannot unlink "." or "..".
-  if (namecmp(name, ".") == 0 || namecmp(name, "..") == 0) {
-    iunlockput(dp);
-    commit_trans();
-    return -1;
-  }
+  if (namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
+    goto bad;
 
-  if ((ip = dirlookup(dp, name, &off)) == 0) {
-    iunlockput(dp);
-    commit_trans();
-    return -1;
-  }
+  if ((ip = dirlookup(dp, name, &off)) == 0)
+    goto bad;
   ilock(ip);
 
   if (ip->nlink < 1)
     panic("unlink: nlink < 1");
   if (ip->type == T_DIR && !isdirempty(ip)) {
     iunlockput(ip);
-    iunlockput(dp);
-    commit_trans();
-    return -1;
+    goto bad;
   }
 
   memset(&de, 0, sizeof(de));
@@ -206,6 +198,11 @@ int sys_unlink(void) {
   commit_trans();
 
   return 0;
+
+bad:
+  iunlockput(dp);
+  commit_trans();
+  return -1;
 }
 
 static struct inode *create(char *path, short type, short major, short minor) {
