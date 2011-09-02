@@ -160,3 +160,6 @@ void log_write(struct buf *b) {
   if (i == log.lh.n)
     log.lh.n++;
 }
+
+// PAGEBREAK!
+//  Blank page.
