@@ -71,12 +71,12 @@ static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm,
   a = (char *)PGROUNDDOWN((uint)va);
   last = (char *)PGROUNDDOWN(((uint)va) + size - 1);
   for (;;) {
-    if((pte = walkpgdir(pgdir, a, alloc) == 0)
+    if ((pte = walkpgdir(pgdir, a, alloc)) == 0)
       return -1;
-    if(*pte & PTE_P)
+    if (*pte & PTE_P)
       panic("remap");
     *pte = pa | perm | PTE_P;
-    if(a == last)
+    if (a == last)
       break;
     a += PGSIZE;
     pa += PGSIZE;
