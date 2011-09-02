@@ -45,9 +45,9 @@ static void printint(int xx, int base, int sign) {
   while (--i >= 0)
     consputc(buf[i]);
 }
-
 // PAGEBREAK: 50
-//  Print to the console. only understands %d, %x, %p, %s.
+
+// Print to the console. only understands %d, %x, %p, %s.
 void cprintf(char *fmt, ...) {
   int i, c, state, locking;
   uint *argp;
