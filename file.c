@@ -93,7 +93,8 @@ int fileread(struct file *f, char *addr, int n) {
   panic("fileread");
 }
 
-// Write to file f.  Addr is kernel address.
+// PAGEBREAK!
+//  Write to file f.  Addr is kernel address.
 int filewrite(struct file *f, char *addr, int n) {
   int r;
 
