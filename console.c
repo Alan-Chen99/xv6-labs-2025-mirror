@@ -49,7 +49,7 @@ static void printint(int xx, int base, int sign) {
 
 // Print to the console. only understands %d, %x, %p, %s.
 void cprintf(char *fmt, ...) {
-  int i, c, state, locking;
+  int i, c, locking;
   uint *argp;
   char *s;
 
@@ -61,7 +61,6 @@ void cprintf(char *fmt, ...) {
     panic("null fmt");
 
   argp = (uint *)(void *)(&fmt + 1);
-  state = 0;
   for (i = 0; (c = fmt[i] & 0xff) != 0; i++) {
     if (c != '%') {
       consputc(c);
