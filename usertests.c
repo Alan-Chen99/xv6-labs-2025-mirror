@@ -1455,10 +1455,9 @@ void bsstest(void) {
 // are larger than a page? or does it write
 // below the stack and wreck the instructions/data?
 void bigargtest(void) {
-  int pid, ppid, fd;
+  int pid, fd;
 
   unlink("bigarg-ok");
-  ppid = getpid();
   pid = fork();
   if (pid == 0) {
     static char *args[MAXARG];
