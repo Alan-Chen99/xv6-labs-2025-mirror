@@ -42,7 +42,7 @@ struct log {
   struct spinlock lock;
   int start;
   int size;
-  int intrans;
+  int busy; // a transaction is active
   int dev;
   struct logheader lh;
 };
@@ -71,7 +71,7 @@ static void install_trans(void) {
     struct buf *lbuf = bread(log.dev, log.start + tail + 1); // read log block
     struct buf *dbuf = bread(log.dev, log.lh.sector[tail]);  // read dst
     memmove(dbuf->data, lbuf->data, BSIZE); // copy block to dst
-    bwrite(dbuf);                           // flush dst to disk
+    bwrite(dbuf);                           // write dst to disk
     brelse(lbuf);
     brelse(dbuf);
   }
@@ -89,7 +89,9 @@ static void read_head(void) {
   brelse(buf);
 }
 
-// Write in-memory log header to disk, committing log entries till head
+// Write in-memory log header to disk.
+// This is the true point at which the
+// current transaction commits.
 static void write_head(void) {
   struct buf *buf = bread(log.dev, log.start);
   struct logheader *hb = (struct logheader *)(buf->data);
@@ -111,23 +113,23 @@ static void recover_from_log(void) {
 
 void begin_trans(void) {
   acquire(&log.lock);
-  while (log.intrans) {
+  while (log.busy) {
     sleep(&log, &log.lock);
   }
-  log.intrans = 1;
+  log.busy = 1;
   release(&log.lock);
 }
 
 void commit_trans(void) {
   if (log.lh.n > 0) {
-    write_head();    // Causes all blocks till log.head to be commited
-    install_trans(); // Install all the transactions till head
+    write_head();    // Write header to disk -- the real commit
+    install_trans(); // Now install writes to home locations
     log.lh.n = 0;
-    write_head(); // Reclaim log
+    write_head(); // Erase the transaction from the log
   }
 
   acquire(&log.lock);
-  log.intrans = 0;
+  log.busy = 0;
   wakeup(&log);
   release(&log.lock);
 }
@@ -145,7 +147,7 @@ void log_write(struct buf *b) {
 
   if (log.lh.n >= LOGSIZE || log.lh.n >= log.size - 1)
     panic("too big a transaction");
-  if (!log.intrans)
+  if (!log.busy)
     panic("write outside of trans");
 
   for (i = 0; i < log.lh.n; i++) {
