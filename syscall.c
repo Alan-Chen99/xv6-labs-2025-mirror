@@ -13,24 +13,24 @@
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
 
-// Fetch the int at addr from process p.
-int fetchint(struct proc *p, uint addr, int *ip) {
-  if (addr >= p->sz || addr + 4 > p->sz)
+// Fetch the int at addr from the current process.
+int fetchint(uint addr, int *ip) {
+  if (addr >= proc->sz || addr + 4 > proc->sz)
     return -1;
   *ip = *(int *)(addr);
   return 0;
 }
 
-// Fetch the nul-terminated string at addr from process p.
+// Fetch the nul-terminated string at addr from the current process.
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
-int fetchstr(struct proc *p, uint addr, char **pp) {
+int fetchstr(uint addr, char **pp) {
   char *s, *ep;
 
-  if (addr >= p->sz)
+  if (addr >= proc->sz)
     return -1;
   *pp = (char *)addr;
-  ep = (char *)p->sz;
+  ep = (char *)proc->sz;
   for (s = *pp; s < ep; s++)
     if (*s == 0)
       return s - *pp;
@@ -38,9 +38,7 @@ int fetchstr(struct proc *p, uint addr, char **pp) {
 }
 
 // Fetch the nth 32-bit system call argument.
-int argint(int n, int *ip) {
-  return fetchint(proc, proc->tf->esp + 4 + 4 * n, ip);
-}
+int argint(int n, int *ip) { return fetchint(proc->tf->esp + 4 + 4 * n, ip); }
 
 // Fetch the nth word-sized system call argument as a pointer
 // to a block of memory of size n bytes.  Check that the pointer
@@ -64,7 +62,7 @@ int argstr(int n, char **pp) {
   int addr;
   if (argint(n, &addr) < 0)
     return -1;
-  return fetchstr(proc, addr, pp);
+  return fetchstr(addr, pp);
 }
 
 extern int sys_chdir(void);

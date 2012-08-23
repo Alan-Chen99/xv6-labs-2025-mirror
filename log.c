@@ -161,6 +161,7 @@ void log_write(struct buf *b) {
   brelse(lbuf);
   if (i == log.lh.n)
     log.lh.n++;
+  b->flags |= B_DIRTY; // XXX prevent eviction
 }
 
 // PAGEBREAK!
