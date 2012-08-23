@@ -101,9 +101,7 @@ void syscall(void) {
   int num;
 
   num = proc->tf->eax;
-  if (num >= 0 && num < SYS_open && syscalls[num]) {
-    proc->tf->eax = syscalls[num]();
-  } else if (num >= SYS_open && num < NELEM(syscalls) && syscalls[num]) {
+  if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     proc->tf->eax = syscalls[num]();
   } else {
     cprintf("%d %s: unknown sys call %d\n", proc->pid, proc->name, num);
