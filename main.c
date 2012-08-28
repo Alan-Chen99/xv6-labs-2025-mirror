@@ -18,7 +18,7 @@ int main(void) {
   kinit1(end, P2V(4 * 1024 * 1024)); // phys page allocator
   kvmalloc();                        // kernel page table
   mpinit();                          // collect info about this machine
-  lapicinit(mpbcpu());
+  lapicinit();
   seginit(); // set up segments
   cprintf("\ncpu%d: starting xv6\n\n", cpu->id);
   picinit();     // interrupt controller
@@ -44,7 +44,7 @@ int main(void) {
 static void mpenter(void) {
   switchkvm();
   seginit();
-  lapicinit(cpunum());
+  lapicinit();
   mpmain();
 }
 

@@ -47,7 +47,7 @@ static void lapicw(int index, int value) {
 }
 // PAGEBREAK!
 
-void lapicinit(int c) {
+void lapicinit(void) {
   if (!lapic)
     return;
 
