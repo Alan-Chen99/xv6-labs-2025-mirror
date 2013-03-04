@@ -283,7 +283,7 @@ void clearpteu(pde_t *pgdir, char *uva) {
 pde_t *copyuvm(pde_t *pgdir, uint sz) {
   pde_t *d;
   pte_t *pte;
-  uint pa, i;
+  uint pa, i, flags;
   char *mem;
 
   if ((d = setupkvm()) == 0)
@@ -294,10 +294,11 @@ pde_t *copyuvm(pde_t *pgdir, uint sz) {
     if (!(*pte & PTE_P))
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
+    flags = PTE_FLAGS(*pte);
     if ((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char *)p2v(pa), PGSIZE);
-    if (mappages(d, (void *)i, PGSIZE, v2p(mem), PTE_W | PTE_U) < 0)
+    if (mappages(d, (void *)i, PGSIZE, v2p(mem), flags) < 0)
       goto bad;
   }
   return d;
