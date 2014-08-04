@@ -104,10 +104,12 @@ int sys_link(void) {
 
   if (argstr(0, &old) < 0 || argstr(1, &new) < 0)
     return -1;
-  if ((ip = namei(old)) == 0)
-    return -1;
 
   begin_trans();
+  if ((ip = namei(old)) == 0) {
+    commit_trans();
+    return -1;
+  }
 
   ilock(ip);
   if (ip->type == T_DIR) {
@@ -166,10 +168,12 @@ int sys_unlink(void) {
 
   if (argstr(0, &path) < 0)
     return -1;
-  if ((dp = nameiparent(path, name)) == 0)
-    return -1;
 
   begin_trans();
+  if ((dp = nameiparent(path, name)) == 0) {
+    commit_trans();
+    return -1;
+  }
 
   ilock(dp);
 
@@ -262,18 +266,24 @@ int sys_open(void) {
 
   if (argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
+
+  begin_trans();
+
   if (omode & O_CREATE) {
-    begin_trans();
     ip = create(path, T_FILE, 0, 0);
-    commit_trans();
-    if (ip == 0)
+    if (ip == 0) {
+      commit_trans();
       return -1;
+    }
   } else {
-    if ((ip = namei(path)) == 0)
+    if ((ip = namei(path)) == 0) {
+      commit_trans();
       return -1;
+    }
     ilock(ip);
     if (ip->type == T_DIR && omode != O_RDONLY) {
       iunlockput(ip);
+      commit_trans();
       return -1;
     }
   }
@@ -282,9 +292,11 @@ int sys_open(void) {
     if (f)
       fileclose(f);
     iunlockput(ip);
+    commit_trans();
     return -1;
   }
   iunlock(ip);
+  commit_trans();
 
   f->type = FD_INODE;
   f->ip = ip;
@@ -329,15 +341,20 @@ int sys_chdir(void) {
   char *path;
   struct inode *ip;
 
-  if (argstr(0, &path) < 0 || (ip = namei(path)) == 0)
+  begin_trans();
+  if (argstr(0, &path) < 0 || (ip = namei(path)) == 0) {
+    commit_trans();
     return -1;
+  }
   ilock(ip);
   if (ip->type != T_DIR) {
     iunlockput(ip);
+    commit_trans();
     return -1;
   }
   iunlock(ip);
   iput(proc->cwd);
+  commit_trans();
   proc->cwd = ip;
   return 0;
 }
