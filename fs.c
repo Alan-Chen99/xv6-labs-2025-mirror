@@ -295,7 +295,7 @@ void iunlock(struct inode *ip) {
 void iput(struct inode *ip) {
   acquire(&icache.lock);
   if (ip->ref == 1 && (ip->flags & I_VALID) && ip->nlink == 0) {
-    // inode has no links: truncate and free inode.
+    // inode has no links and no other references: truncate and free inode.
     if (ip->flags & I_BUSY)
       panic("iput busy");
     ip->flags |= I_BUSY;
