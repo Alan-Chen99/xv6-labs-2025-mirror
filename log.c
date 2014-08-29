@@ -206,6 +206,3 @@ void log_write(struct buf *b) {
     log.lh.n++;
   b->flags |= B_DIRTY; // prevent eviction
 }
-
-// PAGEBREAK!
-//  Blank page.
