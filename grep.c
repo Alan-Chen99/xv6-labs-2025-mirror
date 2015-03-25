@@ -12,8 +12,9 @@ void grep(char *pattern, int fd) {
   char *p, *q;
 
   m = 0;
-  while ((n = read(fd, buf + m, sizeof(buf) - m)) > 0) {
+  while ((n = read(fd, buf + m, sizeof(buf) - m - 1)) > 0) {
     m += n;
+    buf[m] = '\0';
     p = buf;
     while ((q = strchr(p, '\n')) != 0) {
       *q = 0;
