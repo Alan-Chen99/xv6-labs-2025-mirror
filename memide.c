@@ -18,7 +18,7 @@ static uchar *memdisk;
 
 void ideinit(void) {
   memdisk = _binary_fs_img_start;
-  disksize = (uint)_binary_fs_img_size / 512;
+  disksize = (uint)_binary_fs_img_size / BSIZE;
 }
 
 // Interrupt handler.
@@ -38,15 +38,15 @@ void iderw(struct buf *b) {
     panic("iderw: nothing to do");
   if (b->dev != 1)
     panic("iderw: request not for disk 1");
-  if (b->sector >= disksize)
-    panic("iderw: sector out of range");
+  if (b->block >= disksize)
+    panic("iderw: block out of range");
 
-  p = memdisk + b->sector * 512;
+  p = memdisk + b->block * BSIZE;
 
   if (b->flags & B_DIRTY) {
     b->flags &= ~B_DIRTY;
-    memmove(p, b->data, 512);
+    memmove(p, b->data, BSIZE);
   } else
-    memmove(b->data, p, 512);
+    memmove(b->data, p, BSIZE);
   b->flags |= B_VALID;
 }
