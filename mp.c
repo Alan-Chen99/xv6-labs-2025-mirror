@@ -17,8 +17,6 @@ int ismp;
 int ncpu;
 uchar ioapicid;
 
-int mpbcpu(void) { return bcpu - cpus; }
-
 static uchar sum(uchar *addr, int len) {
   int i, sum;
 
