@@ -137,6 +137,9 @@ static void cgaputc(int c) {
   } else
     crt[pos++] = (c & 0xff) | 0x0700; // black on white
 
+  if (pos > 25 * 80)
+    panic("pos overflow");
+
   if ((pos / 80) >= 24) { // Scroll up.
     memmove(crt, crt + 80, sizeof(crt[0]) * 23 * 80);
     pos -= 80;
