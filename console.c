@@ -171,7 +171,6 @@ void consputc(int c) {
 
 #define INPUT_BUF 128
 struct {
-  struct spinlock lock;
   char buf[INPUT_BUF];
   uint r; // Read index
   uint w; // Write index
@@ -181,13 +180,13 @@ struct {
 #define C(x) ((x) - '@') // Control-x
 
 void consoleintr(int (*getc)(void)) {
-  int c;
+  int c, dopd = 0;
 
-  acquire(&input.lock);
+  acquire(&cons.lock);
   while ((c = getc()) >= 0) {
     switch (c) {
     case C('P'): // Process listing.
-      procdump();
+      dopd = 1;
       break;
     case C('U'): // Kill line.
       while (input.e != input.w &&
@@ -216,7 +215,12 @@ void consoleintr(int (*getc)(void)) {
       break;
     }
   }
-  release(&input.lock);
+  release(&cons.lock);
+  // Have to do this without the console lock held.
+  if (dopd) {
+    dopd = 0;
+    procdump();
+  }
 }
 
 int consoleread(struct inode *ip, char *dst, int n) {
@@ -225,15 +229,15 @@ int consoleread(struct inode *ip, char *dst, int n) {
 
   iunlock(ip);
   target = n;
-  acquire(&input.lock);
+  acquire(&cons.lock);
   while (n > 0) {
     while (input.r == input.w) {
       if (proc->killed) {
-        release(&input.lock);
+        release(&cons.lock);
         ilock(ip);
         return -1;
       }
-      sleep(&input.r, &input.lock);
+      sleep(&input.r, &cons.lock);
     }
     c = input.buf[input.r++ % INPUT_BUF];
     if (c == C('D')) { // EOF
@@ -249,7 +253,7 @@ int consoleread(struct inode *ip, char *dst, int n) {
     if (c == '\n')
       break;
   }
-  release(&input.lock);
+  release(&cons.lock);
   ilock(ip);
 
   return target - n;
@@ -270,7 +274,6 @@ int consolewrite(struct inode *ip, char *buf, int n) {
 
 void consoleinit(void) {
   initlock(&cons.lock, "console");
-  initlock(&input.lock, "input");
 
   devsw[CONSOLE].write = consolewrite;
   devsw[CONSOLE].read = consoleread;
