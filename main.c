@@ -17,13 +17,13 @@ extern char end[]; // first address after kernel loaded from ELF file
 int main(void) {
   kinit1(end, P2V(4 * 1024 * 1024)); // phys page allocator
   kvmalloc();                        // kernel page table
-  mpinit();                          // collect info about this machine
-  lapicinit();
-  seginit(); // set up segments
+  mpinit();                          // detect other processors
+  lapicinit();                       // interrupt controller
+  seginit();                         // segment descriptors
   cprintf("\ncpu%d: starting xv6\n\n", cpu->id);
-  picinit();     // interrupt controller
+  picinit();     // another interrupt controller
   ioapicinit();  // another interrupt controller
-  consoleinit(); // I/O devices & their interrupts
+  consoleinit(); // console hardware
   uartinit();    // serial port
   pinit();       // process table
   tvinit();      // trap vectors
@@ -35,8 +35,7 @@ int main(void) {
   startothers();                              // start other processors
   kinit2(P2V(4 * 1024 * 1024), P2V(PHYSTOP)); // must come after startothers()
   userinit();                                 // first user process
-  // Finish setting up this processor in mpmain.
-  mpmain();
+  mpmain();                                   // finish this processor's setup
 }
 
 // Other CPUs jump here from entryother.S.
