@@ -25,7 +25,7 @@
 #define DEASSERT 0x00000000
 #define LEVEL 0x00008000 // Level triggered
 #define BCAST 0x00080000 // Send to all APICs, including self.
-#define BUSY 0x00001000
+/ #define BUSY 0x00001000
 #define FIXED 0x00000000
 #define ICRHI (0x0310 / 4)  // Interrupt Command [63:32]
 #define TIMER (0x0320 / 4)  // Local Vector Table 0 (TIMER)
@@ -40,7 +40,7 @@
 #define TCCR (0x0390 / 4)   // Timer Current Count
 #define TDCR (0x03E0 / 4)   // Timer Divide Configuration
 
-volatile uint *lapic; // Initialized in mp.c
+    volatile uint *lapic; // Initialized in mp.c
 
 static void lapicw(int index, int value) {
   lapic[index] = value;
