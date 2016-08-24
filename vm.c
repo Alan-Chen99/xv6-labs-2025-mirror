@@ -45,7 +45,7 @@ static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc) {
 
   pde = &pgdir[PDX(va)];
   if (*pde & PTE_P) {
-    pgtab = (pte_t *)p2v(PTE_ADDR(*pde));
+    pgtab = (pte_t *)P2V(PTE_ADDR(*pde));
   } else {
     if (!alloc || (pgtab = (pte_t *)kalloc()) == 0)
       return 0;
@@ -54,7 +54,7 @@ static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc) {
     // The permissions here are overly generous, but they can
     // be further restricted by the permissions in the page table
     // entries, if necessary.
-    *pde = v2p(pgtab) | PTE_P | PTE_W | PTE_U;
+    *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
   }
   return &pgtab[PTX(va)];
 }
@@ -125,7 +125,7 @@ pde_t *setupkvm(void) {
   if ((pgdir = (pde_t *)kalloc()) == 0)
     return 0;
   memset(pgdir, 0, PGSIZE);
-  if (p2v(PHYSTOP) > (void *)DEVSPACE)
+  if (P2V(PHYSTOP) > (void *)DEVSPACE)
     panic("PHYSTOP too high");
   for (k = kmap; k < &kmap[NELEM(kmap)]; k++)
     if (mappages(pgdir, k->virt, k->phys_end - k->phys_start,
@@ -144,7 +144,7 @@ void kvmalloc(void) {
 // Switch h/w page table register to the kernel-only page table,
 // for when no process is running.
 void switchkvm(void) {
-  lcr3(v2p(kpgdir)); // switch to the kernel page table
+  lcr3(V2P(kpgdir)); // switch to the kernel page table
 }
 
 // Switch TSS and h/w page table to correspond to process p.
@@ -157,7 +157,7 @@ void switchuvm(struct proc *p) {
   ltr(SEG_TSS << 3);
   if (p->pgdir == 0)
     panic("switchuvm: no pgdir");
-  lcr3(v2p(p->pgdir)); // switch to process's address space
+  lcr3(V2P(p->pgdir)); // switch to process's address space
   popcli();
 }
 
@@ -170,7 +170,7 @@ void inituvm(pde_t *pgdir, char *init, uint sz) {
     panic("inituvm: more than a page");
   mem = kalloc();
   memset(mem, 0, PGSIZE);
-  mappages(pgdir, 0, PGSIZE, v2p(mem), PTE_W | PTE_U);
+  mappages(pgdir, 0, PGSIZE, V2P(mem), PTE_W | PTE_U);
   memmove(mem, init, sz);
 }
 
@@ -190,7 +190,7 @@ int loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz) {
       n = sz - i;
     else
       n = PGSIZE;
-    if (readi(ip, p2v(pa), offset + i, n) != n)
+    if (readi(ip, P2V(pa), offset + i, n) != n)
       return -1;
   }
   return 0;
@@ -216,7 +216,7 @@ int allocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
       return 0;
     }
     memset(mem, 0, PGSIZE);
-    if (mappages(pgdir, (char *)a, PGSIZE, v2p(mem), PTE_W | PTE_U) < 0) {
+    if (mappages(pgdir, (char *)a, PGSIZE, V2P(mem), PTE_W | PTE_U) < 0) {
       cprintf("allocuvm out of memory (2)\n");
       deallocuvm(pgdir, newsz, oldsz);
       kfree(mem);
@@ -246,7 +246,7 @@ int deallocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
       pa = PTE_ADDR(*pte);
       if (pa == 0)
         panic("kfree");
-      char *v = p2v(pa);
+      char *v = P2V(pa);
       kfree(v);
       *pte = 0;
     }
@@ -264,7 +264,7 @@ void freevm(pde_t *pgdir) {
   deallocuvm(pgdir, KERNBASE, 0);
   for (i = 0; i < NPDENTRIES; i++) {
     if (pgdir[i] & PTE_P) {
-      char *v = p2v(PTE_ADDR(pgdir[i]));
+      char *v = P2V(PTE_ADDR(pgdir[i]));
       kfree(v);
     }
   }
@@ -301,8 +301,8 @@ pde_t *copyuvm(pde_t *pgdir, uint sz) {
     flags = PTE_FLAGS(*pte);
     if ((mem = kalloc()) == 0)
       goto bad;
-    memmove(mem, (char *)p2v(pa), PGSIZE);
-    if (mappages(d, (void *)i, PGSIZE, v2p(mem), flags) < 0)
+    memmove(mem, (char *)P2V(pa), PGSIZE);
+    if (mappages(d, (void *)i, PGSIZE, V2P(mem), flags) < 0)
       goto bad;
   }
   return d;
@@ -322,7 +322,7 @@ char *uva2ka(pde_t *pgdir, char *uva) {
     return 0;
   if ((*pte & PTE_U) == 0)
     return 0;
-  return (char *)p2v(PTE_ADDR(*pte));
+  return (char *)P2V(PTE_ADDR(*pte));
 }
 
 // Copy len bytes from p to user address va in page table pgdir.
