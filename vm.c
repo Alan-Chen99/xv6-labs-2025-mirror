@@ -154,6 +154,7 @@ void switchuvm(struct proc *p) {
   cpu->gdt[SEG_TSS].s = 0;
   cpu->ts.ss0 = SEG_KDATA << 3;
   cpu->ts.esp0 = (uint)proc->kstack + KSTACKSIZE;
+  cpu->ts.iomb = (ushort)0xFFFF; // forbid I/O instructions from user space
   ltr(SEG_TSS << 3);
   if (p->pgdir == 0)
     panic("switchuvm: no pgdir");
