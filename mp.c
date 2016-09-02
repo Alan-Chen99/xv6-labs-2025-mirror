@@ -96,12 +96,10 @@ void mpinit(void) {
     switch (*p) {
     case MPPROC:
       proc = (struct mpproc *)p;
-      if (ncpu != proc->apicid) {
-        cprintf("mpinit: ncpu=%d apicid=%d\n", ncpu, proc->apicid);
-        ismp = 0;
+      if (ncpu < NCPU) {
+        cpus[ncpu].apicid = proc->apicid; // apicid may differ from ncpu
+        ncpu++;
       }
-      cpus[ncpu].id = ncpu;
-      ncpu++;
       p += sizeof(struct mpproc);
       continue;
     case MPIOAPIC:
@@ -115,8 +113,8 @@ void mpinit(void) {
       p += 8;
       continue;
     default:
-      cprintf("mpinit: unknown config type %x\n", *p);
       ismp = 0;
+      break;
     }
   }
   if (!ismp) {

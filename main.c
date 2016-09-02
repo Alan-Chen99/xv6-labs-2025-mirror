@@ -20,7 +20,7 @@ int main(void) {
   mpinit();                          // detect other processors
   lapicinit();                       // interrupt controller
   seginit();                         // segment descriptors
-  cprintf("\ncpu%d: starting xv6\n\n", cpu->id);
+  cprintf("\ncpu%d: starting xv6\n\n", cpunum());
   picinit();     // another interrupt controller
   ioapicinit();  // another interrupt controller
   consoleinit(); // console hardware
@@ -48,7 +48,7 @@ static void mpenter(void) {
 
 // Common CPU setup code.
 static void mpmain(void) {
-  cprintf("cpu%d: starting\n", cpu->id);
+  cprintf("cpu%d: starting\n", cpunum());
   idtinit();              // load idt register
   xchg(&cpu->started, 1); // tell startothers() we're up
   scheduler();            // start running processes
@@ -81,7 +81,7 @@ static void startothers(void) {
     *(void **)(code - 8) = mpenter;
     *(int **)(code - 12) = (void *)V2P(entrypgdir);
 
-    lapicstartap(c->id, V2P(code));
+    lapicstartap(c->apicid, V2P(code));
 
     // wait for cpu to finish mpmain()
     while (c->started == 0)
