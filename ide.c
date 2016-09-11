@@ -9,6 +9,7 @@
 #include "x86.h"
 #include "traps.h"
 #include "spinlock.h"
+#include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
 
@@ -130,8 +131,8 @@ void ideintr(void) {
 void iderw(struct buf *b) {
   struct buf **pp;
 
-  if (!(b->flags & B_BUSY))
-    panic("iderw: buf not busy");
+  if (!holdingsleep(&b->lock))
+    panic("iderw: buf not locked");
   if ((b->flags & (B_VALID | B_DIRTY)) == B_VALID)
     panic("iderw: nothing to do");
   if (b->dev != 0 && !havedisk1)

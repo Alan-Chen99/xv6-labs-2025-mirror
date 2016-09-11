@@ -17,6 +17,8 @@ int exec(char *path, char **argv) {
   pde_t *pgdir, *oldpgdir;
 
   begin_op();
+
+  cprintf("exec %s\n", path);
   if ((ip = namei(path)) == 0) {
     end_op();
     return -1;
@@ -96,6 +98,7 @@ int exec(char *path, char **argv) {
   proc->tf->esp = sp;
   switchuvm(proc);
   freevm(oldpgdir);
+  cprintf("exec succeeded\n");
   return 0;
 
 bad:

@@ -13,9 +13,7 @@
 // * Only one process at a time can use a buffer,
 //     so do not keep them longer than necessary.
 //
-// The implementation uses three state flags internally:
-// * B_BUSY: the block has been returned from bread
-//     and has not been passed back to brelse.
+// The implementation uses two state flags internally:
 // * B_VALID: the buffer data has been read from the disk.
 // * B_DIRTY: the buffer data has been modified
 //     and needs to be written to disk.
@@ -24,6 +22,7 @@
 #include "defs.h"
 #include "param.h"
 #include "spinlock.h"
+#include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
 
@@ -49,6 +48,7 @@ void binit(void) {
     b->next = bcache.head.next;
     b->prev = &bcache.head;
     b->dev = -1;
+    initsleeplock(&b->lock, "buffer");
     bcache.head.next->prev = b;
     bcache.head.next = b;
   }
@@ -56,18 +56,20 @@ void binit(void) {
 
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
-// In either case, return B_BUSY buffer.
+// In either case, return locked buffer.
 static struct buf *bget(uint dev, uint blockno) {
   struct buf *b;
 
   acquire(&bcache.lock);
 
+  // cprintf("bget %d\n", blockno);
 loop:
   // Is the block already cached?
   for (b = bcache.head.next; b != &bcache.head; b = b->next) {
     if (b->dev == dev && b->blockno == blockno) {
-      if (!(b->flags & B_BUSY)) {
-        b->flags |= B_BUSY;
+      if (!holdingsleep(&b->lock)) {
+        acquiresleep(&b->lock);
+        // cprintf("return buffer %p for blk %d\n", b - bcache.buf, blockno);
         release(&bcache.lock);
         return b;
       }
@@ -76,14 +78,16 @@ loop:
     }
   }
 
-  // Not cached; recycle some non-busy and clean buffer.
-  // "clean" because B_DIRTY and !B_BUSY means log.c
+  // Not cached; recycle some non-locked and clean buffer.
+  // "clean" because B_DIRTY and not locked means log.c
   // hasn't yet committed the changes to the buffer.
   for (b = bcache.head.prev; b != &bcache.head; b = b->prev) {
-    if ((b->flags & B_BUSY) == 0 && (b->flags & B_DIRTY) == 0) {
+    if (!holdingsleep(&b->lock) && (b->flags & B_DIRTY) == 0) {
       b->dev = dev;
       b->blockno = blockno;
-      b->flags = B_BUSY;
+      b->flags = 0; // XXX
+      acquiresleep(&b->lock);
+      // cprintf("return buffer %p for blk %d\n", b - bcache.buf, blockno);
       release(&bcache.lock);
       return b;
     }
@@ -91,7 +95,7 @@ loop:
   panic("bget: no buffers");
 }
 
-// Return a B_BUSY buf with the contents of the indicated block.
+// Return a locked buf with the contents of the indicated block.
 struct buf *bread(uint dev, uint blockno) {
   struct buf *b;
 
@@ -102,18 +106,18 @@ struct buf *bread(uint dev, uint blockno) {
   return b;
 }
 
-// Write b's contents to disk.  Must be B_BUSY.
+// Write b's contents to disk.  Must be locked.
 void bwrite(struct buf *b) {
-  if ((b->flags & B_BUSY) == 0)
+  if (b->lock.locked == 0)
     panic("bwrite");
   b->flags |= B_DIRTY;
   iderw(b);
 }
 
-// Release a B_BUSY buffer.
+// Release a locked buffer.
 // Move to the head of the MRU list.
 void brelse(struct buf *b) {
-  if ((b->flags & B_BUSY) == 0)
+  if (b->lock.locked == 0)
     panic("brelse");
 
   acquire(&bcache.lock);
@@ -124,8 +128,7 @@ void brelse(struct buf *b) {
   b->prev = &bcache.head;
   bcache.head.next->prev = b;
   bcache.head.next = b;
-
-  b->flags &= ~B_BUSY;
+  releasesleep(&b->lock);
   wakeup(b);
 
   release(&bcache.lock);
