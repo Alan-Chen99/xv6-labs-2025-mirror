@@ -41,7 +41,7 @@ int fetchstr(uint addr, char **pp) {
 int argint(int n, int *ip) { return fetchint(proc->tf->esp + 4 + 4 * n, ip); }
 
 // Fetch the nth word-sized system call argument as a pointer
-// to a block of memory of size n bytes.  Check that the pointer
+// to a block of memory of size bytes.  Check that the pointer
 // lies within the process address space.
 int argptr(int n, char **pp, int size) {
   int i;
