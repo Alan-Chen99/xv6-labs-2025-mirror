@@ -26,7 +26,7 @@ int exec(char *path, char **argv) {
   pgdir = 0;
 
   // Check ELF header
-  if (readi(ip, (char *)&elf, 0, sizeof(elf)) < sizeof(elf))
+  if (readi(ip, (char *)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
   if (elf.magic != ELF_MAGIC)
     goto bad;
