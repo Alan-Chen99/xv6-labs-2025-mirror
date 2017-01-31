@@ -94,10 +94,10 @@ void lapicinit(void) {
   lapicw(TPR, 0);
 }
 
-int cpunum(void) {
+int lapiccpunum(void) {
   int apicid, i;
 
-  // Cannot call cpu when interrupts are enabled:
+  // Cannot call cpunum when interrupts are enabled:
   // result not guaranteed to last long enough to be used!
   // Would prefer to panic but even printing is chancy here:
   // almost everything, including cprintf and panic, calls cpu,
@@ -105,7 +105,7 @@ int cpunum(void) {
   if (readeflags() & FL_IF) {
     static int n;
     if (n++ == 0)
-      cprintf("cpu called from %x with interrupts enabled\n",
+      cprintf("cpunum called from %x with interrupts enabled\n",
               __builtin_return_address(0));
   }
 

@@ -567,7 +567,7 @@ static struct inode *namex(char *path, int nameiparent, char *name) {
   if (*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
-    ip = idup(proc->cwd);
+    ip = idup(myproc()->cwd);
 
   while ((path = skipelem(path, name)) != 0) {
     ilock(ip);

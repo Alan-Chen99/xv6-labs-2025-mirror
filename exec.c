@@ -20,6 +20,7 @@ int exec(char *path, char **argv) {
 
   if ((ip = namei(path)) == 0) {
     end_op();
+    cprintf("exec: fail\n");
     return -1;
   }
   ilock(ip);
@@ -87,15 +88,15 @@ int exec(char *path, char **argv) {
   for (last = s = path; *s; s++)
     if (*s == '/')
       last = s + 1;
-  safestrcpy(proc->name, last, sizeof(proc->name));
+  safestrcpy(myproc()->name, last, sizeof(myproc()->name));
 
   // Commit to the user image.
-  oldpgdir = proc->pgdir;
-  proc->pgdir = pgdir;
-  proc->sz = sz;
-  proc->tf->eip = elf.entry; // main
-  proc->tf->esp = sp;
-  switchuvm(proc);
+  oldpgdir = myproc()->pgdir;
+  myproc()->pgdir = pgdir;
+  myproc()->sz = sz;
+  myproc()->tf->eip = elf.entry; // main
+  myproc()->tf->esp = sp;
+  switchuvm(myproc());
   freevm(oldpgdir);
   return 0;
 
