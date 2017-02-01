@@ -37,10 +37,11 @@ static int argfd(int n, int *pfd, struct file **pf) {
 // Takes over file reference from caller on success.
 static int fdalloc(struct file *f) {
   int fd;
+  struct proc *curproc = myproc();
 
   for (fd = 0; fd < NOFILE; fd++) {
-    if (myproc()->ofile[fd] == 0) {
-      myproc()->ofile[fd] = f;
+    if (curproc->ofile[fd] == 0) {
+      curproc->ofile[fd] = f;
       return fd;
     }
   }
@@ -341,6 +342,7 @@ int sys_mknod(void) {
 int sys_chdir(void) {
   char *path;
   struct inode *ip;
+  struct proc *curproc = myproc();
 
   begin_op();
   if (argstr(0, &path) < 0 || (ip = namei(path)) == 0) {
@@ -354,9 +356,9 @@ int sys_chdir(void) {
     return -1;
   }
   iunlock(ip);
-  iput(myproc()->cwd);
+  iput(curproc->cwd);
   end_op();
-  myproc()->cwd = ip;
+  curproc->cwd = ip;
   return 0;
 }
 

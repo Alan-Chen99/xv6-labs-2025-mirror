@@ -29,11 +29,14 @@ static inline struct cpu *mycpu(void) {
   return cpu;
 }
 
-static inline struct proc *myproc(void) {
+#if 0
+static inline struct proc*
+myproc(void) {
   struct proc *proc;
   asm("movl %%gs:4, %0" : "=r"(proc));
   return proc;
 }
+#endif
 
 // PAGEBREAK: 17
 //  Saved registers for kernel context switches.
@@ -71,6 +74,7 @@ struct proc {
   struct file *ofile[NOFILE]; // Open files
   struct inode *cwd;          // Current directory
   char name[16];              // Process name (debugging)
+  struct cpu *cpu;            // If running, which cpu.
 };
 
 // Process memory is laid out contiguously, low addresses first:
