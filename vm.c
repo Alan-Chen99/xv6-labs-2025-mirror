@@ -129,8 +129,10 @@ pde_t *setupkvm(void) {
     panic("PHYSTOP too high");
   for (k = kmap; k < &kmap[NELEM(kmap)]; k++)
     if (mappages(pgdir, k->virt, k->phys_end - k->phys_start,
-                 (uint)k->phys_start, k->perm) < 0)
+                 (uint)k->phys_start, k->perm) < 0) {
+      freevm(pgdir);
       return 0;
+    }
   return pgdir;
 }
 
