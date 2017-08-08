@@ -146,6 +146,15 @@ static void bfree(int dev, uint b) {
 // Many internal file system functions expect the caller to
 // have locked the inodes involved; this lets callers create
 // multi-step atomic operations.
+//
+// The icache.lock spin-lock defends ip->ref, ip->dev, and ip->inum.
+// Since ip->ref indicates whether an icache entry is free, the
+// icache.lock defends icache allocation. icache.lock also defends
+// all fields of an unallocated icache entry, during allocation.
+//
+// An ip->lock sleep-lock defends all ip-> fields other than ref,
+// dev, and inum.  One must hold ip->lock in order to
+// read or write that inode's ip->valid, ip->size, ip->type, &c.
 
 struct {
   struct spinlock lock;
@@ -193,6 +202,7 @@ struct inode *ialloc(uint dev, short type) {
 }
 
 // Copy a modified in-memory inode to disk.
+// Caller must hold ip->lock.
 void iupdate(struct inode *ip) {
   struct buf *bp;
   struct dinode *dip;
@@ -391,6 +401,7 @@ static void itrunc(struct inode *ip) {
 }
 
 // Copy stat information from inode.
+// Caller must hold ip->lock.
 void stati(struct inode *ip, struct stat *st) {
   st->dev = ip->dev;
   st->ino = ip->inum;
@@ -401,6 +412,7 @@ void stati(struct inode *ip, struct stat *st) {
 
 // PAGEBREAK!
 //  Read data from inode.
+//  Caller must hold ip->lock.
 int readi(struct inode *ip, char *dst, uint off, uint n) {
   uint tot, m;
   struct buf *bp;
@@ -427,6 +439,7 @@ int readi(struct inode *ip, char *dst, uint off, uint n) {
 
 // PAGEBREAK!
 // Write data to inode.
+// Caller must hold ip->lock.
 int writei(struct inode *ip, char *src, uint off, uint n) {
   uint tot, m;
   struct buf *bp;
