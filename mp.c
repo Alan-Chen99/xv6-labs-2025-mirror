@@ -12,7 +12,6 @@
 #include "proc.h"
 
 struct cpu cpus[NCPU];
-int ismp;
 int ncpu;
 uchar ioapicid;
 
@@ -83,13 +82,14 @@ static struct mpconf *mpconfig(struct mp **pmp) {
 
 void mpinit(void) {
   uchar *p, *e;
+  int ismp;
   struct mp *mp;
   struct mpconf *conf;
   struct mpproc *proc;
   struct mpioapic *ioapic;
 
   if ((conf = mpconfig(&mp)) == 0)
-    return;
+    panic("Expect to run on an SMP");
   ismp = 1;
   lapic = (uint *)conf->lapicaddr;
   for (p = (uchar *)(conf + 1), e = (uchar *)conf + conf->length; p < e;) {
@@ -117,13 +117,8 @@ void mpinit(void) {
       break;
     }
   }
-  if (!ismp) {
-    // Didn't like what we found; fall back to no MP.
-    ncpu = 1;
-    lapic = 0;
-    ioapicid = 0;
-    return;
-  }
+  if (!ismp)
+    panic("Didn't find a suitable machine");
 
   if (mp->imcrp) {
     // Bochs doesn't support IMCR, so this doesn't run on Bochs.
