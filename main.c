@@ -101,3 +101,6 @@ __attribute__((__aligned__(PGSIZE))) pde_t entrypgdir[NPDENTRIES] = {
 // PAGEBREAK!
 //  Blank page.
 // PAGEBREAK!
+//  Blank page.
+// PAGEBREAK!
+//  Blank page.
