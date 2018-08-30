@@ -200,6 +200,3 @@ struct gatedesc {
   }
 
 #endif
-
-// PAGEBREAK!
-//  Blank page.
