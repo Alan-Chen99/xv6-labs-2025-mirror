@@ -79,7 +79,11 @@ void getcallerpcs(void *v, uint pcs[]) {
 
 // Check whether this cpu is holding the lock.
 int holding(struct spinlock *lock) {
-  return lock->locked && lock->cpu == mycpu();
+  int r;
+  pushcli();
+  r = lock->locked && lock->cpu == mycpu();
+  popcli();
+  return r;
 }
 
 // Pushcli/popcli are like cli/sti except that they are matched:
