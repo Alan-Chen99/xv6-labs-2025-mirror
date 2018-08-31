@@ -4,7 +4,7 @@
 #include "user.h"
 #include "x86.h"
 
-char *strcpy(char *s, char *t) {
+char *strcpy(char *s, const char *t) {
   char *os;
 
   os = s;
@@ -19,7 +19,7 @@ int strcmp(const char *p, const char *q) {
   return (uchar)*p - (uchar)*q;
 }
 
-uint strlen(char *s) {
+uint strlen(const char *s) {
   int n;
 
   for (n = 0; s[n]; n++)
@@ -55,7 +55,7 @@ char *gets(char *buf, int max) {
   return buf;
 }
 
-int stat(char *n, struct stat *st) {
+int stat(const char *n, struct stat *st) {
   int fd;
   int r;
 
@@ -76,8 +76,9 @@ int atoi(const char *s) {
   return n;
 }
 
-void *memmove(void *vdst, void *vsrc, int n) {
-  char *dst, *src;
+void *memmove(void *vdst, const void *vsrc, int n) {
+  char *dst;
+  const char *src;
 
   dst = vdst;
   src = vsrc;

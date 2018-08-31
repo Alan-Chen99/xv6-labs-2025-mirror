@@ -30,7 +30,7 @@ static void printint(int fd, int xx, int base, int sgn) {
 }
 
 // Print to the given fd. Only understands %d, %x, %p, %s.
-void printf(int fd, char *fmt, ...) {
+void printf(int fd, const char *fmt, ...) {
   char *s;
   int c, i, state;
   uint *ap;
