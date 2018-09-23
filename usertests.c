@@ -341,17 +341,29 @@ void preempt(void) {
 
   printf(1, "preempt: ");
   pid1 = fork();
+  if (pid1 < 0) {
+    printf(1, "fork failed");
+    exit();
+  }
   if (pid1 == 0)
     for (;;)
       ;
 
   pid2 = fork();
+  if (pid2 < 0) {
+    printf(1, "fork failed\n");
+    exit();
+  }
   if (pid2 == 0)
     for (;;)
       ;
 
   pipe(pfds);
   pid3 = fork();
+  if (pid3 < 0) {
+    printf(1, "fork failed\n");
+    exit();
+  }
   if (pid3 == 0) {
     close(pfds[0]);
     if (write(pfds[1], "x", 1) != 1)
@@ -1333,6 +1345,11 @@ void forktest(void) {
       exit();
   }
 
+  if (n == 0) {
+    printf(1, "no fork at all!\n");
+    exit();
+  }
+
   if (n == 1000) {
     printf(1, "fork claimed to work 1000 times!\n");
     exit();
@@ -1354,16 +1371,16 @@ void forktest(void) {
 }
 
 void sbrktest(void) {
-  int fds[2], pid, pids[10], ppid;
-  char *a, *b, *c, *lastaddr, *oldbrk, *p, scratch;
-  uint amt;
+  int i, fds[2], pids[10], pid, ppid;
+  char *c, *oldbrk, scratch, *a, *b, *lastaddr, *p;
+  uint64 amt;
+#define BIG (100 * 1024 * 1024)
 
   printf(stdout, "sbrk test\n");
   oldbrk = sbrk(0);
 
   // can one sbrk() less than a page?
   a = sbrk(0);
-  int i;
   for (i = 0; i < 5000; i++) {
     b = sbrk(1);
     if (b != a) {
@@ -1389,9 +1406,8 @@ void sbrktest(void) {
   wait();
 
   // can one grow address space to something big?
-#define BIG (100 * 1024 * 1024)
   a = sbrk(0);
-  amt = (BIG) - (uint)a;
+  amt = (BIG) - (uint64)a;
   p = sbrk(amt);
   if (p != a) {
     printf(stdout,
@@ -1460,7 +1476,7 @@ void sbrktest(void) {
   for (i = 0; i < sizeof(pids) / sizeof(pids[0]); i++) {
     if ((pids[i] = fork()) == 0) {
       // allocate a lot of memory
-      sbrk(BIG - (uint)sbrk(0));
+      sbrk(BIG - (uint64)sbrk(0));
       write(fds[1], "x", 1);
       // sit around until killed
       for (;;)
@@ -1469,6 +1485,7 @@ void sbrktest(void) {
     if (pids[i] != -1)
       read(fds[0], &scratch, 1);
   }
+
   // if those failed allocations freed up the pages they did allocate,
   // we'll be able to allocate here
   c = sbrk(4096);
@@ -1490,19 +1507,20 @@ void sbrktest(void) {
 }
 
 void validateint(int *p) {
-  int res;
+  /* XXX int res;
   asm("mov %%esp, %%ebx\n\t"
       "mov %3, %%esp\n\t"
       "int %2\n\t"
-      "mov %%ebx, %%esp"
-      : "=a"(res)
-      : "a"(SYS_sleep), "n"(T_SYSCALL), "c"(p)
-      : "ebx");
+      "mov %%ebx, %%esp" :
+      "=a" (res) :
+      "a" (SYS_sleep), "n" (T_SYSCALL), "c" (p) :
+      "ebx");
+  */
 }
 
 void validatetest(void) {
   int hi, pid;
-  uint p;
+  uint64 p;
 
   printf(stdout, "validate test\n");
   hi = 1100 * 1024;

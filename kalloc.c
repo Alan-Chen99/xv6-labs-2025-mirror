@@ -41,7 +41,7 @@ void kinit2(void *vstart, void *vend) {
 
 void freerange(void *vstart, void *vend) {
   char *p;
-  p = (char *)PGROUNDUP((uint)vstart);
+  p = (char *)PGROUNDUP((uint64)vstart);
   for (; p + PGSIZE <= (char *)vend; p += PGSIZE)
     kfree(p);
 }
@@ -53,7 +53,7 @@ void freerange(void *vstart, void *vend) {
 void kfree(char *v) {
   struct run *r;
 
-  if ((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
+  if ((uint64)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
   // Fill with junk to catch dangling refs.
@@ -81,5 +81,7 @@ char *kalloc(void) {
     kmem.freelist = r->next;
   if (kmem.use_lock)
     release(&kmem.lock);
+  if (r != 0 && (uint64)r < KERNBASE)
+    panic("kalloc");
   return (char *)r;
 }

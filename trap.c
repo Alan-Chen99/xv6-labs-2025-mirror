@@ -9,22 +9,29 @@
 #include "spinlock.h"
 
 // Interrupt descriptor table (shared by all CPUs).
-struct gatedesc idt[256];
-extern uint vectors[]; // in vectors.S: array of 256 entry pointers
+struct intgate idt[256];
+extern uint64 vectors[]; // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
 void tvinit(void) {
   int i;
 
-  for (i = 0; i < 256; i++)
-    SETGATE(idt[i], 0, SEG_KCODE << 3, vectors[i], 0);
-  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE << 3, vectors[T_SYSCALL], DPL_USER);
+  for (i = 0; i < 256; i++) {
+    idt[i] = INTDESC(KCSEG, vectors[i], INT_P | SEG_INTR64);
+  }
+  idtinit();
 
   initlock(&tickslock, "time");
 }
 
-void idtinit(void) { lidt(idt, sizeof(idt)); }
+void idtinit(void) {
+  struct desctr dtr;
+
+  dtr.limit = sizeof(idt) - 1;
+  dtr.base = (uint64)idt;
+  lidt((void *)&dtr.limit);
+}
 
 // PAGEBREAK: 41
 void trap(struct trapframe *tf) {
@@ -65,7 +72,7 @@ void trap(struct trapframe *tf) {
     break;
   case T_IRQ0 + 7:
   case T_IRQ0 + IRQ_SPURIOUS:
-    cprintf("cpu%d: spurious interrupt at %x:%x\n", cpuid(), tf->cs, tf->eip);
+    cprintf("cpu%d: spurious interrupt at %x:%x\n", cpuid(), tf->cs, tf->rip);
     lapiceoi();
     break;
 
@@ -74,14 +81,14 @@ void trap(struct trapframe *tf) {
     if (myproc() == 0 || (tf->cs & 3) == 0) {
       // In kernel, it must be our mistake.
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n", tf->trapno,
-              cpuid(), tf->eip, rcr2());
+              cpuid(), tf->rip, rcr2());
       panic("trap");
     }
     // In user space, assume process misbehaved.
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
             myproc()->pid, myproc()->name, tf->trapno, tf->err, cpuid(),
-            tf->eip, rcr2());
+            tf->rip, rcr2());
     myproc()->killed = 1;
   }
 

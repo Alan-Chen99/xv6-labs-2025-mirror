@@ -25,7 +25,7 @@ static uchar sum(uchar *addr, int len) {
 }
 
 // Look for an MP structure in the len bytes at addr.
-static struct mp *mpsearch1(uint a, int len) {
+static struct mp *mpsearch1(uint64 a, int len) {
   uchar *e, *p, *addr;
 
   addr = P2V(a);
@@ -69,7 +69,7 @@ static struct mpconf *mpconfig(struct mp **pmp) {
 
   if ((mp = mpsearch()) == 0 || mp->physaddr == 0)
     return 0;
-  conf = (struct mpconf *)P2V((uint)mp->physaddr);
+  conf = (struct mpconf *)P2V((uint64)mp->physaddr);
   if (memcmp(conf, "PCMP", 4) != 0)
     return 0;
   if (conf->version != 1 && conf->version != 4)
@@ -91,7 +91,7 @@ void mpinit(void) {
   if ((conf = mpconfig(&mp)) == 0)
     panic("Expect to run on an SMP");
   ismp = 1;
-  lapic = (uint *)conf->lapicaddr;
+  lapic = P2V((uint64)conf->lapicaddr_p);
   for (p = (uchar *)(conf + 1), e = (uchar *)conf + conf->length; p < e;) {
     switch (*p) {
     case MPPROC:

@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "msr.h"
 
 struct {
   struct spinlock lock;
@@ -16,7 +17,7 @@ static struct proc *initproc;
 
 int nextpid = 1;
 extern void forkret(void);
-extern void trapret(void);
+extern void sysexit(void);
 
 static void wakeup1(void *chan);
 
@@ -92,13 +93,13 @@ found:
 
   // Set up new context to start executing at forkret,
   // which returns to trapret.
-  sp -= 4;
-  *(uint *)sp = (uint)trapret;
+  sp -= sizeof(uint64);
+  *(uint64 *)sp = (uint64)sysexit;
 
   sp -= sizeof *p->context;
   p->context = (struct context *)sp;
   memset(p->context, 0, sizeof *p->context);
-  p->context->eip = (uint)forkret;
+  p->context->eip = (uint64)forkret;
 
   return p;
 }
@@ -114,16 +115,12 @@ void userinit(void) {
   initproc = p;
   if ((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
-  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+  inituvm(p->pgdir, _binary_initcode_start, (uint64)_binary_initcode_size);
   p->sz = PGSIZE;
   memset(p->tf, 0, sizeof(*p->tf));
-  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
-  p->tf->es = p->tf->ds;
-  p->tf->ss = p->tf->ds;
-  p->tf->eflags = FL_IF;
-  p->tf->esp = PGSIZE;
-  p->tf->eip = 0; // beginning of initcode.S
+  p->tf->r11 = FL_IF;
+  p->tf->rsp = PGSIZE;
+  p->tf->rcx = 0; // beginning of initcode.S
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -183,7 +180,7 @@ int fork(void) {
   *np->tf = *curproc->tf;
 
   // Clear %eax so that fork returns 0 in the child.
-  np->tf->eax = 0;
+  np->tf->rax = 0;
 
   for (i = 0; i < NOFILE; i++)
     if (curproc->ofile[i])
@@ -267,7 +264,7 @@ int wait(void) {
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir);
+        freevm(p->pgdir, p->sz);
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -315,6 +312,7 @@ void scheduler(void) {
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -468,7 +466,7 @@ void procdump(void) {
   int i;
   struct proc *p;
   char *state;
-  uint pc[10];
+  uint64 pc[10];
 
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if (p->state == UNUSED)
@@ -479,7 +477,7 @@ void procdump(void) {
       state = "???";
     cprintf("%d %s %s", p->pid, state, p->name);
     if (p->state == SLEEPING) {
-      getcallerpcs((uint *)p->context->ebp + 2, pc);
+      getcallerpcs((uint64 *)p->context->ebp + 2, pc);
       for (i = 0; i < 10 && pc[i] != 0; i++)
         cprintf(" %p", pc[i]);
     }
