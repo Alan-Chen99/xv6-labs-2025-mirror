@@ -115,8 +115,6 @@ struct segdesc {
 
 #ifndef __ASSEMBLER__
 
-typedef uint64 pml4e_t;
-typedef uint64 pdpe_t;
 typedef uint64 pte_t;
 
 struct taskstate {
