@@ -25,6 +25,8 @@ struct {
 
 void kinit() {
   initlock(&kmem.lock, "kmem");
+  if (PHYSTOP > RAMDISK)
+    panic("kinit");
   freerange(end, (void *)PHYSTOP);
 }
 

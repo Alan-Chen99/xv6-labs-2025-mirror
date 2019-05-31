@@ -19,10 +19,11 @@
 //     and needs to be written to disk.
 
 #include "types.h"
-#include "defs.h"
 #include "param.h"
 #include "spinlock.h"
 #include "sleeplock.h"
+#include "riscv.h"
+#include "defs.h"
 #include "fs.h"
 #include "buf.h"
 
@@ -94,7 +95,7 @@ struct buf *bread(uint dev, uint blockno) {
 
   b = bget(dev, blockno);
   if ((b->flags & B_VALID) == 0) {
-    iderw(b);
+    ramdiskrw(b);
   }
   return b;
 }
@@ -104,7 +105,7 @@ void bwrite(struct buf *b) {
   if (!holdingsleep(&b->lock))
     panic("bwrite");
   b->flags |= B_DIRTY;
-  iderw(b);
+  ramdiskrw(b);
 }
 
 // Release a locked buffer.

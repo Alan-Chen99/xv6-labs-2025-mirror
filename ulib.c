@@ -2,7 +2,6 @@
 #include "stat.h"
 #include "fcntl.h"
 #include "user.h"
-#include "x86.h"
 
 char *strcpy(char *s, const char *t) {
   char *os;
@@ -28,7 +27,11 @@ uint strlen(const char *s) {
 }
 
 void *memset(void *dst, int c, uint n) {
-  stosb(dst, c, n);
+  char *cdst = (char *)dst;
+  int i;
+  for (i = 0; i < n; i++) {
+    cdst[i] = c;
+  }
   return dst;
 }
 

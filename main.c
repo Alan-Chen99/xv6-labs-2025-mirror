@@ -11,16 +11,14 @@ void main() {
   uartinit(); // serial port
   consoleinit();
   printf("entering main()\n");
-  kinit();    // physical page allocator
-  kvminit();  // kernel page table
-  procinit(); // process table
-  trapinit(); // trap vectors
-#if 0
-  binit();         // buffer cache
-  fileinit();      // file table
-  ideinit();       // disk
-#endif
-  userinit(); // first user process
+  kinit();       // physical page allocator
+  kvminit();     // kernel page table
+  procinit();    // process table
+  trapinit();    // trap vectors
+  binit();       // buffer cache
+  fileinit();    // file table
+  ramdiskinit(); // disk
+  userinit();    // first user process
 
   scheduler();
 }
