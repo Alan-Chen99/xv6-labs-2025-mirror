@@ -41,7 +41,6 @@ void usertrap(void) {
 
   if (r_scause() == 8) {
     // system call
-    printf("usertrap(): system call pid=%d syscall=%d\n", p->pid, p->tf->a7);
 
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
