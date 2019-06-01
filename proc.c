@@ -24,7 +24,7 @@ extern void sysexit(void);
 
 static void wakeup1(void *chan);
 
-extern char trampstart[]; // trampoline.S
+extern char trampout[]; // trampoline.S
 
 void procinit(void) { initlock(&ptable.lock, "ptable"); }
 
@@ -107,7 +107,7 @@ pagetable_t proc_pagetable(struct proc *p) {
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
-  mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampstart, PTE_R | PTE_X);
+  mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampout, PTE_R | PTE_X);
 
   // map the trapframe, for trampoline.S.
   mappages(pagetable, (TRAMPOLINE - PGSIZE), PGSIZE, (uint64)(p->tf),

@@ -81,10 +81,17 @@ static inline uint64 r_satp() {
 // Supervisor Scratch register, for early trap handler in trampoline.S.
 static inline void w_sscratch(uint64 x) { asm("csrw sscratch, %0" : : "r"(x)); }
 
-// Supervisor trap cause
+// Supervisor Trap Cause
 static inline uint64 r_scause() {
   uint64 x;
   asm("csrr %0, scause" : "=r"(x));
+  return x;
+}
+
+// Supervisor Trap Value
+static inline uint64 r_stval() {
+  uint64 x;
+  asm("csrr %0, stval" : "=r"(x));
   return x;
 }
 
