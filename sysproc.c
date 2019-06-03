@@ -17,6 +17,18 @@ int sys_fork(void) { return fork(); }
 
 int sys_wait(void) { return wait(); }
 
+int sys_sbrk(void) {
+  int addr;
+  int n;
+
+  if (argint(0, &n) < 0)
+    return -1;
+  addr = myproc()->sz;
+  if (growproc(n) < 0)
+    return -1;
+  return addr;
+}
+
 #if 0
 int
 sys_kill(void)
@@ -26,20 +38,6 @@ sys_kill(void)
   if(argint(0, &pid) < 0)
     return -1;
   return kill(pid);
-}
-
-int
-sys_sbrk(void)
-{
-  int addr;
-  int n;
-
-  if(argint(0, &n) < 0)
-    return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
-  return addr;
 }
 
 int

@@ -164,29 +164,23 @@ void userinit(void) {
   release(&ptable.lock);
 }
 
-#if 0
-
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
-int
-growproc(int n)
-{
+int growproc(int n) {
   uint sz;
   struct proc *p = myproc();
 
   sz = p->sz;
-  if(n > 0){
-    if((sz = allocuvm(p->pagetable, sz, sz + n)) == 0)
+  if (n > 0) {
+    if ((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0)
       return -1;
-  } else if(n < 0){
-    if((sz = uvmdealloc(p->pagetable, sz, sz + n)) == 0)
+  } else if (n < 0) {
+    if ((sz = uvmdealloc(p->pagetable, sz, sz + n)) == 0)
       return -1;
   }
   p->sz = sz;
-  switchuvm(p);
   return 0;
 }
-#endif
 
 // Create a new process, copying p as the parent.
 // Sets up child kernel stack to return as if from system call.
@@ -335,25 +329,7 @@ void scheduler(void) {
   c->proc = 0;
   for (;;) {
     // Enable interrupts on this processor.
-    // XXX riscv
-    // sti();
-
-    if (0) {
-      uint x = *(uint *)0xc001000;
-      if (x != 0) {
-        printf("pending %x\n", x);
-      }
-      x = *(uint *)0xc001004;
-      if (x != 0)
-        printf("pending %x\n", x);
-    }
-
-    if (0) {
-      uint uartgetc(void);
-      uint x = uartgetc();
-      if (x != 0)
-        printf("%x ", x);
-    }
+    intr_on();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -367,9 +343,7 @@ void scheduler(void) {
       c->proc = p;
       p->state = RUNNING;
 
-      printf("switch...\n");
       swtch(&c->scheduler, &p->context);
-      printf("switch returned\n");
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
@@ -415,8 +389,6 @@ void forkret(void) {
   static int first = 1;
   // Still holding ptable.lock from scheduler.
   release(&ptable.lock);
-
-  printf("entering forkret\n");
 
   if (first) {
     // Some initialization functions must be run in the context
@@ -508,43 +480,6 @@ kill(int pid)
   }
   release(&ptable.lock);
   return -1;
-}
-
-//PAGEBREAK: 36
-// Print a process listing to console.  For debugging.
-// Runs when user types ^P on console.
-// No lock to avoid wedging a stuck machine further.
-void
-procdump(void)
-{
-  static char *states[] = {
-  [UNUSED]    "unused",
-  [EMBRYO]    "embryo",
-  [SLEEPING]  "sleep ",
-  [RUNNABLE]  "runble",
-  [RUNNING]   "run   ",
-  [ZOMBIE]    "zombie"
-  };
-  int i;
-  struct proc *p;
-  char *state;
-  uint64 pc[10];
-
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state == UNUSED)
-      continue;
-    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
-      state = states[p->state];
-    else
-      state = "???";
-    printf("%d %s %s", p->pid, state, p->name);
-    if(p->state == SLEEPING){
-      getcallerpcs((uint64*)p->context->rbp+2, pc);
-      for(i=0; i<10 && pc[i] != 0; i++)
-        printf(" %p", pc[i]);
-    }
-    printf("\n");
-  }
 }
 
 #endif
