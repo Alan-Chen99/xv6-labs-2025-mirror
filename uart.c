@@ -48,4 +48,7 @@ uint uartgetc(void) {
   return *R(0);
 }
 
-void uartintr(void) {}
+void uartintr(void) {
+  int c = uartgetc();
+  printf("%x ", c & 0xff);
+}
