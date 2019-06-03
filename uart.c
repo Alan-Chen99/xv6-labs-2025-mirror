@@ -43,9 +43,13 @@ void uartinit(void) {
 
 void uartputc(int c) { *R(0) = c; }
 
-uint uartgetc(void) {
-  // XXX this isn't right, must check there's data in the FIFO.
-  return *R(0);
+int uartgetc(void) {
+  if (*(5) & 0x01) {
+    // input data is ready.
+    return *R(0);
+  } else {
+    return -1;
+  };
 }
 
 void uartintr(void) {
