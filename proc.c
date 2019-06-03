@@ -338,6 +338,23 @@ void scheduler(void) {
     // XXX riscv
     // sti();
 
+    if (0) {
+      uint x = *(uint *)0xc001000;
+      if (x != 0) {
+        printf("pending %x\n", x);
+      }
+      x = *(uint *)0xc001004;
+      if (x != 0)
+        printf("pending %x\n", x);
+    }
+
+    if (0) {
+      uint uartgetc(void);
+      uint x = uartgetc();
+      if (x != 0)
+        printf("%x ", x);
+    }
+
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {

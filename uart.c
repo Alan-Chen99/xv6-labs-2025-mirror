@@ -1,4 +1,10 @@
+#include "types.h"
+#include "param.h"
 #include "memlayout.h"
+#include "riscv.h"
+#include "proc.h"
+#include "spinlock.h"
+#include "defs.h"
 
 //
 // qemu -machine virt has a 16550a UART
@@ -9,10 +15,10 @@
 //
 
 // address of one of the registers
-#define R(reg) ((unsigned int *)(UART0 + 4 * (reg)))
+#define R(reg) ((volatile unsigned char *)(UART0 + reg))
 
 void uartinit(void) {
-  // disable interrupts
+  // disable interrupts -- IER
   *R(1) = 0x00;
 
   // special mode to set baud rate
@@ -28,12 +34,18 @@ void uartinit(void) {
   // and set word length to 8 bits, no parity.
   *R(3) = 0x03;
 
-  // reset and enable FIFOs.
+  // reset and enable FIFOs -- FCR.
   *R(2) = 0x07;
+
+  // enable receive interrupts -- IER.
+  *R(1) = 0x01;
 }
 
 void uartputc(int c) { *R(0) = c; }
 
-static int uartgetc(void) {}
+uint uartgetc(void) {
+  // XXX this isn't right, must check there's data in the FIFO.
+  return *R(0);
+}
 
 void uartintr(void) {}
