@@ -457,22 +457,18 @@ void wakeup(void *chan) {
   release(&ptable.lock);
 }
 
-#if 0
-
 // Kill the process with the given pid.
 // Process won't exit until it returns
 // to user space (see trap in trap.c).
-int
-kill(int pid)
-{
+int kill(int pid) {
   struct proc *p;
 
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == pid){
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->pid == pid) {
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if (p->state == SLEEPING)
         p->state = RUNNABLE;
       release(&ptable.lock);
       return 0;
@@ -481,8 +477,6 @@ kill(int pid)
   release(&ptable.lock);
   return -1;
 }
-
-#endif
 
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.

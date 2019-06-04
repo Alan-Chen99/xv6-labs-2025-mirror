@@ -23,36 +23,22 @@ int sys_sbrk(void) {
 
   if (argint(0, &n) < 0)
     return -1;
-  printf("sbrk(%d), sz was %d\n", n, (int)myproc()->sz);
   addr = myproc()->sz;
   if (growproc(n) < 0)
     return -1;
   return addr;
 }
 
-#if 0
-int
-sys_kill(void)
-{
-  int pid;
-
-  if(argint(0, &pid) < 0)
-    return -1;
-  return kill(pid);
-}
-
-int
-sys_sleep(void)
-{
+int sys_sleep(void) {
   int n;
   uint ticks0;
 
-  if(argint(0, &n) < 0)
+  if (argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(myproc()->killed){
+  while (ticks - ticks0 < n) {
+    if (myproc()->killed) {
       release(&tickslock);
       return -1;
     }
@@ -62,11 +48,17 @@ sys_sleep(void)
   return 0;
 }
 
+int sys_kill(void) {
+  int pid;
+
+  if (argint(0, &pid) < 0)
+    return -1;
+  return kill(pid);
+}
+
 // return how many clock tick interrupts have occurred
 // since start.
-int
-sys_uptime(void)
-{
+int sys_uptime(void) {
   uint xticks;
 
   acquire(&tickslock);
@@ -74,4 +66,3 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-#endif
