@@ -32,6 +32,8 @@ void trapinit(void) {
 // called from trampoline.S
 //
 void usertrap(void) {
+  int which_dev = 0;
+
   if ((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
@@ -59,7 +61,7 @@ void usertrap(void) {
     p->tf->epc += 4;
 
     syscall();
-  } else if (devintr()) {
+  } else if ((which_dev = devintr()) != 0) {
     // ok
   } else {
     printf("usertrap(): unexpected scause 0x%p pid=%d\n", r_scause(), p->pid);
@@ -69,6 +71,10 @@ void usertrap(void) {
 
   if (p->killed)
     exit();
+
+  // give up the CPU if this is a timer interrupt.
+  if (which_dev == 2)
+    yield();
 
   usertrapret();
 }
@@ -139,7 +145,9 @@ void kerneltrap() {
 
 // check if it's an external interrupt or software interrupt,
 // and handle it.
-// returns 1 if handled, 0 if not recognized.
+// returns 2 if timer interrupt,
+// 1 if other device,
+// 0 if not recognized.
 int devintr() {
   uint64 scause = r_scause();
 
@@ -166,7 +174,7 @@ int devintr() {
     // acknowledge.
     w_sip(r_sip() & ~2);
 
-    return 1;
+    return 2;
   } else {
     return 0;
   }
