@@ -46,12 +46,10 @@ void kvminit() {
   mappages(kernel_pagetable, TRAMPOLINE, PGSIZE, (uint64)trampout,
            PTE_R | PTE_X);
 
-  kvmswitch();
+  // Switch h/w page table register to the kernel's page table,
+  // and enable paging.
+  w_satp(MAKE_SATP(kernel_pagetable));
 }
-
-// Switch h/w page table register to the kernel's page table,
-// and enable paging.
-void kvmswitch(void) { w_satp(MAKE_SATP(kernel_pagetable)); }
 
 // Return the address of the PTE in page table pagetable
 // that corresponds to virtual address va.  If alloc!=0,
@@ -190,7 +188,7 @@ uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) {
   for (; a < newsz; a += PGSIZE) {
     mem = kalloc();
     if (mem == 0) {
-      uvmdealloc(pagetable, newsz, oldsz);
+      uvmdealloc(pagetable, a, oldsz);
       return 0;
     }
     memset(mem, 0, PGSIZE);

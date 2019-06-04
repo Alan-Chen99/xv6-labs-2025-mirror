@@ -41,7 +41,12 @@ void uartinit(void) {
   *R(1) = 0x01;
 }
 
-void uartputc(int c) { *R(0) = c; }
+void uartputc(int c) {
+  // wait for Transmit Holding Empty to be set in LSR.
+  while ((*R(5) & (1 << 5)) == 0)
+    ;
+  *R(0) = c;
+}
 
 int uartgetc(void) {
   if (*R(5) & 0x01) {

@@ -25,8 +25,6 @@ struct {
 
 void kinit() {
   initlock(&kmem.lock, "kmem");
-  if (PHYSTOP > RAMDISK)
-    panic("kinit");
   freerange(end, (void *)PHYSTOP);
 }
 
@@ -68,6 +66,7 @@ void *kalloc(void) {
   if (r)
     kmem.freelist = r->next;
   release(&kmem.lock);
-  memset((char *)r, 5, PGSIZE); // fill with junk
+  if (r)
+    memset((char *)r, 5, PGSIZE); // fill with junk
   return (void *)r;
 }
