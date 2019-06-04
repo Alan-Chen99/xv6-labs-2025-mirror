@@ -71,8 +71,10 @@ void pipeclose(struct pipe *p, int writable) {
 }
 
 // PAGEBREAK: 40
-int pipewrite(struct pipe *p, char *addr, int n) {
+int pipewrite(struct pipe *p, uint64 addr, int n) {
   int i;
+  char ch;
+  struct proc *pr = myproc();
 
   acquire(&p->lock);
   for (i = 0; i < n; i++) {
@@ -84,15 +86,19 @@ int pipewrite(struct pipe *p, char *addr, int n) {
       wakeup(&p->nread);
       sleep(&p->nwrite, &p->lock); // DOC: pipewrite-sleep
     }
-    p->data[p->nwrite++ % PIPESIZE] = addr[i];
+    if (copyin(pr->pagetable, &ch, addr + i, 1) == -1)
+      break;
+    p->data[p->nwrite++ % PIPESIZE] = ch;
   }
   wakeup(&p->nread); // DOC: pipewrite-wakeup1
   release(&p->lock);
   return n;
 }
 
-int piperead(struct pipe *p, char *addr, int n) {
+int piperead(struct pipe *p, uint64 addr, int n) {
   int i;
+  struct proc *pr = myproc();
+  char ch;
 
   acquire(&p->lock);
   while (p->nread == p->nwrite && p->writeopen) { // DOC: pipe-empty
@@ -105,7 +111,9 @@ int piperead(struct pipe *p, char *addr, int n) {
   for (i = 0; i < n; i++) { // DOC: piperead-copy
     if (p->nread == p->nwrite)
       break;
-    addr[i] = p->data[p->nread++ % PIPESIZE];
+    ch = p->data[p->nread++ % PIPESIZE];
+    if (copyout(pr->pagetable, addr + i, &ch, 1) == -1)
+      break;
   }
   wakeup(&p->nwrite); // DOC: piperead-wakeup
   release(&p->lock);

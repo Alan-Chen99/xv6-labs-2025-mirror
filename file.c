@@ -99,32 +99,16 @@ int fileread(struct file *f, uint64 addr, int n) {
   if (f->readable == 0)
     return -1;
 
-  // XXX break into page-size pieces.
-  if (n > PGSIZE)
-    panic("fileread PGSIZE");
-
-  buf = kalloc();
-  if (buf == 0)
-    panic("fileread kalloc");
-
   if (f->type == FD_PIPE) {
-    r = piperead(f->pipe, buf, n);
+    r = piperead(f->pipe, addr, n);
   } else if (f->type == FD_INODE) {
     ilock(f->ip);
-    if ((r = readi(f->ip, buf, f->off, n)) > 0)
+    if ((r = readi(f->ip, 1, addr, f->off, n)) > 0)
       f->off += r;
     iunlock(f->ip);
   } else {
     panic("fileread");
   }
-
-  if (r > 0) {
-    if (copyout(p->pagetable, addr, buf, n) < 0) {
-      r = -1;
-    }
-  }
-
-  kfree(buf);
 
   return r;
 }
@@ -140,18 +124,8 @@ int filewrite(struct file *f, uint64 addr, int n) {
   if (f->writable == 0)
     return -1;
 
-  // XXX break into pieces
-  if (n > PGSIZE)
-    panic("filewrite PGSIZE");
-
-  buf = kalloc();
-  if (copyin(p->pagetable, buf, addr, n) < 0) {
-    kfree(buf);
-    return -1;
-  }
-
   if (f->type == FD_PIPE) {
-    ret = pipewrite(f->pipe, buf, n);
+    ret = pipewrite(f->pipe, addr, n);
   } else if (f->type == FD_INODE) {
     // write a few blocks at a time to avoid exceeding
     // the maximum log transaction size, including
@@ -168,7 +142,7 @@ int filewrite(struct file *f, uint64 addr, int n) {
 
       begin_op();
       ilock(f->ip);
-      if ((r = writei(f->ip, buf + i, f->off, n1)) > 0)
+      if ((r = writei(f->ip, 1, addr + i, f->off, n1)) > 0)
         f->off += r;
       iunlock(f->ip);
       end_op();
@@ -183,8 +157,6 @@ int filewrite(struct file *f, uint64 addr, int n) {
   } else {
     panic("filewrite");
   }
-
-  kfree(buf);
 
   return ret;
 }

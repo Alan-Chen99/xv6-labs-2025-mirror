@@ -29,7 +29,7 @@ int exec(char *path, char **argv) {
   ilock(ip);
 
   // Check ELF header
-  if (readi(ip, (char *)&elf, 0, sizeof(elf)) != sizeof(elf))
+  if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
   if (elf.magic != ELF_MAGIC)
     goto bad;
@@ -40,7 +40,7 @@ int exec(char *path, char **argv) {
   // Load program into memory.
   sz = 0;
   for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
-    if (readi(ip, (char *)&ph, off, sizeof(ph)) != sizeof(ph))
+    if (readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
     if (ph.type != ELF_PROG_LOAD)
       continue;
@@ -127,6 +127,7 @@ static int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip,
 
   if ((va % PGSIZE) != 0)
     panic("loadseg: va must be page aligned");
+
   for (i = 0; i < sz; i += PGSIZE) {
     pa = walkaddr(pagetable, va + i);
     if (pa == 0)
@@ -135,8 +136,9 @@ static int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip,
       n = sz - i;
     else
       n = PGSIZE;
-    if (readi(ip, (char *)pa, offset + i, n) != n)
+    if (readi(ip, 0, (uint64)pa, offset + i, n) != n)
       return -1;
   }
+
   return 0;
 }
