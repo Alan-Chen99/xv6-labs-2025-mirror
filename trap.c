@@ -16,14 +16,10 @@ void kernelvec();
 
 extern int devintr();
 
-void trapinit(void) {
-  int i;
+void trapinit(void) { initlock(&tickslock, "time"); }
 
-  // set up to take exceptions and traps while in the kernel.
-  w_stvec((uint64)kernelvec);
-
-  initlock(&tickslock, "time");
-}
+// set up to take exceptions and traps while in the kernel.
+void trapinithart(void) { w_stvec((uint64)kernelvec); }
 
 //
 // handle an interrupt, exception, or system call from user space.

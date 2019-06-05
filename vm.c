@@ -48,11 +48,11 @@ void kvminit() {
   // the highest virtual address in the kernel.
   mappages(kernel_pagetable, TRAMPOLINE, PGSIZE, (uint64)trampout,
            PTE_R | PTE_X);
-
-  // Switch h/w page table register to the kernel's page table,
-  // and enable paging.
-  w_satp(MAKE_SATP(kernel_pagetable));
 }
+
+// Switch h/w page table register to the kernel's page table,
+// and enable paging.
+void kvminithart() { w_satp(MAKE_SATP(kernel_pagetable)); }
 
 // Return the address of the PTE in page table pagetable
 // that corresponds to virtual address va.  If alloc!=0,
