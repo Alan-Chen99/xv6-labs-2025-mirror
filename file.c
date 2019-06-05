@@ -92,9 +92,7 @@ int filestat(struct file *f, uint64 addr) {
 // Read from file f.
 // addr is a user virtual address.
 int fileread(struct file *f, uint64 addr, int n) {
-  struct proc *p = myproc();
   int r = 0;
-  char *buf;
 
   if (f->readable == 0)
     return -1;
@@ -117,9 +115,7 @@ int fileread(struct file *f, uint64 addr, int n) {
 //  Write to file f.
 //  addr is a user virtual address.
 int filewrite(struct file *f, uint64 addr, int n) {
-  struct proc *p = myproc();
   int r, ret = 0;
-  char *buf;
 
   if (f->writable == 0)
     return -1;

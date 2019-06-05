@@ -169,7 +169,7 @@ pagetable_t uvmcreate() {
 // Load the user initcode into address 0 of pagetable,
 // for the very first process.
 // sz must be less than a page.
-void uvminit(pagetable_t pagetable, char *src, uint sz) {
+void uvminit(pagetable_t pagetable, uchar *src, uint sz) {
   char *mem;
 
   if (sz >= PGSIZE)
@@ -226,7 +226,6 @@ static void freewalk(pagetable_t pagetable) {
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if (pte & PTE_V) {
-      // XXX trampoline pages...
       panic("freewalk: leaf");
     }
   }

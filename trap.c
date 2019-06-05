@@ -115,7 +115,6 @@ void usertrapret(void) {
 void kerneltrap() {
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  uint64 sepc = r_sepc(); // XXX needed only for check at end?
 
   if ((sstatus & SSTATUS_SPP) == 0)
     panic("kerneltrap: not from supervisor mode");
@@ -127,12 +126,6 @@ void kerneltrap() {
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");
   }
-
-  // XXX assert that we don't have to save/restore sstatus or sepc.
-  if (r_sstatus() != sstatus)
-    panic("kerneltrap sstatus");
-  if (r_sepc() != sepc)
-    panic("kerneltrap sepc");
 }
 
 // check if it's an external interrupt or software interrupt,
@@ -149,8 +142,6 @@ int devintr() {
 
     if (irq == UART0_IRQ) {
       uartintr();
-    } else {
-      printf("stray interrupt irq=%d\n", irq);
     }
 
     plic_complete(irq);
@@ -158,10 +149,12 @@ int devintr() {
   } else if (scause == 0x8000000000000001) {
     // software interrupt from a machine-mode timer interrupt.
 
-    acquire(&tickslock);
-    ticks++;
-    wakeup(&ticks);
-    release(&tickslock);
+    if (cpuid() == 0) {
+      acquire(&tickslock);
+      ticks++;
+      wakeup(&ticks);
+      release(&tickslock);
+    }
 
     // acknowledge.
     w_sip(r_sip() & ~2);
