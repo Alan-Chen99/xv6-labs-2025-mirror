@@ -50,5 +50,5 @@ void mstart() {
   w_tp(id);
 
   // call main() in supervisor mode.
-  asm("mret");
+  asm volatile("mret");
 }
