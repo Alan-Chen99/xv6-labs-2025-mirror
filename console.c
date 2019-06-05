@@ -17,7 +17,7 @@
 
 static void consputc(int);
 
-static int panicked = 0;
+static volatile int panicked = 0;
 
 static struct {
   struct spinlock lock;
@@ -112,6 +112,7 @@ void printf(char *fmt, ...) {
 }
 
 void panic(char *s) {
+  cons.locking = 0;
   printf("panic: ");
   printf(s);
   printf("\n");
