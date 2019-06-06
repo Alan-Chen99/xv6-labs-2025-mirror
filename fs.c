@@ -306,22 +306,27 @@ void iunlock(struct inode *ip) {
 // All calls to iput() must be inside a transaction in
 // case it has to free the inode.
 void iput(struct inode *ip) {
-  acquiresleep(&ip->lock);
-  if (ip->valid && ip->nlink == 0) {
-    acquire(&icache.lock);
-    int r = ip->ref;
-    release(&icache.lock);
-    if (r == 1) {
-      // inode has no links and no other references: truncate and free.
-      itrunc(ip);
-      ip->type = 0;
-      iupdate(ip);
-      ip->valid = 0;
-    }
-  }
-  releasesleep(&ip->lock);
-
   acquire(&icache.lock);
+
+  if (ip->ref == 1 && ip->valid && ip->nlink == 0) {
+    // inode has no links and no other references: truncate and free.
+
+    // ip->ref == 1 means no other process can have ip locked,
+    // so this acquiresleep() won't block (or deadlock).
+    acquiresleep(&ip->lock);
+
+    release(&icache.lock);
+
+    itrunc(ip);
+    ip->type = 0;
+    iupdate(ip);
+    ip->valid = 0;
+
+    releasesleep(&ip->lock);
+
+    acquire(&icache.lock);
+  }
+
   ip->ref--;
   release(&icache.lock);
 }
