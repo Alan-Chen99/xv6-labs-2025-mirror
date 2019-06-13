@@ -63,9 +63,9 @@ void fileclose(struct file *f) {
   f->type = FD_NONE;
   release(&ftable.lock);
 
-  if (ff.type == FD_PIPE)
+  if (ff.type == FD_PIPE) {
     pipeclose(ff.pipe, ff.writable);
-  else if (ff.type == FD_INODE) {
+  } else if (ff.type == FD_INODE || ff.type == FD_DEVICE) {
     begin_op();
     iput(ff.ip);
     end_op();
@@ -78,7 +78,7 @@ int filestat(struct file *f, uint64 addr) {
   struct proc *p = myproc();
   struct stat st;
 
-  if (f->type == FD_INODE) {
+  if (f->type == FD_INODE || f->type == FD_DEVICE) {
     ilock(f->ip);
     stati(f->ip, &st);
     iunlock(f->ip);
@@ -99,6 +99,8 @@ int fileread(struct file *f, uint64 addr, int n) {
 
   if (f->type == FD_PIPE) {
     r = piperead(f->pipe, addr, n);
+  } else if (f->type == FD_DEVICE) {
+    r = devsw[f->major].read(1, addr, n);
   } else if (f->type == FD_INODE) {
     ilock(f->ip);
     if ((r = readi(f->ip, 1, addr, f->off, n)) > 0)
@@ -122,6 +124,8 @@ int filewrite(struct file *f, uint64 addr, int n) {
 
   if (f->type == FD_PIPE) {
     ret = pipewrite(f->pipe, addr, n);
+  } else if (f->type == FD_DEVICE) {
+    ret = devsw[f->major].write(1, addr, n);
   } else if (f->type == FD_INODE) {
     // write a few blocks at a time to avoid exceeding
     // the maximum log transaction size, including

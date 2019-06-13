@@ -147,19 +147,17 @@ struct {
 
 #define C(x) ((x) - '@') // Contro
 
-int consoleread(struct inode *ip, int user_dst, uint64 dst, int n) {
+int consoleread(int user_dst, uint64 dst, int n) {
   uint target;
   int c;
   char buf[1];
 
-  iunlock(ip);
   target = n;
   acquire(&cons.lock);
   while (n > 0) {
     while (input.r == input.w) {
       if (myproc()->killed) {
         release(&cons.lock);
-        ilock(ip);
         return -1;
       }
       sleep(&input.r, &cons.lock);
@@ -182,15 +180,13 @@ int consoleread(struct inode *ip, int user_dst, uint64 dst, int n) {
       break;
   }
   release(&cons.lock);
-  ilock(ip);
 
   return target - n;
 }
 
-int consolewrite(struct inode *ip, int user_src, uint64 src, int n) {
+int consolewrite(int user_src, uint64 src, int n) {
   int i;
 
-  iunlock(ip);
   acquire(&cons.lock);
   for (i = 0; i < n; i++) {
     char c;
@@ -199,7 +195,6 @@ int consolewrite(struct inode *ip, int user_src, uint64 src, int n) {
     consputc(c);
   }
   release(&cons.lock);
-  ilock(ip);
 
   return n;
 }

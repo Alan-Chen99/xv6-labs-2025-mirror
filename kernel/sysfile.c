@@ -231,7 +231,7 @@ static struct inode *create(char *path, short type, short major, short minor) {
   if ((ip = dirlookup(dp, name, &off)) != 0) {
     iunlockput(dp);
     ilock(ip);
-    if (type == T_FILE && ip->type == T_FILE)
+    if (type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
       return ip;
     iunlockput(ip);
     return 0;
@@ -292,6 +292,12 @@ int sys_open(void) {
     }
   }
 
+  if (ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
   if ((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0) {
     if (f)
       fileclose(f);
@@ -299,14 +305,21 @@ int sys_open(void) {
     end_op();
     return -1;
   }
+
+  if (ip->type == T_DEVICE) {
+    f->type = FD_DEVICE;
+    f->major = ip->major;
+  } else {
+    f->type = FD_INODE;
+    f->off = 0;
+  }
+  f->ip = ip;
+  f->readable = !(omode & O_WRONLY);
+  f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+
   iunlock(ip);
   end_op();
 
-  f->type = FD_INODE;
-  f->ip = ip;
-  f->off = 0;
-  f->readable = !(omode & O_WRONLY);
-  f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
   return fd;
 }
 
@@ -331,7 +344,8 @@ int sys_mknod(void) {
 
   begin_op();
   if ((argstr(0, path, MAXPATH)) < 0 || argint(1, &major) < 0 ||
-      argint(2, &minor) < 0 || (ip = create(path, T_DEV, major, minor)) == 0) {
+      argint(2, &minor) < 0 ||
+      (ip = create(path, T_DEVICE, major, minor)) == 0) {
     end_op();
     return -1;
   }
