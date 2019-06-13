@@ -14,18 +14,19 @@ void main() {
     uartinit(); // serial port
     consoleinit();
     printf("hart %d starting\n", cpuid());
-    kinit();        // physical page allocator
-    kvminit();      // create kernel page table
-    kvminithart();  // turn on paging
-    procinit();     // process table
-    trapinit();     // trap vectors
-    trapinithart(); // install kernel trap vector
-    plicinit();     // set up interrupt controller
-    plicinithart(); // ask PLIC for device interrupts
-    binit();        // buffer cache
-    fileinit();     // file table
-    ramdiskinit();  // disk
-    userinit();     // first user process
+    kinit();            // physical page allocator
+    kvminit();          // create kernel page table
+    kvminithart();      // turn on paging
+    procinit();         // process table
+    trapinit();         // trap vectors
+    trapinithart();     // install kernel trap vector
+    plicinit();         // set up interrupt controller
+    plicinithart();     // ask PLIC for device interrupts
+    binit();            // buffer cache
+    fileinit();         // file table
+    virtio_disk_init(); // emulated hard disk
+    ramdiskinit();      // in-memory disk
+    userinit();         // first user process
     started = 1;
   } else {
     while (started == 0)

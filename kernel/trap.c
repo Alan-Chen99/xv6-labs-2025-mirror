@@ -142,6 +142,8 @@ int devintr() {
 
     if (irq == UART0_IRQ) {
       uartintr();
+    } else if (irq == VIRTIO_IRQ) {
+      virtio_disk_intr();
     }
 
     plic_complete(irq);
