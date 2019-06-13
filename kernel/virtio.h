@@ -50,7 +50,7 @@ struct VRingDesc {
   uint16 flags;
   uint16 next;
 };
-#define VRING_DESC_F_NEXT 1
+#define VRING_DESC_F_NEXT 1  // chained with another descriptor
 #define VRING_DESC_F_WRITE 2 // device writes (vs read)
 
 struct VRingUsedElem {
@@ -59,5 +59,5 @@ struct VRingUsedElem {
 };
 
 // for disk ops
-#define VIRTIO_BLK_T_IN 0
-#define VIRTIO_BLK_T_OUT 1
+#define VIRTIO_BLK_T_IN 0  // read the disk
+#define VIRTIO_BLK_T_OUT 1 // write the disk
