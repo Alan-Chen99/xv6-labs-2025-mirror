@@ -243,7 +243,9 @@ void uvmfree(pagetable_t pagetable, uint64 sz) {
 // its memory into a child's page table.
 // Copies both the page table and the
 // physical memory.
-void uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) {
+// returns 0 on success, -1 on failure.
+// frees any allocated pages on failure.
+int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) {
   pte_t *pte;
   uint64 pa, i;
   uint flags;
@@ -257,10 +259,15 @@ void uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) {
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
     if ((mem = kalloc()) == 0)
-      panic("uvmcopy: kalloc failed");
+      goto err;
     memmove(mem, (char *)pa, PGSIZE);
     mappages(new, i, PGSIZE, (uint64)mem, flags);
   }
+  return 0;
+
+err:
+  unmappages(new, 0, i, 1);
+  return -1;
 }
 
 // Copy from kernel to user.
