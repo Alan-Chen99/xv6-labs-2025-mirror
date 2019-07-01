@@ -1378,6 +1378,13 @@ void sbrktest(void) {
   printf(stdout, "sbrk test\n");
   oldbrk = sbrk(0);
 
+  // does sbrk() return the expected failure value?
+  a = sbrk(1024 * 1024 * 1024);
+  if (a != (char *)0xffffffffffffffffL) {
+    printf(stdout, "sbrk(<toomuch>) returned %p\n", a);
+    exit();
+  }
+
   // can one sbrk() less than a page?
   a = sbrk(0);
   for (i = 0; i < 5000; i++) {
@@ -1419,7 +1426,7 @@ void sbrktest(void) {
   // can one de-allocate?
   a = sbrk(0);
   c = sbrk(-4096);
-  if (c == (char *)0xffffffff) {
+  if (c == (char *)0xffffffffffffffffL) {
     printf(stdout, "sbrk could not deallocate\n");
     exit();
   }
@@ -1494,7 +1501,7 @@ void sbrktest(void) {
     kill(pids[i]);
     wait();
   }
-  if (c == (char *)0xffffffff) {
+  if (c == (char *)0xffffffffffffffffL) {
     printf(stdout, "failed sbrk leaked memory\n");
     exit();
   }

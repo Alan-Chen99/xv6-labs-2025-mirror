@@ -48,7 +48,7 @@ static int fdalloc(struct file *f) {
   return -1;
 }
 
-int sys_dup(void) {
+uint64 sys_dup(void) {
   struct file *f;
   int fd;
 
@@ -60,7 +60,7 @@ int sys_dup(void) {
   return fd;
 }
 
-int sys_read(void) {
+uint64 sys_read(void) {
   struct file *f;
   int n;
   uint64 p;
@@ -70,7 +70,7 @@ int sys_read(void) {
   return fileread(f, p, n);
 }
 
-int sys_write(void) {
+uint64 sys_write(void) {
   struct file *f;
   int n;
   uint64 p;
@@ -81,7 +81,7 @@ int sys_write(void) {
   return filewrite(f, p, n);
 }
 
-int sys_close(void) {
+uint64 sys_close(void) {
   int fd;
   struct file *f;
 
@@ -92,7 +92,7 @@ int sys_close(void) {
   return 0;
 }
 
-int sys_fstat(void) {
+uint64 sys_fstat(void) {
   struct file *f;
   uint64 st; // user pointer to struct stat
 
@@ -102,7 +102,7 @@ int sys_fstat(void) {
 }
 
 // Create the path new as a link to the same inode as old.
-int sys_link(void) {
+uint64 sys_link(void) {
   char name[DIRSIZ], new[MAXPATH], old[MAXPATH];
   struct inode *dp, *ip;
 
@@ -164,7 +164,7 @@ static int isdirempty(struct inode *dp) {
 }
 
 // PAGEBREAK!
-int sys_unlink(void) {
+uint64 sys_unlink(void) {
   struct inode *ip, *dp;
   struct dirent de;
   char name[DIRSIZ], path[MAXPATH];
@@ -262,7 +262,7 @@ static struct inode *create(char *path, short type, short major, short minor) {
   return ip;
 }
 
-int sys_open(void) {
+uint64 sys_open(void) {
   char path[MAXPATH];
   int fd, omode;
   struct file *f;
@@ -323,7 +323,7 @@ int sys_open(void) {
   return fd;
 }
 
-int sys_mkdir(void) {
+uint64 sys_mkdir(void) {
   char path[MAXPATH];
   struct inode *ip;
 
@@ -337,7 +337,7 @@ int sys_mkdir(void) {
   return 0;
 }
 
-int sys_mknod(void) {
+uint64 sys_mknod(void) {
   struct inode *ip;
   char path[MAXPATH];
   int major, minor;
@@ -354,7 +354,7 @@ int sys_mknod(void) {
   return 0;
 }
 
-int sys_chdir(void) {
+uint64 sys_chdir(void) {
   char path[MAXPATH];
   struct inode *ip;
   struct proc *p = myproc();
@@ -377,7 +377,7 @@ int sys_chdir(void) {
   return 0;
 }
 
-int sys_exec(void) {
+uint64 sys_exec(void) {
   char path[MAXPATH], *argv[MAXARG];
   int i;
   uint64 uargv, uarg;
@@ -413,7 +413,7 @@ int sys_exec(void) {
   return ret;
 }
 
-int sys_pipe(void) {
+uint64 sys_pipe(void) {
   uint64 fdarray; // user pointer to array of two integers
   struct file *rf, *wf;
   int fd0, fd1;
