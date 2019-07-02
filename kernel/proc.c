@@ -375,7 +375,7 @@ struct proc *find_runnable(int start) {
 void scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();
-  int next;
+  int next = 0;
 
   c->proc = 0;
   for (;;) {
