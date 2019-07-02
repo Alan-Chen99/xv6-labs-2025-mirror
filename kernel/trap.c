@@ -40,8 +40,6 @@ void usertrap(void) {
   // save user program counter.
   p->tf->epc = r_sepc();
 
-  intr_on();
-
   if (r_scause() == 8) {
     // system call
 
@@ -49,11 +47,15 @@ void usertrap(void) {
     // but we want to return to the next instruction.
     p->tf->epc += 4;
 
+    // an interrupt will change sstatus &c registers,
+    // so don't enable until done with those registers.
+    intr_on();
+
     syscall();
   } else if ((which_dev = devintr()) != 0) {
     // ok
   } else {
-    printf("usertrap(): unexpected scause 0x%p pid=%d\n", r_scause(), p->pid);
+    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;
   }
