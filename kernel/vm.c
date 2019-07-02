@@ -85,8 +85,8 @@ static pte_t *walk(pagetable_t pagetable, uint64 va, int alloc) {
 }
 
 // Look up a virtual address, return the physical address,
-// Can only be used to look up user pages.
 // or 0 if not mapped.
+// Can only be used to look up user pages.
 uint64 walkaddr(pagetable_t pagetable, uint64 va) {
   pte_t *pte;
   uint64 pa;
