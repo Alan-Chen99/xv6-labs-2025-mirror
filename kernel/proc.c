@@ -493,17 +493,11 @@ void sleep(void *chan, struct spinlock *lk) {
 }
 
 // PAGEBREAK!
-//  Wake up all processes sleeping on chan,
-//  where chan is a proc, which is locked.
-static void wakeup1(struct proc *chan) {
-  struct proc *p;
-
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if (p == chan && p->state == SLEEPING && p->chan == chan) {
-      if (p->state != SLEEPING || p->chan != chan)
-        panic("wakeup1");
-      p->state = RUNNABLE;
-    }
+//  Wake up locked parent, used by exit()
+static void wakeup1(struct proc *p) {
+  if (p->chan == p && p->state == SLEEPING) {
+    p->state = RUNNABLE;
+  }
 }
 
 // Wake up all processes sleeping on chan. Never
