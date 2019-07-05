@@ -123,7 +123,7 @@ char junk3[4096];
 void filetest() {
   int parent = getpid();
 
-  printf(1, "file test: ");
+  printf(1, "file: ");
 
   buf[0] = 99;
 
