@@ -6,16 +6,15 @@
 #include "proc.h"
 #include "defs.h"
 
-struct {
-  struct spinlock lock;
-  struct proc proc[NPROC];
-} ptable;
+struct proc proc[NPROC];
 
 struct cpu cpus[NCPU];
 
 struct proc *initproc;
 
+struct spinlock pid_lock;
 int nextpid = 1;
+
 extern void forkret(void);
 
 // for returning  out of the kernel
@@ -28,8 +27,8 @@ extern char trampout[]; // trampoline.S
 void procinit(void) {
   struct proc *p;
 
-  initlock(&ptable.lock, "ptable");
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  initlock(&pid_lock, "nextpid");
+  for (p = proc; p < &proc[NPROC]; p++)
     initlock(&p->lock, "proc");
 }
 
@@ -61,9 +60,9 @@ struct proc *myproc(void) {
 int allocpid() {
   int pid;
 
-  acquire(&ptable.lock);
+  acquire(&pid_lock);
   pid = nextpid++;
-  release(&ptable.lock);
+  release(&pid_lock);
   return pid;
 }
 
@@ -76,7 +75,7 @@ int allocpid() {
 static struct proc *allocproc(void) {
   struct proc *p;
 
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if (p->state == UNUSED) {
       goto found;
@@ -274,7 +273,7 @@ void reparent(struct proc *p, struct proc *parent) {
   struct proc *pp;
   int child_of_init = (p->parent == initproc);
 
-  for (pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++) {
+  for (pp = proc; pp < &proc[NPROC]; pp++) {
     if (pp != p && pp != parent) {
       acquire(&pp->lock);
       if (pp->parent == p) {
@@ -347,7 +346,7 @@ int wait(void) {
   for (;;) {
     // Scan through table looking for exited children.
     havekids = 0;
-    for (np = ptable.proc; np < &ptable.proc[NPROC]; np++) {
+    for (np = proc; np < &proc[NPROC]; np++) {
       if (np->parent != p)
         continue;
       acquire(&np->lock);
@@ -391,7 +390,7 @@ void scheduler(void) {
     // Enable interrupts on this processor.
     intr_on();
 
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
@@ -515,7 +514,7 @@ static void wakeup1(struct proc *p) {
 void wakeup(void *chan) {
   struct proc *p;
 
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if (p->state == SLEEPING && p->chan == chan) {
       p->state = RUNNABLE;
@@ -530,7 +529,7 @@ void wakeup(void *chan) {
 int kill(int pid) {
   struct proc *p;
 
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  for (p = proc; p < &proc[NPROC]; p++) {
     if (p->pid == pid) {
       acquire(&p->lock);
       if (p->pid != pid)
@@ -582,7 +581,7 @@ void procdump(void) {
   struct proc *p;
   char *state;
 
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  for (p = proc; p < &proc[NPROC]; p++) {
     if (p->state == UNUSED)
       continue;
     if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
