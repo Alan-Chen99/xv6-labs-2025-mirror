@@ -69,8 +69,9 @@ int allocpid() {
 
 // PAGEBREAK: 32
 //  Look in the process table for an UNUSED proc.
-//  If found, change state to EMBRYO and initialize
-//  state required to run in the kernel.
+//  If found, change state to EMBRYO, initialize
+//  state required to run in the kernel,
+//  and return with p->lock held.
 //  Otherwise return 0.
 static struct proc *allocproc(void) {
   struct proc *p;
@@ -115,7 +116,7 @@ found:
 
 // free a proc structure and the data hanging from it,
 // including user pages.
-// the proc lock must be held.
+// p->lock must be held.
 static void freeproc(struct proc *p) {
   if (p->kstack)
     kfree(p->kstack);
@@ -237,6 +238,7 @@ int fork(void) {
   // Copy user memory from parent to child.
   if (uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
     freeproc(np);
+    release(&np->lock);
     return -1;
   }
   np->sz = p->sz;
@@ -270,7 +272,7 @@ int fork(void) {
 // are locked.
 void reparent(struct proc *p, struct proc *parent) {
   struct proc *pp;
-  int init_is_my_parent = (p->parent == initproc);
+  int child_of_init = (p->parent == initproc);
 
   for (pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++) {
     if (pp != p && pp != parent) {
@@ -278,10 +280,10 @@ void reparent(struct proc *p, struct proc *parent) {
       if (pp->parent == p) {
         pp->parent = initproc;
         if (pp->state == ZOMBIE) {
-          if (!init_is_my_parent)
+          if (!child_of_init)
             acquire(&initproc->lock);
           wakeup1(initproc);
-          if (!init_is_my_parent)
+          if (!child_of_init)
             release(&initproc->lock);
         }
       }
@@ -402,10 +404,8 @@ void scheduler(void) {
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
-        release(&p->lock);
-      } else {
-        release(&p->lock);
       }
+      release(&p->lock);
     }
   }
 }
