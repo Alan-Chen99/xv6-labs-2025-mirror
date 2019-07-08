@@ -2,6 +2,7 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
@@ -18,7 +19,6 @@ int exec(char *path, char **argv) {
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
-  uint64 oldsz = p->sz;
 
   begin_op();
 
@@ -58,6 +58,9 @@ int exec(char *path, char **argv) {
   iunlockput(ip);
   end_op();
   ip = 0;
+
+  p = myproc();
+  uint64 oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
