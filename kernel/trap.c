@@ -43,6 +43,9 @@ void usertrap(void) {
   if (r_scause() == 8) {
     // system call
 
+    if (p->killed)
+      exit();
+
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
     p->tf->epc += 4;
