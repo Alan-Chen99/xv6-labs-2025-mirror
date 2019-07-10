@@ -88,7 +88,7 @@ void usertrapret(void) {
   p->tf->kernel_satp = r_satp();
   p->tf->kernel_sp = (uint64)p->kstack + PGSIZE;
   p->tf->kernel_trap = (uint64)usertrap;
-  p->tf->hartid = r_tp();
+  p->tf->kernel_hartid = r_tp();
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
