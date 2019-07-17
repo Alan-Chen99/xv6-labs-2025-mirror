@@ -127,7 +127,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_link] sys_link,   [SYS_mkdir] sys_mkdir,   [SYS_close] sys_close,
 };
 
-static void dosyscall(void) {
+void syscall(void) {
   int num;
   struct proc *p = myproc();
 
@@ -140,13 +140,4 @@ static void dosyscall(void) {
     printf("%d %s: unknown sys call %d\n", p->pid, p->name, num);
     p->tf->a0 = -1;
   }
-}
-
-void syscall() {
-  if (myproc()->killed)
-    exit();
-  dosyscall();
-  if (myproc()->killed)
-    exit();
-  return;
 }
