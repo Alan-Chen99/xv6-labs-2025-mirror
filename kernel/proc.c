@@ -387,11 +387,11 @@ void scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();
 
+  // Let devices interrupt when no lock is held.
+  intr_on();
+
   c->proc = 0;
   for (;;) {
-    // Give devices a brief chance to interrupt.
-    intr_on();
-
     for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
