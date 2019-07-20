@@ -44,7 +44,7 @@ struct cpu *mycpu(void) {
   return c;
 }
 
-// Return the current struct proc *.
+// Return the current struct proc *, or zero if none.
 struct proc *myproc(void) {
   push_off();
   struct cpu *c = mycpu();
@@ -389,7 +389,7 @@ void scheduler(void) {
 
   c->proc = 0;
   for (;;) {
-    // Let devices interrupt when no lock is held.
+    // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
 
     for (p = proc; p < &proc[NPROC]; p++) {
