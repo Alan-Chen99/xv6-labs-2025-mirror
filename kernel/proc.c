@@ -291,13 +291,12 @@ void reparent(struct proc *p, struct proc *parent) {
 // until its parent calls wait().
 void exit(void) {
   struct proc *p = myproc();
-  int fd;
 
   if (p == initproc)
     panic("init exiting");
 
   // Close all open files.
-  for (fd = 0; fd < NOFILE; fd++) {
+  for (int fd = 0; fd < NOFILE; fd++) {
     if (p->ofile[fd]) {
       struct file *f = p->ofile[fd];
       fileclose(f);
@@ -314,13 +313,13 @@ void exit(void) {
 
   acquire(&p->lock);
 
-  // Give our children to init.
+  // Give any children to init.
   reparent(p, p->parent);
-
-  p->state = ZOMBIE;
 
   // Parent might be sleeping in wait().
   wakeup1(p->parent);
+
+  p->state = ZOMBIE;
 
   release(&p->parent->lock);
 
