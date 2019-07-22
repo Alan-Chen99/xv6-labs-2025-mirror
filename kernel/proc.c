@@ -142,9 +142,8 @@ pagetable_t proc_pagetable(struct proc *p) {
   // to/from user space, so not PTE_U.
   mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampout, PTE_R | PTE_X);
 
-  // map the trapframe, for trampoline.S.
-  mappages(pagetable, (TRAMPOLINE - PGSIZE), PGSIZE, (uint64)(p->tf),
-           PTE_R | PTE_W);
+  // map the trapframe just below TRAMPOLINE, for trampoline.S.
+  mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->tf), PTE_R | PTE_W);
 
   return pagetable;
 }
@@ -153,7 +152,7 @@ pagetable_t proc_pagetable(struct proc *p) {
 // physical memory it refers to.
 void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
   unmappages(pagetable, TRAMPOLINE, PGSIZE, 0);
-  unmappages(pagetable, TRAMPOLINE - PGSIZE, PGSIZE, 0);
+  unmappages(pagetable, TRAPFRAME, PGSIZE, 0);
   if (sz > 0)
     uvmfree(pagetable, sz);
 }
