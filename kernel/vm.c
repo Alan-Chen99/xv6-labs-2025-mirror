@@ -398,3 +398,12 @@ uint64 kernelpa(uint64 va) {
   pa = PTE2PA(*pte);
   return pa + off;
 }
+
+void clearpteu(pagetable_t pagetable, uint64 va) {
+  pte_t *pte;
+
+  pte = walk(pagetable, va, 0);
+  if (pte == 0)
+    panic("clearpteu");
+  *pte &= ~PTE_U;
+}
