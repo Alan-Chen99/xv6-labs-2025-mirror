@@ -24,8 +24,14 @@ void procinit(void) {
   struct proc *p;
 
   initlock(&pid_lock, "nextpid");
-  for (p = proc; p < &proc[NPROC]; p++)
+  for (p = proc; p < &proc[NPROC]; p++) {
     initlock(&p->lock, "proc");
+    // Allocate a page for the kernel stack.
+    char *kstack = (char *)KSTACK((int)(p - proc));
+    if ((p->kstack = map_kstack(kstack)) == 0) {
+      panic("procinit");
+    }
+  }
 }
 
 // Must be called with interrupts disabled,
@@ -85,16 +91,8 @@ static struct proc *allocproc(void) {
 found:
   p->pid = allocpid();
 
-  // Allocate a page for the kernel stack.
-  if ((p->kstack = kalloc()) == 0) {
-    release(&p->lock);
-    return 0;
-  }
-
   // Allocate a trapframe page.
   if ((p->tf = (struct trapframe *)kalloc()) == 0) {
-    kfree(p->kstack);
-    p->kstack = 0;
     release(&p->lock);
     return 0;
   }
@@ -115,9 +113,6 @@ found:
 // including user pages.
 // p->lock must be held.
 static void freeproc(struct proc *p) {
-  if (p->kstack)
-    kfree(p->kstack);
-  p->kstack = 0;
   if (p->tf)
     kfree((void *)p->tf);
   p->tf = 0;
