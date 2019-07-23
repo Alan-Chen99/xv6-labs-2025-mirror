@@ -16,7 +16,7 @@ uint64 mscratch0[NCPU * 32];
 extern void machinevec();
 
 // entry.S jumps here in machine mode on stack0.
-void mstart() {
+void start() {
   // set M Previous Privilege mode to Supervisor, for mret.
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;
