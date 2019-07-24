@@ -163,7 +163,6 @@ static int isdirempty(struct inode *dp) {
   return 1;
 }
 
-// PAGEBREAK!
 uint64 sys_unlink(void) {
   struct inode *ip, *dp;
   struct dirent de;

@@ -113,9 +113,8 @@ int fileread(struct file *f, uint64 addr, int n) {
   return r;
 }
 
-// PAGEBREAK!
-//  Write to file f.
-//  addr is a user virtual address.
+// Write to file f.
+// addr is a user virtual address.
 int filewrite(struct file *f, uint64 addr, int n) {
   int r, ret = 0;
 

@@ -176,10 +176,9 @@ void iinit(int dev) {
 
 static struct inode *iget(uint dev, uint inum);
 
-// PAGEBREAK!
-//  Allocate an inode on device dev.
-//  Mark it as allocated by  giving it type type.
-//  Returns an unlocked but allocated and referenced inode.
+// Allocate an inode on device dev.
+// Mark it as allocated by  giving it type type.
+// Returns an unlocked but allocated and referenced inode.
 struct inode *ialloc(uint dev, short type) {
   int inum;
   struct buf *bp;
@@ -337,13 +336,12 @@ void iunlockput(struct inode *ip) {
   iput(ip);
 }
 
-// PAGEBREAK!
-//  Inode content
+// Inode content
 //
-//  The content (data) associated with each inode is stored
-//  in blocks on the disk. The first NDIRECT block numbers
-//  are listed in ip->addrs[].  The next NINDIRECT blocks are
-//  listed in block ip->addrs[NDIRECT].
+// The content (data) associated with each inode is stored
+// in blocks on the disk. The first NDIRECT block numbers
+// are listed in ip->addrs[].  The next NINDIRECT blocks are
+// listed in block ip->addrs[NDIRECT].
 
 // Return the disk block address of the nth block in inode ip.
 // If there is no such block, bmap allocates one.
@@ -418,11 +416,10 @@ void stati(struct inode *ip, struct stat *st) {
   st->size = ip->size;
 }
 
-// PAGEBREAK!
-//  Read data from inode.
-//  Caller must hold ip->lock.
-//  If user_dst==1, then dst is a user virtual address;
-//  otherwise, dst is a kernel address.
+// Read data from inode.
+// Caller must hold ip->lock.
+// If user_dst==1, then dst is a user virtual address;
+// otherwise, dst is a kernel address.
 int readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n) {
   uint tot, m;
   struct buf *bp;
@@ -442,7 +439,6 @@ int readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n) {
   return n;
 }
 
-// PAGEBREAK!
 // Write data to inode.
 // Caller must hold ip->lock.
 // If user_src==1, then src is a user virtual address;
@@ -472,8 +468,7 @@ int writei(struct inode *ip, int user_src, uint64 src, uint off, uint n) {
   return n;
 }
 
-// PAGEBREAK!
-//  Directories
+// Directories
 
 int namecmp(const char *s, const char *t) { return strncmp(s, t, DIRSIZ); }
 
@@ -531,8 +526,7 @@ int dirlink(struct inode *dp, char *name, uint inum) {
   return 0;
 }
 
-// PAGEBREAK!
-//  Paths
+// Paths
 
 // Copy the next path element from path into name.
 // Return a pointer to the element following the copied one.

@@ -101,8 +101,7 @@ void pipeclose(struct pipe *, int);
 int piperead(struct pipe *, uint64, int);
 int pipewrite(struct pipe *, uint64, int);
 
-// PAGEBREAK: 16
-//  proc.c
+// proc.c
 int cpuid(void);
 void exit(void);
 int fork(void);

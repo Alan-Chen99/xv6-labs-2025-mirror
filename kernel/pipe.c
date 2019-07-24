@@ -43,7 +43,6 @@ int pipealloc(struct file **f0, struct file **f1) {
   (*f1)->pipe = pi;
   return 0;
 
-  // PAGEBREAK: 20
 bad:
   if (pi)
     kfree((char *)pi);
@@ -70,7 +69,6 @@ void pipeclose(struct pipe *pi, int writable) {
     release(&pi->lock);
 }
 
-// PAGEBREAK: 40
 int pipewrite(struct pipe *pi, uint64 addr, int n) {
   int i;
   char ch;

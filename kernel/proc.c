@@ -76,11 +76,10 @@ int allocpid() {
   return pid;
 }
 
-// PAGEBREAK: 32
-//  Look in the process table for an UNUSED proc.
-//  If found, initialize state required to run in the kernel,
-//  and return with p->lock held.
-//  If there are no free procs, return 0.
+// Look in the process table for an UNUSED proc.
+// If found, initialize state required to run in the kernel,
+// and return with p->lock held.
+// If there are no free procs, return 0.
 static struct proc *allocproc(void) {
   struct proc *p;
 
@@ -172,8 +171,7 @@ uchar initcode[] = {0x17, 0x05, 0x00, 0x00, 0x13, 0x05, 0x05, 0x02, 0x97,
                     0x74, 0x00, 0x00, 0x01, 0x20, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-// PAGEBREAK: 32
-//  Set up first user process.
+// Set up first user process.
 void userinit(void) {
   struct proc *p;
 
@@ -374,14 +372,13 @@ int wait(void) {
   }
 }
 
-// PAGEBREAK: 42
-//  Per-CPU process scheduler.
-//  Each CPU calls scheduler() after setting itself up.
-//  Scheduler never returns.  It loops, doing:
-//   - choose a process to run.
-//   - swtch to start running that process.
-//   - eventually that process transfers control
-//     via swtch back to the scheduler.
+// Per-CPU process scheduler.
+// Each CPU calls scheduler() after setting itself up.
+// Scheduler never returns.  It loops, doing:
+//  - choose a process to run.
+//  - swtch to start running that process.
+//  - eventually that process transfers control
+//    via swtch back to the scheduler.
 void scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();

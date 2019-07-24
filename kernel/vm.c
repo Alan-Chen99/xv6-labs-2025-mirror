@@ -56,10 +56,10 @@ void kvminithart() {
 
 // Return the address of the PTE in page table pagetable
 // that corresponds to virtual address va.  If alloc!=0,
-// create any required page table pages.
+// create any required page-table pages.
 //
-// The risc-v Sv39 scheme has three levels of page table
-// pages. A page table page contains 512 64-bit PTEs.
+// The risc-v Sv39 scheme has three levels of page-table
+// pages. A page-table page contains 512 64-bit PTEs.
 // A 64-bit virtual address is split into five fields:
 //   39..63 -- must be zero.
 //   30..38 -- 9 bits of level-2 index.
@@ -229,7 +229,7 @@ uint64 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) {
   return newsz;
 }
 
-// Recursively free page table pages.
+// Recursively free page-table pages.
 // All leaf mappings must already have been removed.
 static void freewalk(pagetable_t pagetable) {
   // there are 2^9 = 512 PTEs in a page table.
@@ -248,7 +248,7 @@ static void freewalk(pagetable_t pagetable) {
 }
 
 // Free user memory pages,
-// then free page table pages.
+// then free page-table pages.
 void uvmfree(pagetable_t pagetable, uint64 sz) {
   unmappages(pagetable, 0, sz, 1);
   freewalk(pagetable);
