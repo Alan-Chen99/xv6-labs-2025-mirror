@@ -25,26 +25,26 @@ void kvminit() {
   memset(kernel_pagetable, 0, PGSIZE);
 
   // uart registers
-  kmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);
+  kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);
 
   // virtio mmio disk interface
-  kmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+  kvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
 
   // CLINT
-  kmap(CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+  kvmmap(CLINT, CLINT, 0x10000, PTE_R | PTE_W);
 
   // PLIC
-  kmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+  kvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W);
 
   // map kernel text executable and read-only.
-  kmap(KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
+  kvmmap(KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
 
   // map kernel data and the physical RAM we'll make use of.
-  kmap((uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+  kvmmap((uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
-  kmap(TRAMPOLINE, (uint64)trampout, PGSIZE, PTE_R | PTE_X);
+  kvmmap(TRAMPOLINE, (uint64)trampout, PGSIZE, PTE_R | PTE_X);
 }
 
 // Switch h/w page table register to the kernel's page table,
@@ -105,9 +105,27 @@ uint64 walkaddr(pagetable_t pagetable, uint64 va) {
 // add a mapping to the kernel page table.
 // only used when booting.
 // does not flush TLB or enable paging.
-void kmap(uint64 va, uint64 pa, uint64 sz, int perm) {
+void kvmmap(uint64 va, uint64 pa, uint64 sz, int perm) {
   if (mappages(kernel_pagetable, va, sz, pa, perm) != 0)
-    panic("kmap");
+    panic("kvmmap");
+}
+
+// translate a kernel virtual address to
+// a physical address. only needed for
+// addresses on the stack.
+// assumes va is page aligned.
+uint64 kvmpa(uint64 va) {
+  uint64 off = va % PGSIZE;
+  pte_t *pte;
+  uint64 pa;
+
+  pte = walk(kernel_pagetable, va, 0);
+  if (pte == 0)
+    panic("kernelpa");
+  if ((*pte & PTE_V) == 0)
+    panic("kernelpa");
+  pa = PTE2PA(*pte);
+  return pa + off;
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
@@ -138,7 +156,7 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa,
 // Remove mappings from a page table. The mappings in
 // the given range must exist. Optionally free the
 // physical memory.
-void unmappages(pagetable_t pagetable, uint64 va, uint64 size, int do_free) {
+void uvmunmap(pagetable_t pagetable, uint64 va, uint64 size, int do_free) {
   uint64 a, last;
   pte_t *pte;
   uint64 pa;
@@ -147,13 +165,13 @@ void unmappages(pagetable_t pagetable, uint64 va, uint64 size, int do_free) {
   last = PGROUNDDOWN(va + size - 1);
   for (;;) {
     if ((pte = walk(pagetable, a, 0)) == 0)
-      panic("unmappages: walk");
+      panic("uvmunmap: walk");
     if ((*pte & PTE_V) == 0) {
       printf("va=%p pte=%p\n", a, *pte);
-      panic("unmappages: not mapped");
+      panic("uvmunmap: not mapped");
     }
     if (PTE_FLAGS(*pte) == PTE_V)
-      panic("unmappages: not a leaf");
+      panic("uvmunmap: not a leaf");
     if (do_free) {
       pa = PTE2PA(*pte);
       kfree((void *)pa);
@@ -225,7 +243,7 @@ uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) {
 uint64 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) {
   if (newsz >= oldsz)
     return oldsz;
-  unmappages(pagetable, newsz, oldsz - newsz, 1);
+  uvmunmap(pagetable, newsz, oldsz - newsz, 1);
   return newsz;
 }
 
@@ -250,7 +268,7 @@ static void freewalk(pagetable_t pagetable) {
 // Free user memory pages,
 // then free page-table pages.
 void uvmfree(pagetable_t pagetable, uint64 sz) {
-  unmappages(pagetable, 0, sz, 1);
+  uvmunmap(pagetable, 0, sz, 1);
   freewalk(pagetable);
 }
 
@@ -284,8 +302,19 @@ int uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) {
   return 0;
 
 err:
-  unmappages(new, 0, i, 1);
+  uvmunmap(new, 0, i, 1);
   return -1;
+}
+
+// mark a PTE invalid for user access.
+// used by exec for the user stack guard page.
+void uvmclear(pagetable_t pagetable, uint64 va) {
+  pte_t *pte;
+
+  pte = walk(pagetable, va, 0);
+  if (pte == 0)
+    panic("clearpteu");
+  *pte &= ~PTE_U;
 }
 
 // Copy from kernel to user.
@@ -373,33 +402,4 @@ int copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max) {
   } else {
     return -1;
   }
-}
-
-// translate a kernel virtual address to
-// a physical address. only needed for
-// addresses on the stack.
-// assumes va is page aligned.
-uint64 kernelpa(uint64 va) {
-  uint64 off = va % PGSIZE;
-  pte_t *pte;
-  uint64 pa;
-
-  pte = walk(kernel_pagetable, va, 0);
-  if (pte == 0)
-    panic("kernelpa");
-  if ((*pte & PTE_V) == 0)
-    panic("kernelpa");
-  pa = PTE2PA(*pte);
-  return pa + off;
-}
-
-// mark a PTE invalid for user access.
-// used by exec for the user stack guard page.
-void clearpteu(pagetable_t pagetable, uint64 va) {
-  pte_t *pte;
-
-  pte = walk(pagetable, va, 0);
-  if (pte == 0)
-    panic("clearpteu");
-  *pte &= ~PTE_U;
 }

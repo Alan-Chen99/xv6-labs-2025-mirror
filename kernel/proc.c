@@ -34,7 +34,7 @@ void procinit(void) {
     if (pa == 0)
       panic("kalloc");
     uint64 va = KSTACK((int)(p - proc));
-    kmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+    kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
     p->kstack = va;
   }
   kvminithart();
@@ -156,8 +156,8 @@ pagetable_t proc_pagetable(struct proc *p) {
 // Free a process's page table, and free the
 // physical memory it refers to.
 void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
-  unmappages(pagetable, TRAMPOLINE, PGSIZE, 0);
-  unmappages(pagetable, TRAPFRAME, PGSIZE, 0);
+  uvmunmap(pagetable, TRAMPOLINE, PGSIZE, 0);
+  uvmunmap(pagetable, TRAPFRAME, PGSIZE, 0);
   if (sz > 0)
     uvmfree(pagetable, sz);
 }
