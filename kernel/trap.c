@@ -172,7 +172,7 @@ int devintr() {
 
     plic_complete(irq);
     return 1;
-  } else if (scause == 0x8000000000000001) {
+  } else if (scause == 0x8000000000000001L) {
     // software interrupt from a machine-mode timer interrupt,
     // forwarded by timervec in kernelvec.S.
 
