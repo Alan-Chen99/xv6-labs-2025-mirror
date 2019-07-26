@@ -121,9 +121,9 @@ uint64 kvmpa(uint64 va) {
 
   pte = walk(kernel_pagetable, va, 0);
   if (pte == 0)
-    panic("kernelpa");
+    panic("kvmpa");
   if ((*pte & PTE_V) == 0)
-    panic("kernelpa");
+    panic("kvmpa");
   pa = PTE2PA(*pte);
   return pa + off;
 }
@@ -313,7 +313,7 @@ void uvmclear(pagetable_t pagetable, uint64 va) {
 
   pte = walk(pagetable, va, 0);
   if (pte == 0)
-    panic("clearpteu");
+    panic("uvmclear");
   *pte &= ~PTE_U;
 }
 
