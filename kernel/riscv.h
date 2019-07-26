@@ -191,16 +191,16 @@ static inline uint64 r_time() {
   return x;
 }
 
-// enable interrupts
+// enable device interrupts
 static inline void intr_on() {
   w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
   w_sstatus(r_sstatus() | SSTATUS_SIE);
 }
 
-// disable interrupts
+// disable device interrupts
 static inline void intr_off() { w_sstatus(r_sstatus() & ~SSTATUS_SIE); }
 
-// are interrupts enabled?
+// are device interrupts enabled?
 static inline int intr_get() {
   uint64 x = r_sstatus();
   return (x & SSTATUS_SIE) != 0;
