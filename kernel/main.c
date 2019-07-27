@@ -11,6 +11,7 @@ void main() {
   if (cpuid() == 0) {
     uartinit(); // serial port
     consoleinit();
+    printfinit();
     printf("hart %d starting\n", cpuid());
     kinit();            // physical page allocator
     kvminit();          // create kernel page table
