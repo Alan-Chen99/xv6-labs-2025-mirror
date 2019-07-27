@@ -161,7 +161,9 @@ int devintr() {
   uint64 scause = r_scause();
 
   if ((scause & 0x8000000000000000L) && (scause & 0xff) == 9) {
-    // supervisor external interrupt, via PLIC.
+    // this is a supervisor external interrupt, via PLIC.
+
+    // irq indicates which device interrupted.
     int irq = plic_claim();
 
     if (irq == UART0_IRQ) {

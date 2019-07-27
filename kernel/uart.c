@@ -41,6 +41,7 @@ void uartinit(void) {
   *R(1) = 0x01;
 }
 
+// write one output character to the UART.
 void uartputc(int c) {
   // wait for Transmit Holding Empty to be set in LSR.
   while ((*R(5) & (1 << 5)) == 0)
@@ -48,6 +49,8 @@ void uartputc(int c) {
   *R(0) = c;
 }
 
+// read one input character from the UART.
+// return -1 if none is waiting.
 int uartgetc(void) {
   if (*R(5) & 0x01) {
     // input data is ready.
@@ -57,6 +60,7 @@ int uartgetc(void) {
   }
 }
 
+// trap.c calls here when the uart interrupts.
 void uartintr(void) {
   while (1) {
     int c = uartgetc();

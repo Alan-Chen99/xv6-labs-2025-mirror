@@ -37,7 +37,7 @@ void consputc(int c) {
   }
 
   if (c == BACKSPACE) {
-    // if the user typed backspace, erase the character.
+    // if the user typed backspace, overwrite with a space.
     uartputc('\b');
     uartputc(' ');
     uartputc('\b');
@@ -130,10 +130,10 @@ int consoleread(int user_dst, uint64 dst, int n) {
 }
 
 //
-// the uart interrupt handler, uartintr(), calls this
-// for each input character. do erase/kill processing,
-// append to cons.buf, wake up reader if a whole
-// line has arrived.
+// the console input interrupt handler.
+// uartintr() calls this for input character.
+// do erase/kill processing, append to cons.buf,
+// wake up consoleread() if a whole line has arrived.
 //
 void consoleintr(int c) {
   acquire(&cons.lock);
@@ -158,9 +158,16 @@ void consoleintr(int c) {
   default:
     if (c != 0 && cons.e - cons.r < INPUT_BUF) {
       c = (c == '\r') ? '\n' : c;
-      cons.buf[cons.e++ % INPUT_BUF] = c;
+
+      // echo back to the user.
       consputc(c);
+
+      // store for consumption by consoleread().
+      cons.buf[cons.e++ % INPUT_BUF] = c;
+
       if (c == '\n' || c == C('D') || cons.e == cons.r + INPUT_BUF) {
+        // wake up consoleread() if a whole line (or end-of-file)
+        // has arrived.
         cons.w = cons.e;
         wakeup(&cons.r);
       }
