@@ -9,7 +9,6 @@ volatile static int started = 0;
 // start() jumps here in supervisor mode on all CPUs.
 void main() {
   if (cpuid() == 0) {
-    uartinit(); // serial port
     consoleinit();
     printfinit();
     printf("hart %d starting\n", cpuid());
