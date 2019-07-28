@@ -28,7 +28,7 @@ int fetchstr(uint64 addr, char *buf, int max) {
   return strlen(buf);
 }
 
-static uint64 fetcharg(int n) {
+static uint64 argraw(int n) {
   struct proc *p = myproc();
   switch (n) {
   case 0:
@@ -44,33 +44,21 @@ static uint64 fetcharg(int n) {
   case 5:
     return p->tf->a5;
   }
-  panic("fetcharg");
+  panic("argraw");
   return -1;
 }
 
 // Fetch the nth 32-bit system call argument.
 int argint(int n, int *ip) {
-  *ip = fetcharg(n);
+  *ip = argraw(n);
   return 0;
 }
 
+// Retrieve an argument as a pointer.
+// Doesn't check for legality, since
+// copyin/copyout will do that.
 int argaddr(int n, uint64 *ip) {
-  *ip = fetcharg(n);
-  return 0;
-}
-
-// Fetch the nth word-sized system call argument as a pointer
-// to a block of memory of size bytes.  Check that the pointer
-// lies within the process address space.
-int argptr(int n, uint64 *pp, int size) {
-  uint64 i;
-  struct proc *p = myproc();
-
-  if (argaddr(n, &i) < 0)
-    return -1;
-  if (size < 0 || (uint)i >= p->sz || (uint)i + size > p->sz)
-    return -1;
-  *pp = i;
+  *ip = argraw(n);
   return 0;
 }
 
