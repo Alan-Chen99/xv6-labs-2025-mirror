@@ -226,6 +226,9 @@ void virtio_disk_rw(struct buf *b, int write) {
     sleep(b, &vdisk_lock);
   }
 
+  info[idx[0]].b = 0;
+  free_chain(idx[0]);
+
   release(&vdisk_lock);
 }
 
@@ -240,9 +243,6 @@ void virtio_disk_intr() {
 
     info[id].status = 1;
     wakeup(info[id].b);
-
-    info[id].b = 0;
-    free_chain(id);
 
     used_idx = (used_idx + 1) % NUM;
   }
