@@ -73,7 +73,7 @@ static void install_trans(void) {
     struct buf *dbuf = bread(log.dev, log.lh.block[tail]);   // read dst
     memmove(dbuf->data, lbuf->data, BSIZE); // copy block to dst
     bwrite(dbuf);                           // write dst to disk
-    dbuf->refcnt--;                         // unpin buffer from cache
+    bunpin(dbuf);
     brelse(lbuf);
     brelse(dbuf);
   }
@@ -209,7 +209,7 @@ void log_write(struct buf *b) {
   }
   log.lh.block[i] = b->blockno;
   if (i == log.lh.n) { // Add new block to log?
-    b->refcnt++;       // Pin block in cache
+    bpin(b);
     log.lh.n++;
   }
   release(&log.lock);
