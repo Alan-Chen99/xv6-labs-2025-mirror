@@ -28,12 +28,20 @@ static void itrunc(struct inode *);
 struct superblock sb;
 
 // Read the super block.
-void readsb(int dev, struct superblock *sb) {
+static void readsb(int dev, struct superblock *sb) {
   struct buf *bp;
 
   bp = bread(dev, 1);
   memmove(sb, bp->data, sizeof(*sb));
   brelse(bp);
+}
+
+// Init fs
+void fsinit(int dev) {
+  readsb(dev, &sb);
+  if (sb.magic != FSMAGIC)
+    panic("invalid file system");
+  initlog(dev, &sb);
 }
 
 // Zero a block.
@@ -161,17 +169,13 @@ struct {
   struct inode inode[NINODE];
 } icache;
 
-void iinit(int dev) {
+void iinit() {
   int i = 0;
 
   initlock(&icache.lock, "icache");
   for (i = 0; i < NINODE; i++) {
     initsleeplock(&icache.inode[i].lock, "inode");
   }
-
-  readsb(dev, &sb);
-  if (sb.magic != FSMAGIC)
-    panic("invalid file system");
 }
 
 static struct inode *iget(uint dev, uint inum);
