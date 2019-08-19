@@ -219,7 +219,6 @@ bad:
 }
 
 static struct inode *create(char *path, short type, short major, short minor) {
-  uint off;
   struct inode *ip, *dp;
   char name[DIRSIZ];
 
@@ -227,7 +226,7 @@ static struct inode *create(char *path, short type, short major, short minor) {
     return 0;
   ilock(dp);
 
-  if ((ip = dirlookup(dp, name, &off)) != 0) {
+  if ((ip = dirlookup(dp, name, 0)) != 0) {
     iunlockput(dp);
     ilock(ip);
     if (type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
