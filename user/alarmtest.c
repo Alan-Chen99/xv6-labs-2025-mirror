@@ -26,7 +26,7 @@ volatile static int count;
 
 void periodic() {
   count = count + 1;
-  printf(1, "alarm!\n");
+  printf("alarm!\n");
   sigreturn();
 }
 
@@ -34,7 +34,7 @@ void periodic() {
 // the alarm handler even a single time.
 void test0() {
   int i;
-  printf(1, "test0 start\n");
+  printf("test0 start\n");
   count = 0;
   sigalarm(2, periodic);
   for (i = 0; i < 1000 * 500000; i++) {
@@ -45,9 +45,9 @@ void test0() {
   }
   sigalarm(0, 0);
   if (count > 0) {
-    printf(1, "test0 passed\n");
+    printf("test0 passed\n");
   } else {
-    printf(1, "test0 failed\n");
+    printf("test0 failed\n");
   }
 }
 
@@ -62,7 +62,7 @@ void test1() {
   int i;
   int j;
 
-  printf(1, "test1 start\n");
+  printf("test1 start\n");
   count = 0;
   j = 0;
   sigalarm(2, periodic);
@@ -73,8 +73,8 @@ void test1() {
   }
   if (i != j || count < 10) {
     // i should equal j
-    printf(1, "test1 failed\n");
+    printf("test1 failed\n");
   } else {
-    printf(1, "test1 passed\n");
+    printf("test1 passed\n");
   }
 }
