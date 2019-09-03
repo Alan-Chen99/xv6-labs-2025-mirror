@@ -50,8 +50,8 @@ void kvminit() {
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void kvminithart() {
-  sfence_vma();
   w_satp(MAKE_SATP(kernel_pagetable));
+  sfence_vma();
 }
 
 // Return the address of the PTE in page table pagetable
