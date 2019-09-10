@@ -8,7 +8,10 @@
 #include "proc.h"
 
 uint64 sys_exit(void) {
-  exit();
+  int n;
+  if (argint(0, &n) < 0)
+    return -1;
+  exit(n);
   return 0; // not reached
 }
 
@@ -16,7 +19,12 @@ uint64 sys_getpid(void) { return myproc()->pid; }
 
 uint64 sys_fork(void) { return fork(); }
 
-uint64 sys_wait(void) { return wait(); }
+uint64 sys_wait(void) {
+  uint64 p;
+  if (argaddr(0, &p) < 0)
+    return -1;
+  return wait(p);
+}
 
 uint64 sys_sbrk(void) {
   int addr;
