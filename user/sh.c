@@ -63,7 +63,7 @@ void runcmd(struct cmd *cmd) {
   struct redircmd *rcmd;
 
   if (cmd == 0)
-    exit(-1);
+    exit(1);
 
   switch (cmd->type) {
   default:
@@ -72,7 +72,7 @@ void runcmd(struct cmd *cmd) {
   case EXEC:
     ecmd = (struct execcmd *)cmd;
     if (ecmd->argv[0] == 0)
-      exit(-1);
+      exit(1);
     exec(ecmd->argv[0], ecmd->argv);
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
@@ -82,7 +82,7 @@ void runcmd(struct cmd *cmd) {
     close(rcmd->fd);
     if (open(rcmd->file, rcmd->mode) < 0) {
       fprintf(2, "open %s failed\n", rcmd->file);
-      exit(-1);
+      exit(1);
     }
     runcmd(rcmd->cmd);
     break;
@@ -167,7 +167,7 @@ int main(void) {
 
 void panic(char *s) {
   fprintf(2, "%s\n", s);
-  exit(-1);
+  exit(1);
 }
 
 int fork1(void) {
