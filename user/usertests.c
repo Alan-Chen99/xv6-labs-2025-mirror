@@ -1838,6 +1838,7 @@ int run(void f(char *), char *s) {
   int pid;
   int xstatus;
 
+  printf("test %s: ", s);
   if ((pid = fork()) < 0) {
     printf("runtest: fork error\n");
     exit(1);
@@ -1848,9 +1849,9 @@ int run(void f(char *), char *s) {
   } else {
     wait(&xstatus);
     if (xstatus != 0)
-      printf("test %s FAILED\n", s);
+      printf("FAILED\n", s);
     else
-      printf("test %s OK\n", s);
+      printf("OK\n", s);
     return xstatus == 0;
   }
 }
@@ -1909,7 +1910,8 @@ int main(int argc, char *argv[]) {
   printf("usertests starting\n");
 
   if (open("usertests.ran", 0) >= 0) {
-    printf("already ran user tests -- rebuild fs.img (make fs.img)\n");
+    printf(
+        "already ran user tests -- rebuild fs.img (rm fs.img; make fs.img)\n");
     exit(1);
   }
   close(open("usertests.ran", O_CREATE));
