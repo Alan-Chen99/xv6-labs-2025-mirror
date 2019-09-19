@@ -21,7 +21,6 @@
 
 char buf[BUFSZ];
 char name[3];
-char *echoargv[] = {"echo", "ALL", "TESTS", "PASSED", 0};
 
 // does chdir() call iput(p->cwd) in a transaction?
 void iputtest(char *s) {
@@ -265,8 +264,53 @@ void dirtest(char *s) {
 }
 
 void exectest(char *s) {
-  if (exec("echo", echoargv) < 0) {
-    printf("%s: exec echo failed\n", s);
+  int fd, xstatus, pid;
+  char *echoargv[] = {"echo", "OK", 0};
+  char buf[3];
+
+  unlink("echo-ok");
+  pid = fork();
+  if (pid < 0) {
+    printf("%s: fork failed\n", s);
+    exit(1);
+  }
+  if (pid == 0) {
+    close(1);
+    fd = open("echo-ok", O_CREATE | O_WRONLY);
+    if (fd < 0) {
+      printf("%s: create failed\n", s);
+      exit(1);
+    }
+    if (fd != 1) {
+      printf("%s: wrong fd\n", s);
+      exit(1);
+    }
+    if (exec("echo", echoargv) < 0) {
+      printf("%s: exec echo failed\n", s);
+      exit(1);
+    }
+    // won't get to here
+  }
+  if (wait(&xstatus) != pid) {
+    printf("%s: wait failed!\n", s);
+  }
+  if (xstatus != 0)
+    exit(xstatus);
+
+  fd = open("echo-ok", O_RDONLY);
+  if (fd < 0) {
+    printf("%s: open failed\n", s);
+    exit(1);
+  }
+  if (read(fd, buf, 2) != 2) {
+    printf("%s: read failed\n", s);
+    exit(1);
+  }
+  unlink("echo-ok");
+  if (buf[0] == 'O' && buf[1] == 'K')
+    exit(0);
+  else {
+    printf("%s: wrong output\n", s);
     exit(1);
   }
 }
@@ -1787,7 +1831,8 @@ void stacktest(char *s) {
     exit(xstatus);
 }
 
-void run(void f(char *), char *s) {
+// 1 if successful
+int run(void f(char *), char *s) {
   int pid;
   int xstatus;
 
@@ -1804,6 +1849,7 @@ void run(void f(char *), char *s) {
       printf("test %s FAILED\n", s);
     else
       printf("test %s OK\n", s);
+    return xstatus == 0;
   }
 }
 
@@ -1830,6 +1876,7 @@ int main(int argc, char *argv[]) {
       {subdir, "subdir"},
       {fourfiles, "fourfiles"},
       {sharedfd, "sharedfd"},
+      {exectest, "exectest"},
       {bigargtest, "bigargtest"},
       {bigwrite, "bigwrite"},
       {bsstest, "bsstest"},
@@ -1853,24 +1900,28 @@ int main(int argc, char *argv[]) {
       {dirfile, "dirfile"},
       {iref, "iref"},
       {forktest, "forktest"},
-      {bigdir, "bigdir"},     // slow
-      {exectest, "exectest"}, // must be last
+      {bigdir, "bigdir"}, // slow
       {0, 0},
   };
 
   printf("usertests starting\n");
 
   if (open("usertests.ran", 0) >= 0) {
-    printf("already ran user tests -- rebuild fs.img\n");
+    printf("already ran user tests -- rebuild fs.img (make fs.img)\n");
     exit(1);
   }
   close(open("usertests.ran", O_CREATE));
 
+  int fail = 0;
   for (struct test *t = tests; t->s != 0; t++) {
     if ((n == 0) || strcmp(t->s, n) == 0) {
-      run(t->f, t->s);
+      if (!run(t->f, t->s))
+        fail = 1;
     }
   }
-
-  exit(0);
+  if (!fail)
+    printf("ALL TESTS PASSED\n");
+  else
+    printf("SOME TESTS FAILED\n");
+  exit(1); // not reached.
 }
