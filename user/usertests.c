@@ -1832,13 +1832,16 @@ void stacktest(char *s) {
     exit(xstatus);
 }
 
-// copyinstr() used to cast the virtual page address to uint,
-// which (with certain wild system call arguments) could
-// result in a kernel page fault.
+// copyin(), copyout(), and copyinstr() used to cast the virtual page
+// address to uint, which (with certain wild system call arguments)
+// resulted in a kernel page faults.
 void pgbug(char *s) {
   char *argv[1];
   argv[0] = 0;
   exec((char *)0xeaeb0b5b00002f5e, argv);
+
+  pipe((int *)0xeaeb0b5b00002f5e);
+
   exit(0);
 }
 
