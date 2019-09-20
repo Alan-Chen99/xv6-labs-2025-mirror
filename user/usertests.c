@@ -1832,6 +1832,16 @@ void stacktest(char *s) {
     exit(xstatus);
 }
 
+// copyinstr() used to cast the virtual page address to uint,
+// which (with certain wild system call arguments) could
+// result in a kernel page fault.
+void pgbug(char *s) {
+  char *argv[1];
+  argv[0] = 0;
+  exec((char *)0xeaeb0b5b00002f5e, argv);
+  exit(0);
+}
+
 // run each test in its own process. run returns 1 if child's exit()
 // indicates success.
 int run(void f(char *), char *s) {
@@ -1866,6 +1876,7 @@ int main(int argc, char *argv[]) {
     void (*f)(char *);
     char *s;
   } tests[] = {
+      {pgbug, "pgbug"},
       {reparent, "reparent"},
       {twochildren, "twochildren"},
       {forkfork, "forkfork"},
