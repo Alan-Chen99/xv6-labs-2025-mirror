@@ -1927,6 +1927,7 @@ void sbrkbugs(char *s) {
 // has this bug, it will panic: balloc: out of blocks.
 // assumed_free may need to be raised to be
 // more than the number of free blocks.
+// this test takes a long time.
 void badwrite(char *s) {
   int assumed_free = 600;
 
@@ -1953,6 +1954,20 @@ void badwrite(char *s) {
   }
   close(fd);
   unlink("junk");
+
+  exit(0);
+}
+
+// test whether exec() leaks memory if one of the
+// arguments is invalid. the test passes if
+// the kernel doesn't panic.
+void badarg(char *s) {
+  for (int i = 0; i < 50000; i++) {
+    char *argv[2];
+    argv[0] = (char *)0xffffffff;
+    argv[1] = 0;
+    exec("echo", argv);
+  }
 
   exit(0);
 }
@@ -1993,7 +2008,8 @@ int main(int argc, char *argv[]) {
   } tests[] = {
       {pgbug, "pgbug"},
       {sbrkbugs, "sbrkbugs"},
-      {badwrite, "badwrite"},
+      // {badwrite, "badwrite" },
+      {badarg, "badarg"},
       {reparent, "reparent"},
       {twochildren, "twochildren"},
       {forkfork, "forkfork"},

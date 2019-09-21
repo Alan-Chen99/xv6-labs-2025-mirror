@@ -388,10 +388,10 @@ uint64 sys_exec(void) {
   memset(argv, 0, sizeof(argv));
   for (i = 0;; i++) {
     if (i >= NELEM(argv)) {
-      return -1;
+      goto bad;
     }
     if (fetchaddr(uargv + sizeof(uint64) * i, (uint64 *)&uarg) < 0) {
-      return -1;
+      goto bad;
     }
     if (uarg == 0) {
       argv[i] = 0;
@@ -401,7 +401,7 @@ uint64 sys_exec(void) {
     if (argv[i] == 0)
       panic("sys_exec kalloc");
     if (fetchstr(uarg, argv[i], PGSIZE) < 0) {
-      return -1;
+      goto bad;
     }
   }
 
@@ -411,6 +411,11 @@ uint64 sys_exec(void) {
     kfree(argv[i]);
 
   return ret;
+
+bad:
+  for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
+    kfree(argv[i]);
+  return -1;
 }
 
 uint64 sys_pipe(void) {
