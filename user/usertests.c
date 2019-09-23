@@ -565,6 +565,29 @@ void forkforkfork(char *s) {
   sleep(10); // one second
 }
 
+// regression test. does reparent() violate the parent-then-child
+// locking order when giving away a child to init, so that exit()
+// deadlocks against init's wait()? also used to trigger a "panic:
+// release" due to exit() releasing a different p->parent->lock than
+// it acquired.
+void reparent2(char *s) {
+  for (int i = 0; i < 800; i++) {
+    int pid1 = fork();
+    if (pid1 < 0) {
+      printf("fork failed\n");
+      exit(1);
+    }
+    if (pid1 == 0) {
+      fork();
+      fork();
+      exit(0);
+    }
+    wait(0);
+  }
+
+  exit(0);
+}
+
 // allocate all mem, free it, and allocate again
 void mem(char *s) {
   void *m1, *m2;
@@ -1852,9 +1875,9 @@ void stacktest(char *s) {
     exit(xstatus);
 }
 
-// copyin(), copyout(), and copyinstr() used to cast the virtual page
-// address to uint, which (with certain wild system call arguments)
-// resulted in a kernel page faults.
+// regression test. copyin(), copyout(), and copyinstr() used to cast
+// the virtual page address to uint, which (with certain wild system
+// call arguments) resulted in a kernel page faults.
 void pgbug(char *s) {
   char *argv[1];
   argv[0] = 0;
@@ -1865,9 +1888,9 @@ void pgbug(char *s) {
   exit(0);
 }
 
-// does the kernel panic if a process sbrk()s its size to be less than
-// a page, or zero, or reduces the break by an amount too small to
-// cause a page to be freed?
+// regression test. does the kernel panic if a process sbrk()s its
+// size to be less than a page, or zero, or reduces the break by an
+// amount too small to cause a page to be freed?
 void sbrkbugs(char *s) {
   int pid = fork();
   if (pid < 0) {
@@ -1921,13 +1944,11 @@ void sbrkbugs(char *s) {
   exit(0);
 }
 
-// does write() with an invalid buffer pointer cause
-// a block to be allocated for a file that is then
-// not freed when the file is deleted? if the kernel
-// has this bug, it will panic: balloc: out of blocks.
-// assumed_free may need to be raised to be
-// more than the number of free blocks.
-// this test takes a long time.
+// regression test. does write() with an invalid buffer pointer cause
+// a block to be allocated for a file that is then not freed when the
+// file is deleted? if the kernel has this bug, it will panic: balloc:
+// out of blocks. assumed_free may need to be raised to be more than
+// the number of free blocks. this test takes a long time.
 void badwrite(char *s) {
   int assumed_free = 600;
 
@@ -1958,9 +1979,8 @@ void badwrite(char *s) {
   exit(0);
 }
 
-// test whether exec() leaks memory if one of the
-// arguments is invalid. the test passes if
-// the kernel doesn't panic.
+// regression test. test whether exec() leaks memory if one of the
+// arguments is invalid. the test passes if the kernel doesn't panic.
 void badarg(char *s) {
   for (int i = 0; i < 50000; i++) {
     char *argv[2];
@@ -2006,6 +2026,7 @@ int main(int argc, char *argv[]) {
     void (*f)(char *);
     char *s;
   } tests[] = {
+      {reparent2, "reparent2"},
       {pgbug, "pgbug"},
       {sbrkbugs, "sbrkbugs"},
       // {badwrite, "badwrite" },
