@@ -275,7 +275,8 @@ static void freewalk(pagetable_t pagetable) {
 // Free user memory pages,
 // then free page-table pages.
 void uvmfree(pagetable_t pagetable, uint64 sz) {
-  uvmunmap(pagetable, 0, sz, 1);
+  if (sz > 0)
+    uvmunmap(pagetable, 0, sz, 1);
   freewalk(pagetable);
 }
 
