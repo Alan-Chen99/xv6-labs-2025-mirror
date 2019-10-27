@@ -2009,9 +2009,9 @@ int run(void f(char *), char *s) {
   } else {
     wait(&xstatus);
     if (xstatus != 0)
-      printf("FAILED\n", s);
+      printf("FAILED\n");
     else
-      printf("OK\n", s);
+      printf("OK\n");
     return xstatus == 0;
   }
 }
