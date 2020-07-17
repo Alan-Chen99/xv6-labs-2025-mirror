@@ -97,7 +97,7 @@ found:
   p->pid = allocpid();
 
   // Allocate a trapframe page.
-  if ((p->tf = (struct trapframe *)kalloc()) == 0) {
+  if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
     release(&p->lock);
     return 0;
   }
@@ -118,9 +118,9 @@ found:
 // including user pages.
 // p->lock must be held.
 static void freeproc(struct proc *p) {
-  if (p->tf)
-    kfree((void *)p->tf);
-  p->tf = 0;
+  if (p->trapframe)
+    kfree((void *)p->trapframe);
+  p->trapframe = 0;
   if (p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
@@ -149,7 +149,7 @@ pagetable_t proc_pagetable(struct proc *p) {
   mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X);
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
-  mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->tf), PTE_R | PTE_W);
+  mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->trapframe), PTE_R | PTE_W);
 
   return pagetable;
 }
@@ -184,8 +184,8 @@ void userinit(void) {
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->tf->epc = 0;     // user program counter
-  p->tf->sp = PGSIZE; // user stack pointer
+  p->trapframe->epc = 0;     // user program counter
+  p->trapframe->sp = PGSIZE; // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -236,10 +236,10 @@ int fork(void) {
   np->parent = p;
 
   // copy saved user registers.
-  *(np->tf) = *(p->tf);
+  *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in the child.
-  np->tf->a0 = 0;
+  np->trapframe->a0 = 0;
 
   // increment reference counts on open file descriptors.
   for (i = 0; i < NOFILE; i++)
