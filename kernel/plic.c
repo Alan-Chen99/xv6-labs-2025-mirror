@@ -27,7 +27,6 @@ void plicinithart(void) {
 // ask the PLIC what interrupt we should serve.
 int plic_claim(void) {
   int hart = cpuid();
-  // int irq = *(uint32*)(PLIC + 0x201004);
   int irq = *(uint32 *)PLIC_SCLAIM(hart);
   return irq;
 }
@@ -35,6 +34,5 @@ int plic_claim(void) {
 // tell the PLIC we've served this IRQ.
 void plic_complete(int irq) {
   int hart = cpuid();
-  //*(uint32*)(PLIC + 0x201004) = irq;
   *(uint32 *)PLIC_SCLAIM(hart) = irq;
 }
