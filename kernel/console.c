@@ -74,7 +74,7 @@ int consolewrite(int user_src, uint64 src, int n) {
   }
   release(&cons.lock);
 
-  return n;
+  return i;
 }
 
 //
