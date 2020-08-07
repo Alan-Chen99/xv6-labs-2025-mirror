@@ -22,6 +22,80 @@
 char buf[BUFSZ];
 char name[3];
 
+void copyin1(char *s) {
+  int fd = open("copyin1", O_CREATE | O_WRONLY);
+  if (fd < 0) {
+    printf("open(copyin1) failed\n");
+    exit(1);
+  }
+  int n = write(fd, (void *)0x80000000LL, 8192);
+  if (n >= 0) {
+    printf("write(fd, 0x80000000LL, 8192) did not fail!\n");
+    exit(1);
+  }
+  close(fd);
+  unlink("copyin1");
+}
+
+void copyin2(char *s) {
+  int fd = open("copyin2", O_CREATE | O_WRONLY);
+  if (fd < 0) {
+    printf("open(copyin2) failed\n");
+    exit(1);
+  }
+  int n = write(fd, (void *)0xffffffffffffffffLL, 8192);
+  if (n >= 0) {
+    printf("write(fd, 0xffffffffffffffffLL, 8192) did not fail!\n");
+    exit(1);
+  }
+  close(fd);
+  unlink("copyin2");
+}
+
+void copyout1(char *s) {
+  int fd = open("README", 0);
+  if (fd < 0) {
+    printf("open(README) failed\n");
+    exit(1);
+  }
+  int n = read(fd, (void *)0x80000000LL, 8192);
+  if (n >= 0) {
+    printf("read(fd, 0x80000000LL, 8192) returned %d, not -1\n", n);
+    exit(1);
+  }
+  close(fd);
+}
+
+void copyout2(char *s) {
+  int fd = open("README", 0);
+  if (fd < 0) {
+    printf("open(README) failed\n");
+    exit(1);
+  }
+  int n = read(fd, (void *)0xffffffffffffffffLL, 8192);
+  if (n >= 0) {
+    printf("read(fd, 0xffffffffffffffff, 8192) returned %d, not -1\n", n);
+    exit(1);
+  }
+  close(fd);
+}
+
+void copyinstr1(char *s) {
+  int fd = open((char *)0x80000000LL, O_CREATE | O_WRONLY);
+  if (fd >= 0) {
+    printf("open(0x80000000) returned %d, not -1\n", fd);
+    exit(1);
+  }
+}
+
+void copyinstr2(char *s) {
+  int fd = open((char *)0xffffffffffffffff, O_CREATE | O_WRONLY);
+  if (fd >= 0) {
+    printf("open(0xffffffffffffffff) returned %d, not -1\n", fd);
+    exit(1);
+  }
+}
+
 // test O_TRUNC.
 void truncate1(char *s) {
   char buf[32];
@@ -2200,6 +2274,12 @@ int main(int argc, char *argv[]) {
     void (*f)(char *);
     char *s;
   } tests[] = {
+      {copyin1, "copyin1"},
+      {copyin2, "copyin2"},
+      {copyout1, "copyout1"},
+      {copyout2, "copyout2"},
+      {copyinstr1, "copyinstr1"},
+      {copyinstr2, "copyinstr2"},
       {truncate1, "truncate1"},
       {truncate2, "truncate2"},
       {truncate3, "truncate3"},
