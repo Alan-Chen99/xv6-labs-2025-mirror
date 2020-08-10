@@ -250,6 +250,7 @@ void virtio_disk_intr() {
 
     disk.used_idx = (disk.used_idx + 1) % NUM;
   }
+  *R(VIRTIO_MMIO_INTERRUPT_ACK) = *R(VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3;
 
   release(&disk.vdisk_lock);
 }
