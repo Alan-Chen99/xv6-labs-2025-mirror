@@ -38,7 +38,7 @@ void usertrap(void) {
   struct proc *p = myproc();
 
   // save user program counter.
-  p->tf->epc = r_sepc();
+  p->trapframe->epc = r_sepc();
 
   if (r_scause() == 8) {
     // system call
@@ -48,7 +48,7 @@ void usertrap(void) {
 
     // sepc points to the ecall instruction,
     // but we want to return to the next instruction.
-    p->tf->epc += 4;
+    p->trapframe->epc += 4;
 
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
@@ -79,8 +79,9 @@ void usertrap(void) {
 void usertrapret(void) {
   struct proc *p = myproc();
 
-  // turn off interrupts, since we're switching
-  // now from kerneltrap() to usertrap().
+  // we're about to switch the destination of traps from
+  // kerneltrap() to usertrap(), so turn off interrupts until
+  // we're back in user space, where usertrap() is correct.
   intr_off();
 
   // send syscalls, interrupts, and exceptions to trampoline.S
@@ -88,10 +89,10 @@ void usertrapret(void) {
 
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.
-  p->tf->kernel_satp = r_satp();         // kernel page table
-  p->tf->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
-  p->tf->kernel_trap = (uint64)usertrap;
-  p->tf->kernel_hartid = r_tp(); // hartid for cpuid()
+  p->trapframe->kernel_satp = r_satp();         // kernel page table
+  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+  p->trapframe->kernel_trap = (uint64)usertrap;
+  p->trapframe->kernel_hartid = r_tp(); // hartid for cpuid()
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
@@ -103,7 +104,7 @@ void usertrapret(void) {
   w_sstatus(x);
 
   // set S Exception Program Counter to the saved user pc.
-  w_sepc(p->tf->epc);
+  w_sepc(p->trapframe->epc);
 
   // tell trampoline.S the user page table to switch to.
   uint64 satp = MAKE_SATP(p->pagetable);
@@ -117,7 +118,6 @@ void usertrapret(void) {
 
 // interrupts and exceptions from kernel code go here via kernelvec,
 // on whatever the current kernel stack is.
-// must be 4-byte aligned to fit in stvec.
 void kerneltrap() {
   int which_dev = 0;
   uint64 sepc = r_sepc();
@@ -170,9 +170,16 @@ int devintr() {
       uartintr();
     } else if (irq == VIRTIO0_IRQ) {
       virtio_disk_intr();
+    } else if (irq) {
+      printf("unexpected interrupt irq=%d\n", irq);
     }
 
-    plic_complete(irq);
+    // the PLIC allows each device to raise at most one
+    // interrupt at a time; tell the PLIC the device is
+    // now allowed to interrupt again.
+    if (irq)
+      plic_complete(irq);
+
     return 1;
   } else if (scause == 0x8000000000000001L) {
     // software interrupt from a machine-mode timer interrupt,

@@ -30,7 +30,8 @@ void acquire(struct spinlock *lk) {
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
+  // references happen strictly after the lock is acquired.
+  // On RISC-V, this emits a fence instruction.
   __sync_synchronize();
 
   // Record info about lock acquisition for holding() and debugging.
@@ -46,8 +47,10 @@ void release(struct spinlock *lk) {
 
   // Tell the C compiler and the CPU to not move loads or stores
   // past this point, to ensure that all the stores in the critical
-  // section are visible to other CPUs before the lock is released.
-  // On RISC-V, this turns into a fence instruction.
+  // section are visible to other CPUs before the lock is released,
+  // and that loads in the critical section occur strictly before
+  // the lock is released.
+  // On RISC-V, this emits a fence instruction.
   __sync_synchronize();
 
   // Release the lock, equivalent to lk->locked = 0.
@@ -63,11 +66,10 @@ void release(struct spinlock *lk) {
 }
 
 // Check whether this cpu is holding the lock.
+// Interrupts must be off.
 int holding(struct spinlock *lk) {
   int r;
-  push_off();
   r = (lk->locked && lk->cpu == mycpu());
-  pop_off();
   return r;
 }
 
@@ -88,9 +90,9 @@ void pop_off(void) {
   struct cpu *c = mycpu();
   if (intr_get())
     panic("pop_off - interruptible");
-  c->noff -= 1;
-  if (c->noff < 0)
+  if (c->noff < 1)
     panic("pop_off");
+  c->noff -= 1;
   if (c->noff == 0 && c->intena)
     intr_on();
 }

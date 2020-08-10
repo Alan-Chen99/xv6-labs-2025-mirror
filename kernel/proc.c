@@ -20,6 +20,7 @@ static void wakeup1(struct proc *chan);
 
 extern char trampoline[]; // trampoline.S
 
+// initialize the proc table at boot time.
 void procinit(void) {
   struct proc *p;
 
@@ -97,7 +98,7 @@ found:
   p->pid = allocpid();
 
   // Allocate a trapframe page.
-  if ((p->tf = (struct trapframe *)kalloc()) == 0) {
+  if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
     release(&p->lock);
     return 0;
   }
@@ -107,7 +108,7 @@ found:
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
-  memset(&p->context, 0, sizeof p->context);
+  memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
@@ -118,9 +119,9 @@ found:
 // including user pages.
 // p->lock must be held.
 static void freeproc(struct proc *p) {
-  if (p->tf)
-    kfree((void *)p->tf);
-  p->tf = 0;
+  if (p->trapframe)
+    kfree((void *)p->trapframe);
+  p->trapframe = 0;
   if (p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
@@ -134,8 +135,8 @@ static void freeproc(struct proc *p) {
   p->state = UNUSED;
 }
 
-// Create a page table for a given process,
-// with no user pages, but with trampoline pages.
+// Create a user page table for a given process,
+// with no user memory, but with trampoline pages.
 pagetable_t proc_pagetable(struct proc *p) {
   pagetable_t pagetable;
 
@@ -149,7 +150,7 @@ pagetable_t proc_pagetable(struct proc *p) {
   mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X);
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
-  mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->tf), PTE_R | PTE_W);
+  mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->trapframe), PTE_R | PTE_W);
 
   return pagetable;
 }
@@ -159,8 +160,7 @@ pagetable_t proc_pagetable(struct proc *p) {
 void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
   uvmunmap(pagetable, TRAMPOLINE, PGSIZE, 0);
   uvmunmap(pagetable, TRAPFRAME, PGSIZE, 0);
-  if (sz > 0)
-    uvmfree(pagetable, sz);
+  uvmfree(pagetable, sz);
 }
 
 // a user program that calls exec("/init")
@@ -185,8 +185,8 @@ void userinit(void) {
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->tf->epc = 0;     // user program counter
-  p->tf->sp = PGSIZE; // user stack pointer
+  p->trapframe->epc = 0;     // user program counter
+  p->trapframe->sp = PGSIZE; // user stack pointer
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -237,10 +237,10 @@ int fork(void) {
   np->parent = p;
 
   // copy saved user registers.
-  *(np->tf) = *(p->tf);
+  *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in the child.
-  np->tf->a0 = 0;
+  np->trapframe->a0 = 0;
 
   // increment reference counts on open file descriptors.
   for (i = 0; i < NOFILE; i++)
@@ -423,7 +423,7 @@ void scheduler(void) {
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        swtch(&c->scheduler, &p->context);
+        swtch(&c->context, &p->context);
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
@@ -455,7 +455,7 @@ void sched(void) {
     panic("sched interruptible");
 
   intena = mycpu()->intena;
-  swtch(&p->context, &mycpu()->scheduler);
+  swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
 }
 
