@@ -2390,6 +2390,8 @@ int main(int argc, char *argv[]) {
 
   if (argc == 2 && strcmp(argv[1], "-c") == 0) {
     continuous = 1;
+  } else if (argc == 2 && strcmp(argv[1], "-C") == 0) {
+    continuous = 2;
   } else if (argc == 2 && argv[1][0] != '-') {
     justone = argv[1];
   } else if (argc > 1) {
@@ -2472,12 +2474,14 @@ int main(int argc, char *argv[]) {
       }
       if (fail) {
         printf("SOME TESTS FAILED\n");
-        exit(1);
+        if (continuous != 2)
+          exit(1);
       }
       int free1 = countfree();
       if (free1 < free0) {
         printf("FAILED -- lost some free pages\n");
-        exit(1);
+        if (continuous != 2)
+          exit(1);
       }
     }
   }
