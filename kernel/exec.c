@@ -13,7 +13,7 @@ static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset,
 int exec(char *path, char **argv) {
   char *s, *last;
   int i, off;
-  uint64 argc, sz, sp, ustack[MAXARG + 1], stackbase;
+  uint64 argc, sz = 0, sp, ustack[MAXARG + 1], stackbase;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -38,7 +38,6 @@ int exec(char *path, char **argv) {
     goto bad;
 
   // Load program into memory.
-  sz = 0;
   for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
     if (readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
@@ -48,8 +47,10 @@ int exec(char *path, char **argv) {
       goto bad;
     if (ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
-    if ((sz = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
+    uint64 sz1;
+    if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
       goto bad;
+    sz = sz1;
     if (ph.vaddr % PGSIZE != 0)
       goto bad;
     if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
