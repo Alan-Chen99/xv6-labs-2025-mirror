@@ -31,13 +31,6 @@
 // but not from write().
 //
 void consputc(int c) {
-  extern volatile int panicked; // from printf.c
-
-  if (panicked) {
-    for (;;)
-      ;
-  }
-
   if (c == BACKSPACE) {
     // if the user typed backspace, overwrite with a space.
     uartputc_sync('\b');
@@ -64,12 +57,6 @@ struct {
 //
 int consolewrite(int user_src, uint64 src, int n) {
   int i;
-  extern volatile int panicked; // from printf.c
-
-  if (panicked) {
-    for (;;)
-      ;
-  }
 
   acquire(&cons.lock);
   for (i = 0; i < n; i++) {
