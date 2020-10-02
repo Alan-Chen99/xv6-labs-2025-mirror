@@ -514,11 +514,11 @@ void writetest(char *s) {
   }
   for (i = 0; i < N; i++) {
     if (write(fd, "aaaaaaaaaa", SZ) != SZ) {
-      printf("%s: error: write aa %d new file failed\n", i);
+      printf("%s: error: write aa %d new file failed\n", s, i);
       exit(1);
     }
     if (write(fd, "bbbbbbbbbb", SZ) != SZ) {
-      printf("%s: error: write bb %d new file failed\n", i);
+      printf("%s: error: write bb %d new file failed\n", s, i);
       exit(1);
     }
   }
@@ -553,7 +553,7 @@ void writebig(char *s) {
   for (i = 0; i < MAXFILE; i++) {
     ((int *)buf)[0] = i;
     if (write(fd, buf, BSIZE) != BSIZE) {
-      printf("%s: error: write big file failed\n", i);
+      printf("%s: error: write big file failed\n", s, i);
       exit(1);
     }
   }
@@ -571,16 +571,16 @@ void writebig(char *s) {
     i = read(fd, buf, BSIZE);
     if (i == 0) {
       if (n == MAXFILE - 1) {
-        printf("%s: read only %d blocks from big", n);
+        printf("%s: read only %d blocks from big", s, n);
         exit(1);
       }
       break;
     } else if (i != BSIZE) {
-      printf("%s: read failed %d\n", i);
+      printf("%s: read failed %d\n", s, i);
       exit(1);
     }
     if (((int *)buf)[0] != n) {
-      printf("%s: read content of block %d is %d\n", n, ((int *)buf)[0]);
+      printf("%s: read content of block %d is %d\n", s, n, ((int *)buf)[0]);
       exit(1);
     }
     n++;
@@ -613,8 +613,6 @@ void createtest(char *s) {
 }
 
 void dirtest(char *s) {
-  printf("mkdir test\n");
-
   if (mkdir("dir0") < 0) {
     printf("%s: mkdir failed\n", s);
     exit(1);
@@ -634,7 +632,6 @@ void dirtest(char *s) {
     printf("%s: unlink dir0 failed\n", s);
     exit(1);
   }
-  printf("%s: mkdir test ok\n");
 }
 
 void exectest(char *s) {
@@ -749,7 +746,7 @@ void preempt(char *s) {
 
   pid1 = fork();
   if (pid1 < 0) {
-    printf("%s: fork failed");
+    printf("%s: fork failed", s);
     exit(1);
   }
   if (pid1 == 0)
@@ -774,7 +771,7 @@ void preempt(char *s) {
   if (pid3 == 0) {
     close(pfds[0]);
     if (write(pfds[1], "x", 1) != 1)
-      printf("%s: preempt write error");
+      printf("%s: preempt write error", s);
     close(pfds[1]);
     for (;;)
       ;
@@ -782,7 +779,7 @@ void preempt(char *s) {
 
   close(pfds[1]);
   if (read(pfds[0], buf, sizeof(buf)) != 1) {
-    printf("%s: preempt read error");
+    printf("%s: preempt read error", s);
     return;
   }
   close(pfds[0]);
@@ -2008,7 +2005,8 @@ void sbrkmuch(char *s) {
   }
   c = sbrk(0);
   if (c != a - PGSIZE) {
-    printf("%s: sbrk deallocation produced wrong address, a %x c %x\n", a, c);
+    printf("%s: sbrk deallocation produced wrong address, a %x c %x\n", s, a,
+           c);
     exit(1);
   }
 
@@ -2016,7 +2014,7 @@ void sbrkmuch(char *s) {
   a = sbrk(0);
   c = sbrk(PGSIZE);
   if (c != a || sbrk(0) != a + PGSIZE) {
-    printf("%s: sbrk re-allocation failed, a %x c %x\n", a, c);
+    printf("%s: sbrk re-allocation failed, a %x c %x\n", s, a, c);
     exit(1);
   }
   if (*lastaddr == 99) {
@@ -2028,7 +2026,7 @@ void sbrkmuch(char *s) {
   a = sbrk(0);
   c = sbrk(-(sbrk(0) - oldbrk));
   if (c != a) {
-    printf("%s: sbrk downsize failed, a %x c %x\n", a, c);
+    printf("%s: sbrk downsize failed, a %x c %x\n", s, a, c);
     exit(1);
   }
 }
@@ -2045,7 +2043,7 @@ void kernmem(char *s) {
       exit(1);
     }
     if (pid == 0) {
-      printf("%s: oops could read %x = %x\n", a, *a);
+      printf("%s: oops could read %x = %x\n", s, a, *a);
       exit(1);
     }
     int xstatus;
@@ -2115,7 +2113,7 @@ void sbrkfail(char *s) {
     }
     // print n so the compiler doesn't optimize away
     // the for loop.
-    printf("%s: allocate a lot of memory succeeded %d\n", n);
+    printf("%s: allocate a lot of memory succeeded %d\n", s, n);
     exit(1);
   }
   wait(&xstatus);
@@ -2229,10 +2227,10 @@ void fsfull() {
     name[3] = '0' + (nfiles % 100) / 10;
     name[4] = '0' + (nfiles % 10);
     name[5] = '\0';
-    printf("%s: writing %s\n", name);
+    printf("writing %s\n", name);
     int fd = open(name, O_CREATE | O_RDWR);
     if (fd < 0) {
-      printf("%s: open %s failed\n", name);
+      printf("open %s failed\n", name);
       break;
     }
     int total = 0;
@@ -2243,7 +2241,7 @@ void fsfull() {
       total += cc;
       fsblocks++;
     }
-    printf("%s: wrote %d bytes\n", total);
+    printf("wrote %d bytes\n", total);
     close(fd);
     if (total == 0)
       break;
@@ -2292,7 +2290,7 @@ void stacktest(char *s) {
     char *sp = (char *)r_sp();
     sp -= PGSIZE;
     // the *sp should cause a trap.
-    printf("%s: stacktest: read below stack %p\n", *sp);
+    printf("%s: stacktest: read below stack %p\n", s, *sp);
     exit(1);
   } else if (pid < 0) {
     printf("%s: fork failed\n", s);
@@ -2592,6 +2590,7 @@ int main(int argc, char *argv[]) {
       {subdir, "subdir"},
       {fourfiles, "fourfiles"},
       {sharedfd, "sharedfd"},
+      {dirtest, "dirtest"},
       {exectest, "exectest"},
       {bigargtest, "bigargtest"},
       {bigwrite, "bigwrite"},
