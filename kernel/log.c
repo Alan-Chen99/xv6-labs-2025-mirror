@@ -63,7 +63,7 @@ void initlog(int dev, struct superblock *sb) {
 }
 
 // Copy committed blocks from log to their home location
-static void install_trans(void) {
+static void install_trans(int recovering) {
   int tail;
 
   for (tail = 0; tail < log.lh.n; tail++) {
@@ -71,7 +71,8 @@ static void install_trans(void) {
     struct buf *dbuf = bread(log.dev, log.lh.block[tail]);   // read dst
     memmove(dbuf->data, lbuf->data, BSIZE); // copy block to dst
     bwrite(dbuf);                           // write dst to disk
-    bunpin(dbuf);
+    if (recovering == 0)
+      bunpin(dbuf);
     brelse(lbuf);
     brelse(dbuf);
   }
@@ -106,7 +107,7 @@ static void write_head(void) {
 
 static void recover_from_log(void) {
   read_head();
-  install_trans(); // if committed, copy from log to disk
+  install_trans(1); // if committed, copy from log to disk
   log.lh.n = 0;
   write_head(); // clear the log
 }
@@ -175,9 +176,9 @@ static void write_log(void) {
 
 static void commit() {
   if (log.lh.n > 0) {
-    write_log();     // Write modified blocks from cache to log
-    write_head();    // Write header to disk -- the real commit
-    install_trans(); // Now install writes to home locations
+    write_log();      // Write modified blocks from cache to log
+    write_head();     // Write header to disk -- the real commit
+    install_trans(0); // Now install writes to home locations
     log.lh.n = 0;
     write_head(); // Erase the transaction from the log
   }
