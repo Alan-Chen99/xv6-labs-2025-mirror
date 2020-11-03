@@ -370,7 +370,7 @@ int wait(uint64 addr) {
           if (addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
                                    sizeof(np->xstate)) < 0) {
             release(&np->lock);
-            release(&p->lock);
+            release(&proc_tree_lock);
             return -1;
           }
           freeproc(np);
