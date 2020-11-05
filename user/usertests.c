@@ -739,6 +739,33 @@ void pipe1(char *s) {
   }
 }
 
+// test if child is killed (status = -1)
+void killstatus(char *s) {
+  int xst;
+
+  for (int i = 0; i < 100; i++) {
+    int pid1 = fork();
+    if (pid1 < 0) {
+      printf("%s: fork failed\n", s);
+      exit(1);
+    }
+    if (pid1 == 0) {
+      for (int j = 0; j < 1000; j++) {
+        getpid();
+      }
+      exit(0);
+    }
+    sleep(1);
+    kill(pid1);
+    wait(&xst);
+    if (xst != -1) {
+      printf("%s: status should be -1\n", s);
+      exit(1);
+    }
+  }
+  exit(0);
+}
+
 // meant to be run w/ at most two CPUs
 void preempt(char *s) {
   int pid1, pid2, pid3;
@@ -2664,6 +2691,7 @@ int main(int argc, char *argv[]) {
       {iputtest, "iput"},
       {mem, "mem"},
       {pipe1, "pipe1"},
+      {killstatus, "killstatus"},
       {preempt, "preempt"},
       {exitwait, "exitwait"},
       {rmdot, "rmdot"},
