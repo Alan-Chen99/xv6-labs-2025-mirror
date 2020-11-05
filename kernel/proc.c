@@ -330,13 +330,13 @@ void exit(int status) {
 
   acquire(&proc_tree_lock);
 
-  acquire(&p->lock);
-
   // Give any children to init.
   reparent(p);
 
   // Parent might be sleeping in wait().
   wakeup(p->parent);
+
+  acquire(&p->lock);
 
   p->xstate = status;
   p->state = ZOMBIE;
@@ -362,7 +362,9 @@ int wait(uint64 addr) {
     havekids = 0;
     for (np = proc; np < &proc[NPROC]; np++) {
       if (np->parent == p) {
+        // make sure the child isn't still in exit() or swtch().
         acquire(&np->lock);
+
         havekids = 1;
         if (np->state == ZOMBIE) {
           // Found one.
