@@ -1303,7 +1303,7 @@ void linktest(char *s) {
 
   unlink("lf2");
   if (link("lf2", "lf1") >= 0) {
-    printf("%s: link non-existant succeeded! oops\n", s);
+    printf("%s: link non-existent succeeded! oops\n", s);
     exit(1);
   }
 
@@ -2262,7 +2262,7 @@ void validatetest(char *s) {
   }
 }
 
-// does unintialized data start out zero?
+// does uninitialized data start out zero?
 char uninit[10000];
 void bsstest(char *s) {
   int i;
