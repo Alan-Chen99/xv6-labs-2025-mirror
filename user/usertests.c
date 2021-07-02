@@ -2475,6 +2475,14 @@ void sbrklast(char *s) {
     exit(1);
 }
 
+// does sbrk handle signed int32 wrap-around with
+// negative arguments?
+void sbrk8000(char *s) {
+  sbrk(0x80000004);
+  volatile char *top = sbrk(0);
+  *(top - 1) = *(top - 1) + 1;
+}
+
 // regression test. does write() with an invalid buffer pointer cause
 // a block to be allocated for a file that is then not freed when the
 // file is deleted? if the kernel has this bug, it will panic: balloc:
@@ -2705,6 +2713,7 @@ int main(int argc, char *argv[]) {
       {sbrkfail, "sbrkfail"},
       {sbrkarg, "sbrkarg"},
       {sbrklast, "sbrklast"},
+      {sbrk8000, "sbrk8000"},
       {validatetest, "validatetest"},
       {stacktest, "stacktest"},
       {opentest, "opentest"},
