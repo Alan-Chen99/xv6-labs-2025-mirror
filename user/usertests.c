@@ -2132,6 +2132,28 @@ void kernmem(char *s) {
   }
 }
 
+// user code should not be able to write to addresses above MAXVA.
+void MAXVAplus(char *s) {
+  volatile uint64 a = MAXVA;
+  for (; a != 0; a <<= 1) {
+    int pid;
+    pid = fork();
+    if (pid < 0) {
+      printf("%s: fork failed\n", s);
+      exit(1);
+    }
+    if (pid == 0) {
+      *(char *)a = 99;
+      printf("%s: oops wrote %x\n", s, a);
+      exit(1);
+    }
+    int xstatus;
+    wait(&xstatus);
+    if (xstatus != -1) // did kernel kill child?
+      exit(1);
+  }
+}
+
 // if we run the system out of memory, does it clean up the last
 // failed allocation?
 void sbrkfail(char *s) {
@@ -2673,6 +2695,7 @@ int main(int argc, char *argv[]) {
     void (*f)(char *);
     char *s;
   } tests[] = {
+      {MAXVAplus, "MAXVAplus"},
       {manywrites, "manywrites"},
       {execout, "execout"},
       {copyin, "copyin"},
