@@ -41,7 +41,7 @@ void proc_mapstacks(pagetable_t kpgtbl) {
   }
 }
 
-// initialize the proc table at boot time.
+// initialize the proc table.
 void procinit(void) {
   struct proc *p;
 
@@ -194,7 +194,8 @@ void proc_freepagetable(pagetable_t pagetable, uint64 sz) {
 }
 
 // a user program that calls exec("/init")
-// od -t xC initcode
+// assembled from ../user/initcode.S
+// od -t xC ../user/initcode
 uchar initcode[] = {0x17, 0x05, 0x00, 0x00, 0x13, 0x05, 0x45, 0x02, 0x97,
                     0x05, 0x00, 0x00, 0x93, 0x85, 0x35, 0x02, 0x93, 0x08,
                     0x70, 0x00, 0x73, 0x00, 0x00, 0x00, 0x93, 0x08, 0x20,
@@ -209,9 +210,9 @@ void userinit(void) {
   p = allocproc();
   initproc = p;
 
-  // allocate one user page and copy init's instructions
+  // allocate one user page and copy initcode's instructions
   // and data into it.
-  uvminit(p->pagetable, initcode, sizeof(initcode));
+  uvmfirst(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.

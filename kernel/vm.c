@@ -42,7 +42,7 @@ pagetable_t kvmmake(void) {
   // the highest virtual address in the kernel.
   kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
 
-  // map kernel stacks
+  // allocate and map a kernel stack for each process.
   proc_mapstacks(kpgtbl);
 
   return kpgtbl;
@@ -184,11 +184,11 @@ pagetable_t uvmcreate() {
 // Load the user initcode into address 0 of pagetable,
 // for the very first process.
 // sz must be less than a page.
-void uvminit(pagetable_t pagetable, uchar *src, uint sz) {
+void uvmfirst(pagetable_t pagetable, uchar *src, uint sz) {
   char *mem;
 
   if (sz >= PGSIZE)
-    panic("inituvm: more than a page");
+    panic("uvmfirst: more than a page");
   mem = kalloc();
   memset(mem, 0, PGSIZE);
   mappages(pagetable, 0, PGSIZE, (uint64)mem, PTE_W | PTE_R | PTE_X | PTE_U);
