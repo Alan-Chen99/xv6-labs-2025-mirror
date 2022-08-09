@@ -161,11 +161,6 @@ static inline uint64 r_satp() {
   return x;
 }
 
-// Supervisor Scratch register, for early trap handler in trampoline.S.
-static inline void w_sscratch(uint64 x) {
-  asm volatile("csrw sscratch, %0" : : "r"(x));
-}
-
 static inline void w_mscratch(uint64 x) {
   asm volatile("csrw mscratch, %0" : : "r"(x));
 }
