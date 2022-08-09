@@ -135,6 +135,7 @@ static inline void w_mtvec(uint64 x) {
   asm volatile("csrw mtvec, %0" : : "r"(x));
 }
 
+// Physical Memory Protection
 static inline void w_pmpcfg0(uint64 x) {
   asm volatile("csrw pmpcfg0, %0" : : "r"(x));
 }
