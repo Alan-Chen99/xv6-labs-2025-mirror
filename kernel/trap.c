@@ -43,7 +43,7 @@ void usertrap(void) {
   if (r_scause() == 8) {
     // system call
 
-    if (__sync_add_and_fetch(&p->killed, 0))
+    if (killed(p))
       exit(-1);
 
     // sepc points to the ecall instruction,
@@ -63,7 +63,7 @@ void usertrap(void) {
     __sync_bool_compare_and_swap(&p->killed, 0, 1);
   }
 
-  if (__sync_add_and_fetch(&p->killed, 0))
+  if (killed(p))
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
