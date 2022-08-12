@@ -143,7 +143,7 @@ void consoleintr(int c) {
     }
     break;
   case C('H'): // Backspace
-  case '\x7f':
+  case '\x7f': // Delete key
     if (cons.e != cons.w) {
       cons.e--;
       consputc(BACKSPACE);
