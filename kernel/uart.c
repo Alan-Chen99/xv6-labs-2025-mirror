@@ -165,7 +165,7 @@ int uartgetc(void) {
 
 // handle a uart interrupt, raised because input has
 // arrived, or the uart is ready for more output, or
-// both. called from trap.c.
+// both. called from devintr().
 void uartintr(void) {
   // read and process incoming characters.
   while (1) {
