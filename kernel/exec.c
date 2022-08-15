@@ -7,8 +7,16 @@
 #include "defs.h"
 #include "elf.h"
 
-static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset,
-                   uint sz);
+static int loadseg(pde_t *, uint64, uint, struct inode *, uint, uint);
+
+int flags2perm(int flags) {
+  int perm = 0;
+  if (flags & 0x1)
+    perm = PTE_X;
+  if (flags & 0x2)
+    perm |= PTE_W;
+  return perm;
+}
 
 int exec(char *path, char **argv) {
   char *s, *last;
@@ -31,6 +39,7 @@ int exec(char *path, char **argv) {
   // Check ELF header
   if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
+
   if (elf.magic != ELF_MAGIC)
     goto bad;
 
@@ -47,14 +56,15 @@ int exec(char *path, char **argv) {
       goto bad;
     if (ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
+    if (ph.align != PGSIZE)
+      goto bad;
+    uint64 e = PGROUNDUP(ph.vaddr + ph.memsz);
     uint64 sz1;
-    if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, PTE_X | PTE_W)) ==
-        0)
+    if ((sz1 = uvmalloc(pagetable, sz, e, flags2perm(ph.flags))) == 0)
       goto bad;
     sz = sz1;
-    if ((ph.vaddr % PGSIZE) != 0)
-      goto bad;
-    if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+    uint64 s = PGROUNDDOWN(ph.vaddr);
+    if (loadseg(pagetable, s, ph.vaddr - s, ip, ph.off, ph.filesz) < 0)
       goto bad;
   }
   iunlockput(ip);
@@ -133,8 +143,8 @@ bad:
 // va must be page-aligned
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
-static int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip,
-                   uint offset, uint sz) {
+static int loadseg(pagetable_t pagetable, uint64 va, uint poff,
+                   struct inode *ip, uint offset, uint sz) {
   uint i, n;
   uint64 pa;
 
@@ -146,7 +156,7 @@ static int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip,
       n = sz - i;
     else
       n = PGSIZE;
-    if (readi(ip, 0, (uint64)pa, offset + i, n) != n)
+    if (readi(ip, 0, (uint64)pa + poff, offset + i, n) != n)
       return -1;
   }
 
