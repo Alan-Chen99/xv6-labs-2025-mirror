@@ -8,8 +8,7 @@
 
 uint64 sys_exit(void) {
   int n;
-  if (argint(0, &n) < 0)
-    return -1;
+  argint(0, &n);
   exit(n);
   return 0; // not reached
 }
@@ -20,17 +19,15 @@ uint64 sys_fork(void) { return fork(); }
 
 uint64 sys_wait(void) {
   uint64 p;
-  if (argaddr(0, &p) < 0)
-    return -1;
+  argaddr(0, &p);
   return wait(p);
 }
 
 uint64 sys_sbrk(void) {
-  int addr;
+  uint64 addr;
   int n;
 
-  if (argint(0, &n) < 0)
-    return -1;
+  argint(0, &n);
   addr = myproc()->sz;
   if (growproc(n) < 0)
     return -1;
@@ -41,12 +38,11 @@ uint64 sys_sleep(void) {
   int n;
   uint ticks0;
 
-  if (argint(0, &n) < 0)
-    return -1;
+  argint(0, &n);
   acquire(&tickslock);
   ticks0 = ticks;
   while (ticks - ticks0 < n) {
-    if (myproc()->killed) {
+    if (killed(myproc())) {
       release(&tickslock);
       return -1;
     }
@@ -59,8 +55,7 @@ uint64 sys_sleep(void) {
 uint64 sys_kill(void) {
   int pid;
 
-  if (argint(0, &pid) < 0)
-    return -1;
+  argint(0, &pid);
   return kill(pid);
 }
 

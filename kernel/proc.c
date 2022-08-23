@@ -232,7 +232,7 @@ void userinit(void) {
 // Grow or shrink user memory by n bytes.
 // Return 0 on success, -1 on failure.
 int growproc(int n) {
-  uint sz;
+  uint64 sz;
   struct proc *p = myproc();
 
   sz = p->sz;
@@ -355,7 +355,7 @@ void exit(int status) {
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int wait(uint64 addr) {
-  struct proc *np;
+  struct proc *pp;
   int havekids, pid;
   struct proc *p = myproc();
 
@@ -364,32 +364,32 @@ int wait(uint64 addr) {
   for (;;) {
     // Scan through table looking for exited children.
     havekids = 0;
-    for (np = proc; np < &proc[NPROC]; np++) {
-      if (np->parent == p) {
+    for (pp = proc; pp < &proc[NPROC]; pp++) {
+      if (pp->parent == p) {
         // make sure the child isn't still in exit() or swtch().
-        acquire(&np->lock);
+        acquire(&pp->lock);
 
         havekids = 1;
-        if (np->state == ZOMBIE) {
+        if (pp->state == ZOMBIE) {
           // Found one.
-          pid = np->pid;
-          if (addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
-                                   sizeof(np->xstate)) < 0) {
-            release(&np->lock);
+          pid = pp->pid;
+          if (addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
+                                   sizeof(pp->xstate)) < 0) {
+            release(&pp->lock);
             release(&wait_lock);
             return -1;
           }
-          freeproc(np);
-          release(&np->lock);
+          freeproc(pp);
+          release(&pp->lock);
           release(&wait_lock);
           return pid;
         }
-        release(&np->lock);
+        release(&pp->lock);
       }
     }
 
     // No point waiting if we don't have any children.
-    if (!havekids || p->killed) {
+    if (!havekids || killed(p)) {
       release(&wait_lock);
       return -1;
     }
@@ -552,6 +552,21 @@ int kill(int pid) {
     release(&p->lock);
   }
   return -1;
+}
+
+void setkilled(struct proc *p) {
+  acquire(&p->lock);
+  p->killed = 1;
+  release(&p->lock);
+}
+
+int killed(struct proc *p) {
+  int k;
+
+  acquire(&p->lock);
+  k = p->killed;
+  release(&p->lock);
+  return k;
 }
 
 // Copy to either a user address, or kernel address,

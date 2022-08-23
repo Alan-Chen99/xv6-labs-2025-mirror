@@ -530,6 +530,7 @@ struct inode *dirlookup(struct inode *dp, char *name, uint *poff) {
 }
 
 // Write a new directory entry (name, inum) into the directory dp.
+// Returns 0 on success, -1 on failure (e.g. out of disk blocks).
 int dirlink(struct inode *dp, char *name, uint inum) {
   int off;
   struct dirent de;
@@ -552,7 +553,7 @@ int dirlink(struct inode *dp, char *name, uint inum) {
   strncpy(de.name, name, DIRSIZ);
   de.inum = inum;
   if (writei(dp, 0, (uint64)&de, off, sizeof(de)) != sizeof(de))
-    panic("dirlink");
+    return -1;
 
   return 0;
 }
