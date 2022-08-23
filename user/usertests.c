@@ -2620,6 +2620,7 @@ void diskfull(char *s) {
     unlink(name);
     int fd = open(name, O_CREATE | O_RDWR | O_TRUNC);
     if (fd < 0) {
+      // oops, ran out of inodes before running out of blocks.
       printf("%s: could not create file %s\n", s, name);
       done = 1;
       break;
@@ -2637,7 +2638,8 @@ void diskfull(char *s) {
 
   // now that there are no free blocks, test that dirlink()
   // merely fails (doesn't panic) if it can't extend
-  // directory content.
+  // directory content. one of these file creations
+  // is expected to fail.
   int nzz = 128;
   for (int i = 0; i < nzz; i++) {
     char name[32];
@@ -2648,14 +2650,15 @@ void diskfull(char *s) {
     name[4] = '\0';
     unlink(name);
     int fd = open(name, O_CREATE | O_RDWR | O_TRUNC);
-    if (fd < 0) {
-      printf("%s: could not create file %s\n", s, name);
+    if (fd < 0)
       break;
-    }
     close(fd);
   }
 
-  mkdir("diskfulldir");
+  // this mkdir() is expected to fail.
+  if (mkdir("diskfulldir") == 0)
+    printf("%s: mkdir(diskfulldir) unexpectedly succeeded!\n");
+
   unlink("diskfulldir");
 
   for (int i = 0; i < nzz; i++) {
@@ -2674,6 +2677,35 @@ void diskfull(char *s) {
     name[1] = 'i';
     name[2] = 'g';
     name[3] = '0' + i;
+    name[4] = '\0';
+    unlink(name);
+  }
+}
+
+void outofinodes(char *s) {
+  int nzz = 32 * 32;
+  for (int i = 0; i < nzz; i++) {
+    char name[32];
+    name[0] = 'z';
+    name[1] = 'z';
+    name[2] = '0' + (i / 32);
+    name[3] = '0' + (i % 32);
+    name[4] = '\0';
+    unlink(name);
+    int fd = open(name, O_CREATE | O_RDWR | O_TRUNC);
+    if (fd < 0) {
+      // failure is eventually expected.
+      break;
+    }
+    close(fd);
+  }
+
+  for (int i = 0; i < nzz; i++) {
+    char name[32];
+    name[0] = 'z';
+    name[1] = 'z';
+    name[2] = '0' + (i / 32);
+    name[3] = '0' + (i % 32);
     name[4] = '\0';
     unlink(name);
   }
@@ -2851,6 +2883,7 @@ int main(int argc, char *argv[]) {
       {badarg, "badarg"},
       {execout, "execout"},
       {diskfull, "diskfull"},
+      {outofinodes, "outofinodes"},
 
       {0, 0},
   };

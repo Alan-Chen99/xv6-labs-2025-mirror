@@ -182,7 +182,8 @@ static struct inode *iget(uint dev, uint inum);
 
 // Allocate an inode on device dev.
 // Mark it as allocated by  giving it type type.
-// Returns an unlocked but allocated and referenced inode.
+// Returns an unlocked but allocated and referenced inode,
+// or NULL if there is no free inode..
 struct inode *ialloc(uint dev, short type) {
   int inum;
   struct buf *bp;
@@ -200,7 +201,8 @@ struct inode *ialloc(uint dev, short type) {
     }
     brelse(bp);
   }
-  panic("ialloc: no inodes");
+  printf("ialloc: no inodes\n");
+  return 0;
 }
 
 // Copy a modified in-memory inode to disk.
