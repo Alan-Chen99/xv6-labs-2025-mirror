@@ -2399,7 +2399,7 @@ void stacktest(char *s) {
 }
 
 // check that writes to text segment fault
-void texttest(char *s) {
+void textwrite(char *s) {
   int pid;
   int xstatus;
 
@@ -2842,6 +2842,7 @@ int main(int argc, char *argv[]) {
       {bigargtest, "bigargtest"},
       {argptest, "argptest"},
       {stacktest, "stacktest"},
+      {textwrite, "textwrite"},
       {pgbug, "pgbug"},
       {sbrkbugs, "sbrkbugs"},
       {sbrklast, "sbrklast"},
@@ -2850,7 +2851,6 @@ int main(int argc, char *argv[]) {
       {badarg, "badarg"},
       {execout, "execout"},
       {diskfull, "diskfull"},
-      {texttest, "texttest"},
 
       {0, 0},
   };
