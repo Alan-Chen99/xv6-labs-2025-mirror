@@ -42,7 +42,7 @@ uint64 sys_sleep(void) {
   acquire(&tickslock);
   ticks0 = ticks;
   while (ticks - ticks0 < n) {
-    if (myproc()->killed) {
+    if (killed(myproc())) {
       release(&tickslock);
       return -1;
     }
