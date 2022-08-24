@@ -295,7 +295,7 @@ void iter() {
     exit(1);
   }
   if (pid1 == 0) {
-    rand_next = 31;
+    rand_next ^= 31;
     go(0);
     exit(0);
   }
@@ -306,7 +306,7 @@ void iter() {
     exit(1);
   }
   if (pid2 == 0) {
-    rand_next = 7177;
+    rand_next ^= 7177;
     go(1);
     exit(0);
   }
@@ -334,5 +334,6 @@ int main() {
       wait(0);
     }
     sleep(20);
+    rand_next += 1;
   }
 }
