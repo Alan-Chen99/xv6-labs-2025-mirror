@@ -580,7 +580,7 @@ void writebig(char *s) {
   for (;;) {
     i = read(fd, buf, BSIZE);
     if (i == 0) {
-      if (n == MAXFILE - 1) {
+      if (n != MAXFILE) {
         printf("%s: read only %d blocks from big", s, n);
         exit(1);
       }
