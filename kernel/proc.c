@@ -413,7 +413,8 @@ void scheduler(void) {
   c->proc = 0;
   for (;;) {
     // The most recent process to run may have had interrupts
-    // turned off; turn them on to avoid deadlock.
+    // turned off; enable them to avoid a deadlock if all
+    // processes are waiting.
     intr_on();
 
     for (p = proc; p < &proc[NPROC]; p++) {
