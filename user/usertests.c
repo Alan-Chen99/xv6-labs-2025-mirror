@@ -42,7 +42,7 @@ void copyin(char *s) {
     }
     int n = write(fd, (void *)addr, 8192);
     if (n >= 0) {
-      printf("write(fd, %p, 8192) returned %d, not -1\n", addr, n);
+      printf("write(fd, %p, 8192) returned %d, not -1\n", (void *)addr, n);
       exit(1);
     }
     close(fd);
@@ -50,7 +50,7 @@ void copyin(char *s) {
 
     n = write(1, (char *)addr, 8192);
     if (n > 0) {
-      printf("write(1, %p, 8192) returned %d, not -1 or 0\n", addr, n);
+      printf("write(1, %p, 8192) returned %d, not -1 or 0\n", (void *)addr, n);
       exit(1);
     }
 
@@ -61,7 +61,8 @@ void copyin(char *s) {
     }
     n = write(fds[1], (char *)addr, 8192);
     if (n > 0) {
-      printf("write(pipe, %p, 8192) returned %d, not -1 or 0\n", addr, n);
+      printf("write(pipe, %p, 8192) returned %d, not -1 or 0\n", (void *)addr,
+             n);
       exit(1);
     }
     close(fds[0]);
@@ -84,7 +85,7 @@ void copyout(char *s) {
     }
     int n = read(fd, (void *)addr, 8192);
     if (n > 0) {
-      printf("read(fd, %p, 8192) returned %d, not -1 or 0\n", addr, n);
+      printf("read(fd, %p, 8192) returned %d, not -1 or 0\n", (void *)addr, n);
       exit(1);
     }
     close(fd);
@@ -101,7 +102,8 @@ void copyout(char *s) {
     }
     n = read(fds[0], (void *)addr, 8192);
     if (n > 0) {
-      printf("read(pipe, %p, 8192) returned %d, not -1 or 0\n", addr, n);
+      printf("read(pipe, %p, 8192) returned %d, not -1 or 0\n", (void *)addr,
+             n);
       exit(1);
     }
     close(fds[0]);
@@ -118,7 +120,7 @@ void copyinstr1(char *s) {
 
     int fd = open((char *)addr, O_CREATE | O_WRONLY);
     if (fd >= 0) {
-      printf("open(%p) returned %d, not -1\n", addr, fd);
+      printf("open(%p) returned %d, not -1\n", (void *)addr, fd);
       exit(1);
     }
   }
@@ -252,7 +254,7 @@ void rwsbrk() {
   }
   n = write(fd, (void *)(a + 4096), 1024);
   if (n >= 0) {
-    printf("write(fd, %p, 1024) returned %d, not -1\n", a + 4096, n);
+    printf("write(fd, %p, 1024) returned %d, not -1\n", (void *)a + 4096, n);
     exit(1);
   }
   close(fd);
@@ -265,7 +267,7 @@ void rwsbrk() {
   }
   n = read(fd, (void *)(a + 4096), 10);
   if (n >= 0) {
-    printf("read(fd, %p, 10) returned %d, not -1\n", a + 4096, n);
+    printf("read(fd, %p, 10) returned %d, not -1\n", (void *)a + 4096, n);
     exit(1);
   }
   close(fd);
@@ -558,7 +560,7 @@ void writebig(char *s) {
   for (i = 0; i < MAXFILE; i++) {
     ((int *)buf)[0] = i;
     if (write(fd, buf, BSIZE) != BSIZE) {
-      printf("%s: error: write big file failed\n", s, i);
+      printf("%s: error: write big file failed i=%d\n", s, i);
       exit(1);
     }
   }
@@ -733,7 +735,7 @@ void pipe1(char *s) {
         cc = sizeof(buf);
     }
     if (total != N * SZ) {
-      printf("%s: pipe1 oops 3 total %d\n", total);
+      printf("%s: pipe1 oops 3 total %d\n", s, total);
       exit(1);
     }
     close(fds[0]);
@@ -1010,7 +1012,7 @@ void mem(char *s) {
     }
     m1 = malloc(1024 * 20);
     if (m1 == 0) {
-      printf("couldn't allocate mem?!!\n", s);
+      printf("%s: couldn't allocate mem?!!\n", s);
       exit(1);
     }
     free(m1);
@@ -1098,14 +1100,14 @@ void fourfiles(char *s) {
 
     pid = fork();
     if (pid < 0) {
-      printf("fork failed\n", s);
+      printf("%s: fork failed\n", s);
       exit(1);
     }
 
     if (pid == 0) {
       fd = open(fname, O_CREATE | O_RDWR);
       if (fd < 0) {
-        printf("create failed\n", s);
+        printf("%s: create failed\n", s);
         exit(1);
       }
 
@@ -1134,7 +1136,7 @@ void fourfiles(char *s) {
     while ((n = read(fd, buf, sizeof(buf))) > 0) {
       for (j = 0; j < n; j++) {
         if (buf[j] != '0' + i) {
-          printf("wrong char\n", s);
+          printf("%s: wrong char\n", s);
           exit(1);
         }
       }
@@ -1158,7 +1160,7 @@ void createdelete(char *s) {
   for (pi = 0; pi < NCHILD; pi++) {
     pid = fork();
     if (pid < 0) {
-      printf("fork failed\n", s);
+      printf("%s: fork failed\n", s);
       exit(1);
     }
 
@@ -1467,7 +1469,7 @@ void subdir(char *s) {
   }
 
   if (mkdir("/dd/dd") != 0) {
-    printf("subdir mkdir dd/dd failed\n", s);
+    printf("%s: subdir mkdir dd/dd failed\n", s);
     exit(1);
   }
 
@@ -1492,7 +1494,7 @@ void subdir(char *s) {
   close(fd);
 
   if (link("dd/dd/ff", "dd/dd/ffff") != 0) {
-    printf("link dd/dd/ff dd/dd/ffff failed\n", s);
+    printf("%s: link dd/dd/ff dd/dd/ffff failed\n", s);
     exit(1);
   }
 
@@ -1514,7 +1516,7 @@ void subdir(char *s) {
     exit(1);
   }
   if (chdir("dd/../../../dd") != 0) {
-    printf("chdir dd/../../dd failed\n", s);
+    printf("%s: chdir dd/../../dd failed\n", s);
     exit(1);
   }
   if (chdir("./..") != 0) {
@@ -1942,7 +1944,7 @@ void sbrkbasic(char *s) {
   for (i = 0; i < 5000; i++) {
     b = sbrk(1);
     if (b != a) {
-      printf("%s: sbrk test failed %d %x %x\n", s, i, a, b);
+      printf("%s: sbrk test failed %d %p %p\n", s, i, a, b);
       exit(1);
     }
     *b = 1;
@@ -1999,7 +2001,7 @@ void sbrkmuch(char *s) {
   }
   c = sbrk(0);
   if (c != a - PGSIZE) {
-    printf("%s: sbrk deallocation produced wrong address, a %x c %x\n", s, a,
+    printf("%s: sbrk deallocation produced wrong address, a %p c %p\n", s, a,
            c);
     exit(1);
   }
@@ -2008,7 +2010,7 @@ void sbrkmuch(char *s) {
   a = sbrk(0);
   c = sbrk(PGSIZE);
   if (c != a || sbrk(0) != a + PGSIZE) {
-    printf("%s: sbrk re-allocation failed, a %x c %x\n", s, a, c);
+    printf("%s: sbrk re-allocation failed, a %p c %p\n", s, a, c);
     exit(1);
   }
   if (*lastaddr == 99) {
@@ -2020,7 +2022,7 @@ void sbrkmuch(char *s) {
   a = sbrk(0);
   c = sbrk(-(sbrk(0) - oldbrk));
   if (c != a) {
-    printf("%s: sbrk downsize failed, a %x c %x\n", s, a, c);
+    printf("%s: sbrk downsize failed, a %p c %p\n", s, a, c);
     exit(1);
   }
 }
@@ -2037,7 +2039,7 @@ void kernmem(char *s) {
       exit(1);
     }
     if (pid == 0) {
-      printf("%s: oops could read %x = %x\n", s, a, *a);
+      printf("%s: oops could read %p = %x\n", s, a, *a);
       exit(1);
     }
     int xstatus;
@@ -2059,7 +2061,7 @@ void MAXVAplus(char *s) {
     }
     if (pid == 0) {
       *(char *)a = 99;
-      printf("%s: oops wrote %x\n", s, a);
+      printf("%s: oops wrote %p\n", s, (void *)a);
       exit(1);
     }
     int xstatus;
@@ -2300,7 +2302,7 @@ void stacktest(char *s) {
     char *sp = (char *)r_sp();
     sp -= PGSIZE;
     // the *sp should cause a trap.
-    printf("%s: stacktest: read below stack %p\n", s, *sp);
+    printf("%s: stacktest: read below stack %d\n", s, *sp);
     exit(1);
   } else if (pid < 0) {
     printf("%s: fork failed\n", s);
@@ -2735,7 +2737,7 @@ void diskfull(char *s) {
 
   // this mkdir() is expected to fail.
   if (mkdir("diskfulldir") == 0)
-    printf("%s: mkdir(diskfulldir) unexpectedly succeeded!\n");
+    printf("%s: mkdir(diskfulldir) unexpectedly succeeded!\n", s);
 
   unlink("diskfulldir");
 
