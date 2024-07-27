@@ -436,6 +436,7 @@ void scheduler(void) {
       release(&p->lock);
     }
     if (found == 0) {
+      // nothing to run; stop running on this core until an interrupt.
       intr_on();
       asm volatile("wfi");
     }
