@@ -145,6 +145,8 @@ int main(int argc, char *argv[]) {
     if (shortname[0] == '_')
       shortname += 1;
 
+    assert(strlen(shortname) <= DIRSIZ);
+
     inum = ialloc(T_FILE);
 
     bzero(&de, sizeof(de));
