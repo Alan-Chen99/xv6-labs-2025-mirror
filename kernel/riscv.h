@@ -144,12 +144,14 @@ static inline void w_stimecmp(uint64 x) {
 // Machine Environment Configuration Register
 static inline uint64 r_menvcfg() {
   uint64 x;
-  asm volatile("csrr %0, menvcfg" : "=r"(x));
+  // asm volatile("csrr %0, menvcfg" : "=r" (x) );
+  asm volatile("csrr %0, 0x30a" : "=r"(x));
   return x;
 }
 
 static inline void w_menvcfg(uint64 x) {
-  asm volatile("csrw menvcfg, %0" : : "r"(x));
+  // asm volatile("csrw menvcfg, %0" : : "r" (x));
+  asm volatile("csrw 0x30a, %0" : : "r"(x));
 }
 
 // Physical Memory Protection
