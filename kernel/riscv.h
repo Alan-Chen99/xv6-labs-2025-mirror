@@ -131,12 +131,14 @@ static inline uint64 r_stvec() {
 // Supervisor Timer Comparison Register
 static inline uint64 r_stimecmp() {
   uint64 x;
-  asm volatile("csrr %0, stimecmp" : "=r"(x));
+  // asm volatile("csrr %0, stimecmp" : "=r" (x) );
+  asm volatile("csrr %0, 0x14d" : "=r"(x));
   return x;
 }
 
 static inline void w_stimecmp(uint64 x) {
-  asm volatile("csrw stimecmp, %0" : : "r"(x));
+  // asm volatile("csrw stimecmp, %0" : : "r" (x));
+  asm volatile("csrw 0x14d, %0" : : "r"(x));
 }
 
 // Machine Environment Configuration Register
