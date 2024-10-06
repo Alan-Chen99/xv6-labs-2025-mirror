@@ -127,7 +127,6 @@ void uartstart() {
   while (1) {
     if (uart_tx_w == uart_tx_r) {
       // transmit buffer is empty.
-      ReadReg(ISR);
       return;
     }
 
@@ -163,6 +162,8 @@ int uartgetc(void) {
 // arrived, or the uart is ready for more output, or
 // both. called from devintr().
 void uartintr(void) {
+  ReadReg(ISR); // acknowledge the interrupt
+
   // read and process incoming characters.
   while (1) {
     int c = uartgetc();
