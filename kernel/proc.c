@@ -459,7 +459,7 @@ void sched(void) {
   if (mycpu()->noff != 1)
     panic("sched locks");
   if (p->state == RUNNING)
-    panic("sched running");
+    panic("sched RUNNING");
   if (intr_get())
     panic("sched interruptible");
 
@@ -499,8 +499,8 @@ void forkret(void) {
   usertrapret();
 }
 
-// Atomically release lock and sleep on chan.
-// Reacquires lock when awakened.
+// Sleep on wait channel chan, releasing condition lock lk.
+// Re-acquires lk when awakened.
 void sleep(void *chan, struct spinlock *lk) {
   struct proc *p = myproc();
 
@@ -528,8 +528,8 @@ void sleep(void *chan, struct spinlock *lk) {
   acquire(lk);
 }
 
-// Wake up all processes sleeping on chan.
-// Must be called without any p->lock.
+// Wake up all processes sleeping on wait channel chan.
+// Caller should hold the condition lock.
 void wakeup(void *chan) {
   struct proc *p;
 
