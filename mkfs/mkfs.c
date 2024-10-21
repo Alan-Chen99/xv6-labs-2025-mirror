@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
   sb.inodestart = xint(2 + nlog);
   sb.bmapstart = xint(2 + nlog + ninodeblocks);
 
-  printf("nmeta %d (boot, super, log blocks %u inode blocks %u, bitmap blocks "
+  printf("nmeta %d (boot, super, log blocks %u, inode blocks %u, bitmap blocks "
          "%u) blocks %d total %d\n",
          nmeta, nlog, ninodeblocks, nbitmap, nblocks, FSSIZE);
 
