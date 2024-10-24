@@ -40,7 +40,7 @@ static void printptr(int fd, uint64 x) {
     putc(fd, digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
-// Print to the given fd. Only understands %d, %x, %p, %s.
+// Print to the given fd. Only understands %d, %x, %p, %c, %s.
 void vprintf(int fd, const char *fmt, va_list ap) {
   char *s;
   int c0, c1, c2, i, state;
@@ -86,6 +86,8 @@ void vprintf(int fd, const char *fmt, va_list ap) {
         i += 2;
       } else if (c0 == 'p') {
         printptr(fd, va_arg(ap, uint64));
+      } else if (c0 == 'c') {
+        putc(fd, va_arg(ap, int));
       } else if (c0 == 's') {
         if ((s = va_arg(ap, char *)) == 0)
           s = "(null)";
