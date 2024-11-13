@@ -440,7 +440,9 @@ void scheduler(void) {
     }
     if (found == 0) {
       // nothing to run; stop running on this core until an interrupt.
+#ifndef LAB_FS
       asm volatile("wfi");
+#endif
     }
   }
 }
