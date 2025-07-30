@@ -8,8 +8,8 @@ static char digits[] = "0123456789ABCDEF";
 
 static void putc(int fd, char c) { write(fd, &c, 1); }
 
-static void printint(int fd, int xx, int base, int sgn) {
-  char buf[16];
+static void printint(int fd, long long xx, int base, int sgn) {
+  char buf[20];
   int i, neg;
   uint x;
 
