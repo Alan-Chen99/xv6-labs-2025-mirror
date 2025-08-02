@@ -155,7 +155,7 @@ void uartstart() {
 // read one input character from the UART.
 // return -1 if none is waiting.
 int uartgetc(void) {
-  if (ReadReg(LSR) & 0x01) {
+  if (ReadReg(LSR) & LSR_RX_READY) {
     // input data is ready.
     return ReadReg(RHR);
   } else {
