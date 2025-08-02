@@ -15,12 +15,12 @@
 #include "defs.h"
 #include "proc.h"
 
-volatile int panicked = 0;
+volatile int panicking = 0; // printing a panic message
+volatile int panicked = 0;  // spinning forever at end of a panic
 
 // lock to avoid interleaving concurrent printf's.
 static struct {
   struct spinlock lock;
-  int locking;
 } pr;
 
 static char digits[] = "0123456789abcdef";
@@ -58,11 +58,10 @@ static void printptr(uint64 x) {
 // Print to the console.
 int printf(char *fmt, ...) {
   va_list ap;
-  int i, cx, c0, c1, c2, locking;
+  int i, cx, c0, c1, c2;
   char *s;
 
-  locking = pr.locking;
-  if (locking)
+  if (panicking == 0)
     acquire(&pr.lock);
 
   va_start(ap, fmt);
@@ -149,14 +148,14 @@ int printf(char *fmt, ...) {
   }
   va_end(ap);
 
-  if (locking)
+  if (panicking == 0)
     release(&pr.lock);
 
   return 0;
 }
 
 void panic(char *s) {
-  pr.locking = 0;
+  panicking = 1;
   printf("panic: ");
   printf("%s\n", s);
   panicked = 1; // freeze uart output from other CPUs
@@ -164,7 +163,4 @@ void panic(char *s) {
     ;
 }
 
-void printfinit(void) {
-  initlock(&pr.lock, "pr");
-  pr.locking = 1;
-}
+void printfinit(void) { initlock(&pr.lock, "pr"); }

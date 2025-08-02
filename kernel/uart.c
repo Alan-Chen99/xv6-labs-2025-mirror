@@ -45,7 +45,8 @@ char uart_tx_buf[UART_TX_BUF_SIZE];
 uint64 uart_tx_w; // write next to uart_tx_buf[uart_tx_w % UART_TX_BUF_SIZE]
 uint64 uart_tx_r; // read next from uart_tx_buf[uart_tx_r % UART_TX_BUF_SIZE]
 
-extern volatile int panicked; // from printf.c
+extern volatile int panicking; // from printf.c
+extern volatile int panicked;  // from printf.c
 
 void uartstart();
 
@@ -82,7 +83,8 @@ void uartinit(void) {
 // from interrupts; it's only suitable for use
 // by write().
 void uartputc(int c) {
-  acquire(&uart_tx_lock);
+  if (panicking == 0)
+    acquire(&uart_tx_lock);
 
   if (panicked) {
     for (;;)
@@ -96,7 +98,8 @@ void uartputc(int c) {
   uart_tx_buf[uart_tx_w % UART_TX_BUF_SIZE] = c;
   uart_tx_w += 1;
   uartstart();
-  release(&uart_tx_lock);
+  if (panicking == 0)
+    release(&uart_tx_lock);
 }
 
 // alternate version of uartputc() that doesn't
@@ -104,7 +107,8 @@ void uartputc(int c) {
 // to echo characters. it spins waiting for the uart's
 // output register to be empty.
 void uartputc_sync(int c) {
-  push_off();
+  if (panicking == 0)
+    push_off();
 
   if (panicked) {
     for (;;)
@@ -116,7 +120,8 @@ void uartputc_sync(int c) {
     ;
   WriteReg(THR, c);
 
-  pop_off();
+  if (panicking == 0)
+    pop_off();
 }
 
 // if the UART is idle, and a character is waiting
@@ -173,7 +178,9 @@ void uartintr(void) {
   }
 
   // send buffered characters.
-  acquire(&uart_tx_lock);
+  if (panicking == 0)
+    acquire(&uart_tx_lock);
   uartstart();
-  release(&uart_tx_lock);
+  if (panicking == 0)
+    release(&uart_tx_lock);
 }
