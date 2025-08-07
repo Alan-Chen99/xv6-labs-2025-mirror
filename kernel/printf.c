@@ -86,7 +86,7 @@ int printf(char *fmt, ...) {
       printint(va_arg(ap, uint64), 10, 1);
       i += 2;
     } else if (c0 == 'u') {
-      printint(va_arg(ap, int), 10, 0);
+      printint(va_arg(ap, uint32), 10, 0);
     } else if (c0 == 'l' && c1 == 'u') {
       printint(va_arg(ap, uint64), 10, 0);
       i += 1;
@@ -94,7 +94,7 @@ int printf(char *fmt, ...) {
       printint(va_arg(ap, uint64), 10, 0);
       i += 2;
     } else if (c0 == 'x') {
-      printint(va_arg(ap, int), 16, 0);
+      printint(va_arg(ap, uint32), 16, 0);
     } else if (c0 == 'l' && c1 == 'x') {
       printint(va_arg(ap, uint64), 16, 0);
       i += 1;
@@ -104,7 +104,7 @@ int printf(char *fmt, ...) {
     } else if (c0 == 'p') {
       printptr(va_arg(ap, uint64));
     } else if (c0 == 'c') {
-      consputc(va_arg(ap, int));
+      consputc(va_arg(ap, uint));
     } else if (c0 == 's') {
       if ((s = va_arg(ap, char *)) == 0)
         s = "(null)";

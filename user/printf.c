@@ -69,7 +69,7 @@ void vprintf(int fd, const char *fmt, va_list ap) {
         printint(fd, va_arg(ap, uint64), 10, 1);
         i += 2;
       } else if (c0 == 'u') {
-        printint(fd, va_arg(ap, int), 10, 0);
+        printint(fd, va_arg(ap, uint32), 10, 0);
       } else if (c0 == 'l' && c1 == 'u') {
         printint(fd, va_arg(ap, uint64), 10, 0);
         i += 1;
@@ -77,7 +77,7 @@ void vprintf(int fd, const char *fmt, va_list ap) {
         printint(fd, va_arg(ap, uint64), 10, 0);
         i += 2;
       } else if (c0 == 'x') {
-        printint(fd, va_arg(ap, int), 16, 0);
+        printint(fd, va_arg(ap, uint32), 16, 0);
       } else if (c0 == 'l' && c1 == 'x') {
         printint(fd, va_arg(ap, uint64), 16, 0);
         i += 1;
@@ -87,7 +87,7 @@ void vprintf(int fd, const char *fmt, va_list ap) {
       } else if (c0 == 'p') {
         printptr(fd, va_arg(ap, uint64));
       } else if (c0 == 'c') {
-        putc(fd, va_arg(ap, int));
+        putc(fd, va_arg(ap, uint32));
       } else if (c0 == 's') {
         if ((s = va_arg(ap, char *)) == 0)
           s = "(null)";
