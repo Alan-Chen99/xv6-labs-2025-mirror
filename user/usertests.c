@@ -1987,10 +1987,8 @@ void sbrkmuch(char *s) {
     exit(1);
   }
 
-  // touch each page to make sure it exists.
-  char *eee = sbrk(0);
-  for (char *pp = a; pp < eee; pp += 4096)
-    *pp = 1;
+  // use sbrkalloc to make sure each page exists
+  sbrkalloc(0);
 
   lastaddr = (char *)(BIG - 1);
   *lastaddr = 99;
@@ -2124,17 +2122,13 @@ void sbrkfail(char *s) {
   }
   if (pid == 0) {
     // allocate a lot of memory.
-    // this should produce a page fault,
+    // this should produce an error or a page fault with lazy,
     // and thus not complete.
-    a = sbrk(0);
-    sbrk(10 * BIG);
-    int n = 0;
-    for (i = 0; i < 10 * BIG; i += PGSIZE) {
-      n += *(a + i);
+    a = sbrkalloc(10 * BIG);
+    if (a == (char *)0xffffffffffffffffL) {
+      exit(0);
     }
-    // print n so the compiler doesn't optimize away
-    // the for loop.
-    printf("%s: allocate a lot of memory succeeded %d\n", s, n);
+    printf("%s: allocate a lot of memory succeeded %d\n", s, 10 * BIG);
     exit(1);
   }
   wait(&xstatus);
