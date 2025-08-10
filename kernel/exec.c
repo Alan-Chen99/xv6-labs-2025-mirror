@@ -9,6 +9,7 @@
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
+// map ELF permissions to PTE permission bits.
 int flags2perm(int flags) {
   int perm = 0;
   if (flags & 0x1)
@@ -30,16 +31,18 @@ int exec(char *path, char **argv) {
 
   begin_op();
 
+  // Open the executable file.
   if ((ip = namei(path)) == 0) {
     end_op();
     return -1;
   }
   ilock(ip);
 
-  // Check ELF header
+  // Read the ELF header.
   if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
 
+  // Is this really an ELF file?
   if (elf.magic != ELF_MAGIC)
     goto bad;
 
@@ -86,7 +89,8 @@ int exec(char *path, char **argv) {
   sp = sz;
   stackbase = sp - USERSTACK * PGSIZE;
 
-  // Push argument strings, prepare rest of stack in ustack.
+  // Copy argument strings into new stack, remember their
+  // addresses in ustack[].
   for (argc = 0; argv[argc]; argc++) {
     if (argc >= MAXARG)
       goto bad;
@@ -100,7 +104,7 @@ int exec(char *path, char **argv) {
   }
   ustack[argc] = 0;
 
-  // push the array of argv[] pointers.
+  // push a copy of ustack[], the array of argv[] pointers.
   sp -= (argc + 1) * sizeof(uint64);
   sp -= sp % 16;
   if (sp < stackbase)
@@ -108,7 +112,7 @@ int exec(char *path, char **argv) {
   if (copyout(pagetable, sp, (char *)ustack, (argc + 1) * sizeof(uint64)) < 0)
     goto bad;
 
-  // arguments to user main(argc, argv)
+  // a0 and a1 contain arguments to user main(argc, argv)
   // argc is returned via the system call return
   // value, which goes in a0.
   p->trapframe->a1 = sp;
@@ -139,7 +143,7 @@ bad:
   return -1;
 }
 
-// Load a program segment into pagetable at virtual address va.
+// Load an ELF program segment into pagetable at virtual address va.
 // va must be page-aligned
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
