@@ -2526,7 +2526,7 @@ void lazy_alloc_unmap(char *s) {
   exit(0);
 }
 
-void more_sparse(char *s) {
+void lazy_copy(char *s) {
   // copyinstr on lazy page
   {
     char *p = sbrk(0);
@@ -2641,7 +2641,7 @@ struct test {
     {badarg, "badarg"},
     {lazy_alloc, "lazy_alloc"},
     {lazy_alloc_unmap, "lazy_unmap"},
-    {more_sparse, "more_sparse"},
+    {lazy_copy, "lazy_copy"},
     {0, 0},
 };
 
