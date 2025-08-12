@@ -211,15 +211,18 @@ void userinit(void) {
 
 // Shrink user memory by n bytes.
 // Return 0 on success, -1 on failure.
-int shrinkproc(int n) {
+int growproc(int n) {
   uint64 sz;
   struct proc *p = myproc();
 
-  if (n > p->sz)
-    return -1;
-
   sz = p->sz;
-  sz = uvmdealloc(p->pagetable, sz, sz - n);
+  if (n > 0) {
+    if ((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
+      return -1;
+    }
+  } else if (n < 0) {
+    sz = uvmdealloc(p->pagetable, sz, sz + n);
+  }
   p->sz = sz;
   return 0;
 }

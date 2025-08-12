@@ -417,8 +417,8 @@ int copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max) {
 uint64 vmfault(pagetable_t pagetable, uint64 va, int read) {
   uint64 ka;
   struct proc *p = myproc();
-  ka = 0;
 
+  ka = 0;
   if (va >= p->sz)
     return 0;
   va = PGROUNDDOWN(va);

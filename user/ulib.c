@@ -2,6 +2,7 @@
 #include "kernel/stat.h"
 #include "kernel/fcntl.h"
 #include "kernel/riscv.h"
+#include "kernel/vm.h"
 #include "user/user.h"
 
 //
@@ -123,16 +124,6 @@ void *memcpy(void *dst, const void *src, uint n) {
   return memmove(dst, src, n);
 }
 
-// sbrk and touch each page to make sure it allocated
-char *sbrkalloc(int n) {
-  char *p0;
+char *sbrk(int n) { return sys_sbrk(n, SBRK_EAGER); }
 
-  char *p = sbrk(n);
-  if (p == (char *)0xffffffffffffffffL) {
-    return p;
-  }
-  for (p0 = p; p0 < p + n; p0 += PGSIZE) {
-    *p0 = 99;
-  }
-  return p;
-}
+char *sbrklazy(int n) { return sys_sbrk(n, SBRK_LAZY); }
