@@ -42,4 +42,5 @@ int main(int argc, char **argv) {
     if (xstatus != 0)
       exit(xstatus);
   }
+  return 0;
 }
