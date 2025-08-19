@@ -229,7 +229,7 @@ int growproc(int n) {
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
-int fork(void) {
+int kfork(void) {
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
@@ -292,7 +292,7 @@ void reparent(struct proc *p) {
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait().
-void exit(int status) {
+void kexit(int status) {
   struct proc *p = myproc();
 
   if (p == initproc)
@@ -334,7 +334,7 @@ void exit(int status) {
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
-int wait(uint64 addr) {
+int kwait(uint64 addr) {
   struct proc *pp;
   int havekids, pid;
   struct proc *p = myproc();
@@ -479,9 +479,9 @@ void forkret(void) {
     // ensure other cores see first=0.
     __sync_synchronize();
 
-    // We can invoke exec() now that file system is initialized.
-    // Put the return value (argc) of exec into a0.
-    p->trapframe->a0 = exec("/init", (char *[]){"/init", 0});
+    // We can invoke kexec() now that file system is initialized.
+    // Put the return value (argc) of kexec into a0.
+    p->trapframe->a0 = kexec("/init", (char *[]){"/init", 0});
     if (p->trapframe->a0 == -1) {
       panic("exec");
     }
@@ -494,7 +494,7 @@ void forkret(void) {
   ((void (*)(uint64))trampoline_userret)(satp);
 }
 
-// Sleep on wait channel chan, releasing condition lock lk.
+// Sleep on channel chan, releasing condition lock lk.
 // Re-acquires lk when awakened.
 void sleep(void *chan, struct spinlock *lk) {
   struct proc *p = myproc();
@@ -523,7 +523,7 @@ void sleep(void *chan, struct spinlock *lk) {
   acquire(lk);
 }
 
-// Wake up all processes sleeping on wait channel chan.
+// Wake up all processes sleeping on channel chan.
 // Caller should hold the condition lock.
 void wakeup(void *chan) {
   struct proc *p;
@@ -542,7 +542,7 @@ void wakeup(void *chan) {
 // Kill the process with the given pid.
 // The victim won't exit until it tries to return
 // to user space (see usertrap() in trap.c).
-int kill(int pid) {
+int kkill(int pid) {
   struct proc *p;
 
   for (p = proc; p < &proc[NPROC]; p++) {

@@ -34,5 +34,5 @@ int main(int argc, char **argv) {
   printf("wait for kill and reclaim %d\n", st.ino);
   // sit around until killed
   for (;;)
-    sleep(1000);
+    pause(1000);
 }

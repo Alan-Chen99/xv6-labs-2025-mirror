@@ -333,7 +333,7 @@ int main() {
     if (pid > 0) {
       wait(0);
     }
-    sleep(20);
+    pause(20);
     rand_next += 1;
   }
 }

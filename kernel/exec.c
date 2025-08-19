@@ -19,7 +19,10 @@ int flags2perm(int flags) {
   return perm;
 }
 
-int exec(char *path, char **argv) {
+//
+// the implementation of the exec() system call
+//
+int kexec(char *path, char **argv) {
   char *s, *last;
   int i, off;
   uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;

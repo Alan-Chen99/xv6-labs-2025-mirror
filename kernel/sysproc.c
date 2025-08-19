@@ -10,18 +10,18 @@
 uint64 sys_exit(void) {
   int n;
   argint(0, &n);
-  exit(n);
+  kexit(n);
   return 0; // not reached
 }
 
 uint64 sys_getpid(void) { return myproc()->pid; }
 
-uint64 sys_fork(void) { return fork(); }
+uint64 sys_fork(void) { return kfork(); }
 
 uint64 sys_wait(void) {
   uint64 p;
   argaddr(0, &p);
-  return wait(p);
+  return kwait(p);
 }
 
 uint64 sys_sbrk(void) {
@@ -48,7 +48,7 @@ uint64 sys_sbrk(void) {
   return addr;
 }
 
-uint64 sys_sleep(void) {
+uint64 sys_pause(void) {
   int n;
   uint ticks0;
 
@@ -72,7 +72,7 @@ uint64 sys_kill(void) {
   int pid;
 
   argint(0, &pid);
-  return kill(pid);
+  return kkill(pid);
 }
 
 // return how many clock tick interrupts have occurred
