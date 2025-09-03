@@ -9,9 +9,10 @@
 // wrapper so that it's OK if main() does not call exit().
 //
 void start() {
+  int r;
   extern int main();
-  main();
-  exit(0);
+  r = main();
+  exit(r);
 }
 
 char *strcpy(char *s, const char *t) {
