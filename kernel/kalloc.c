@@ -45,9 +45,10 @@ void kfree(void *pa) {
   if (((uint64)pa % PGSIZE) != 0 || (char *)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
+#ifndef LAB_SYSCALL
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
-
+#endif
   r = (struct run *)pa;
 
   acquire(&kmem.lock);
@@ -68,7 +69,9 @@ void *kalloc(void) {
     kmem.freelist = r->next;
   release(&kmem.lock);
 
+#ifndef LAB_SYSCALL
   if (r)
     memset((char *)r, 5, PGSIZE); // fill with junk
+#endif
   return (void *)r;
 }
