@@ -81,7 +81,9 @@ def test_sandbox_bigpath():
 def test_attack():
     secret = random_str(8)
     r.run_qemu(shell_script([
-        'secret ' + secret + ' ; attack'
+        'secret ' + secret,
+        'attack',
+        'attack'
     ]))
     r.match('^'+secret+'.*')
 
