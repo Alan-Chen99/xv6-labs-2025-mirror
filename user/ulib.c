@@ -2,6 +2,9 @@
 #include "kernel/stat.h"
 #include "kernel/fcntl.h"
 #include "kernel/riscv.h"
+#ifdef LAB_PGTBL
+#include "kernel/memlayout.h"
+#endif
 #include "kernel/vm.h"
 #include "user/user.h"
 
@@ -127,3 +130,10 @@ void *memcpy(void *dst, const void *src, uint n) {
 char *sbrk(int n) { return sys_sbrk(n, SBRK_EAGER); }
 
 char *sbrklazy(int n) { return sys_sbrk(n, SBRK_LAZY); }
+
+#ifdef LAB_PGTBL
+int ugetpid(void) {
+  struct usyscall *u = (struct usyscall *)USYSCALL;
+  return u->pid;
+}
+#endif

@@ -1980,6 +1980,7 @@ void sbrkmuch(char *s) {
   // can one grow address space to something big?
   a = sbrk(0);
   amt = BIG - (uint64)a;
+
   p = sbrk(amt);
   if (p != a) {
     printf("%s: sbrk test failed to grow big address space; enough phys mem?\n",
@@ -2550,8 +2551,11 @@ void lazy_copy(char *s) {
 
   // read() and write() to these addresses should fail.
   unsigned long bad[] = {
-      0x3fffffc000, 0x3fffffd000, 0x3fffffe000,
-      0x3ffffff000, 0x4000000000, 0x8000000000,
+      0x3fffffc000,
+#ifndef LAB_PGTBL
+      0x3fffffd000, // uses for syscall page
+#endif
+      0x3fffffe000, 0x3ffffff000, 0x4000000000, 0x8000000000,
   };
   for (int i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
     int fd = open("README", 0);
@@ -2560,7 +2564,7 @@ void lazy_copy(char *s) {
       exit(1);
     }
     if (read(fd, (char *)bad[i], 512) >= 0) {
-      printf("read succeeded\n");
+      printf("read %lx succeeded\n", bad[i]);
       exit(1);
     }
     close(fd);
@@ -2570,7 +2574,7 @@ void lazy_copy(char *s) {
       exit(1);
     }
     if (write(fd, (char *)bad[i], 512) >= 0) {
-      printf("write succeeded\n");
+      printf("write %lx succeeded\n", bad[i]);
       exit(1);
     }
     close(fd);
