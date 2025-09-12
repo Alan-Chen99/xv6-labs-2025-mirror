@@ -67,15 +67,14 @@ def test_sandbox_most():
 
     # sandbox all calls except: exit, and exec grep
 
-@test(5, "sandbox_bigpath")
+@test(5, "sandbox_minus")
 def test_sandbox_bigpath():
     r.run_qemu(shell_script([
-        'sandbox 32768 aaaaaaaaaaabbbbbbbbbbbcccccccccccdddddddddddeeeeeeeeeeefffffffffffggggggggggghhhhhhhhhhhiiiiiiiiiiijjjjjjjjjjjkkkkkkkkkkklllllllllllmmmmmmmmmmm grep xv6 README',
+        'echo hello! > ---',
+        'sandbox 32768 --- grep hello! ---',
     ]))
-    matches = re.findall("failed", r.qemu.output)
-    assert_equal(len(matches), 1, "Number of appearances of 'failed'")
-    matches = re.findall("xv6", r.qemu.output)
-    assert_equal(len(matches), 1, "Number of appearances of 'xv6'")
+    matches = re.findall("hello!", r.qemu.output)
+    assert_equal(len(matches), 3, "Number of appearances of 'hello!'")
 
 @test(14, "attack")
 def test_attack():
