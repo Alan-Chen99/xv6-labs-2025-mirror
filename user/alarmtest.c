@@ -30,10 +30,17 @@ int main(int argc, char *argv[]) {
 
 volatile static int count;
 
+#define A0_CHECKVAL 1337
+#define S11_CHECKVAL 6181
+register int s11_var asm("s11");
+
 void periodic() {
+  s11_var = ~S11_CHECKVAL;
   count = count + 1;
   printf("alarm!\n");
   sigreturn();
+  printf("oops, sigreturn returned!\n");
+  exit(1);
 }
 
 // tests whether the kernel calls
@@ -57,11 +64,12 @@ void test0() {
   }
 }
 
-void __attribute__((noinline)) foo(int i, int *j) {
+int __attribute__((noinline)) foo(int i, int *j) {
   if ((i % 2500000) == 0) {
     write(2, ".", 1);
   }
   *j += 1;
+  return A0_CHECKVAL;
 }
 
 //
@@ -77,13 +85,21 @@ void test1() {
   int j;
 
   printf("test1 start\n");
+  s11_var = S11_CHECKVAL;
   count = 0;
   j = 0;
   sigalarm(2, periodic);
   for (i = 0; i < 500000000; i++) {
     if (count >= 10)
       break;
-    foo(i, &j);
+    if (foo(i, &j) != A0_CHECKVAL) {
+      printf("\ntest1 failed: a0 not preserved\n");
+      exit(1);
+    }
+    if (s11_var != S11_CHECKVAL) {
+      printf("\ntest1 failed: register s11 not preserved\n");
+      exit(1);
+    }
   }
   if (count < 10) {
     printf("\ntest1 failed: too few calls to the handler\n");
