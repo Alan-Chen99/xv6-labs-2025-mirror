@@ -139,7 +139,6 @@ void filetest() {
     }
     if (pid == 0) {
       pause(1);
-      printf("reading %d\n", i);
       if (read(fds[0], buf, sizeof(i)) != sizeof(i)) {
         printf("error: read failed\n");
         exit(1);
@@ -153,7 +152,6 @@ void filetest() {
       }
       exit(0);
     }
-    printf("writing %d\n", i);
     if (write(fds[1], &i, sizeof(i)) != sizeof(i)) {
       printf("error: write failed\n");
       exit(-1);
