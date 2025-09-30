@@ -145,7 +145,6 @@ void filetest() {
       }
       pause(1);
       int j = *(int *)buf;
-      printf("i = %d\n", i);
       if (j != i) {
         printf("error: read the wrong value %d; expected %d\n", j, i);
         exit(1);
