@@ -8,10 +8,47 @@
 #include "proc.h"
 #include "defs.h"
 
+#ifdef LAB_LOCK
+#define NLOCK 500
+
+static struct spinlock *locks[NLOCK];
+struct spinlock lock_locks;
+
+void freelock(struct spinlock *lk) {
+  acquire(&lock_locks);
+  int i;
+  for (i = 0; i < NLOCK; i++) {
+    if (locks[i] == lk) {
+      locks[i] = 0;
+      break;
+    }
+  }
+  release(&lock_locks);
+}
+
+static void findslot(struct spinlock *lk) {
+  acquire(&lock_locks);
+  int i;
+  for (i = 0; i < NLOCK; i++) {
+    if (locks[i] == 0) {
+      locks[i] = lk;
+      release(&lock_locks);
+      return;
+    }
+  }
+  panic("findslot");
+}
+#endif
+
 void initlock(struct spinlock *lk, char *name) {
   lk->name = name;
   lk->locked = 0;
   lk->cpu = 0;
+#ifdef LAB_LOCK
+  lk->nts = 0;
+  lk->n = 0;
+  findslot(lk);
+#endif
 }
 
 // Acquire the lock.
@@ -21,12 +58,21 @@ void acquire(struct spinlock *lk) {
   if (holding(lk))
     panic("acquire");
 
+#ifdef LAB_LOCK
+  __sync_fetch_and_add(&(lk->n), 1);
+#endif
+
   // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
   //   a5 = 1
   //   s1 = &lk->locked
   //   amoswap.w.aq a5, a5, (s1)
-  while (__sync_lock_test_and_set(&lk->locked, 1) != 0)
+  while (__sync_lock_test_and_set(&lk->locked, 1) != 0) {
+#ifdef LAB_LOCK
+    __sync_fetch_and_add(&(lk->nts), 1);
+#else
     ;
+#endif
+  }
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
@@ -65,6 +111,193 @@ void release(struct spinlock *lk) {
   pop_off();
 }
 
+#ifdef LAB_LOCK
+static void read_acquire_inner(struct rwspinlock *rwlk) {
+  // Replace this with your implementation.
+  acquire(&rwlk->l);
+}
+
+static void read_release_inner(struct rwspinlock *rwlk) {
+  // Replace this with your implementation.
+  release(&rwlk->l);
+}
+
+static void write_acquire_inner(struct rwspinlock *rwlk) {
+  // Replace this with your implementation.
+  acquire(&rwlk->l);
+}
+
+static void write_release_inner(struct rwspinlock *rwlk) {
+  // Replace this with your implementation.
+  release(&rwlk->l);
+}
+
+void read_acquire(struct rwspinlock *rwlk) {
+  push_off(); // disable interrupts to avoid deadlock.
+  read_acquire_inner(rwlk);
+}
+
+void read_release(struct rwspinlock *rwlk) {
+  read_release_inner(rwlk);
+  pop_off();
+}
+
+void write_acquire(struct rwspinlock *rwlk) {
+  push_off(); // disable interrupts to avoid deadlock.
+  write_acquire_inner(rwlk);
+}
+
+void write_release(struct rwspinlock *rwlk) {
+  write_release_inner(rwlk);
+  pop_off();
+}
+
+// Test rwspinlock implementation.
+static void rwspinlock_test_step(uint step) {
+  static uint barrier;
+  const uint ncpu = 3;
+
+  __atomic_fetch_add(&barrier, 1, __ATOMIC_ACQ_REL);
+  while (__atomic_load_n(&barrier, __ATOMIC_RELAXED) != ncpu * step) {
+    // spin
+  }
+
+  if (cpuid() == 0) {
+    printf("rwspinlock_test: step %d\n", step);
+  }
+}
+
+static uint delay() {
+  static uint v;
+  for (int i = 0; i < 10000; i++) {
+    __atomic_fetch_add(&v, 1, __ATOMIC_RELAXED);
+  }
+  return __atomic_load_n(&v, __ATOMIC_RELAXED);
+}
+
+void rwspinlock_test() {
+  push_off();
+  int id = cpuid();
+
+  rwspinlock_test_step(1);
+
+  static struct rwspinlock l;
+  for (int i = 0; i < 1000000; i++)
+    read_acquire(&l);
+
+  rwspinlock_test_step(2);
+
+  for (int i = 0; i < 1000000; i++)
+    read_release(&l);
+
+  rwspinlock_test_step(3);
+
+  if (id == 1) {
+    for (int i = 0; i < 30; i++) {
+      read_acquire(&l);
+    }
+  }
+
+  rwspinlock_test_step(4);
+
+  static uint flag;
+  if (id == 0) {
+    write_acquire(&l);
+    __atomic_store_n(&flag, 1, __ATOMIC_RELAXED);
+    write_release(&l);
+  }
+
+  if (id == 1) {
+    delay();
+    for (int i = 0; i < 10; i++) {
+      read_release(&l);
+    }
+    delay();
+    for (int i = 0; i < 10; i++) {
+      read_release(&l);
+    }
+    delay();
+    for (int i = 0; i < 10; i++) {
+      read_release(&l);
+    }
+  }
+
+  if (id == 2) {
+    delay();
+    read_acquire(&l);
+    uint f = __atomic_load_n(&flag, __ATOMIC_RELAXED);
+    if (f == 0) {
+      printf("rwspinlock_test: reader sneaked ahead of waiting writer\n");
+    }
+    read_release(&l);
+  }
+
+  rwspinlock_test_step(5);
+
+  static uint v;
+  if (id == 0) {
+    uint maxwv = 0;
+    for (int i = 0; i < 1000000; i++) {
+      write_acquire(&l);
+      uint x = __atomic_add_fetch(&v, 1, __ATOMIC_ACQ_REL);
+      if (x > maxwv) {
+        maxwv = x;
+      }
+      uint y = __atomic_fetch_sub(&v, 1, __ATOMIC_ACQ_REL);
+      if (y > maxwv) {
+        maxwv = y;
+      }
+      write_release(&l);
+    }
+    if (maxwv > 1) {
+      printf("rwspinlock_test: cpu %d saw concurrent reads/writes: %d\n", id,
+             maxwv);
+    }
+  } else {
+    uint maxrv = 0;
+    for (int i = 0; i < 1000000; i++) {
+      read_acquire(&l);
+      uint x = __atomic_add_fetch(&v, 1, __ATOMIC_ACQ_REL);
+      if (x > maxrv) {
+        maxrv = x;
+      }
+      uint y = __atomic_fetch_sub(&v, 1, __ATOMIC_ACQ_REL);
+      if (y > maxrv) {
+        maxrv = y;
+      }
+      read_release(&l);
+    }
+    if (maxrv < 2) {
+      printf("rwspinlock_test: cpu %d never saw concurrent reads: %d\n", id,
+             maxrv);
+    }
+  }
+
+  rwspinlock_test_step(6);
+
+  uint maxwv = 0;
+  for (int i = 0; i < 1000000; i++) {
+    write_acquire(&l);
+    uint x = __atomic_add_fetch(&v, 1, __ATOMIC_ACQ_REL);
+    if (x > maxwv) {
+      maxwv = x;
+    }
+    uint y = __atomic_fetch_sub(&v, 1, __ATOMIC_ACQ_REL);
+    if (y > maxwv) {
+      maxwv = y;
+    }
+    write_release(&l);
+  }
+  if (maxwv > 1) {
+    printf("rwspinlock_test: cpu %d saw concurrent writes: %d\n", id, maxwv);
+  }
+
+  rwspinlock_test_step(7);
+
+  pop_off();
+}
+#endif
+
 // Check whether this cpu is holding the lock.
 // Interrupts must be off.
 int holding(struct spinlock *lk) {
@@ -99,3 +332,57 @@ void pop_off(void) {
   if (c->noff == 0 && c->intena)
     intr_on();
 }
+
+// Read a shared 32-bit value without holding a lock
+int atomic_read4(int *addr) {
+  uint32 val;
+  __atomic_load(addr, &val, __ATOMIC_SEQ_CST);
+  return val;
+}
+
+#ifdef LAB_LOCK
+int snprint_lock(char *buf, int sz, struct spinlock *lk) {
+  int n = 0;
+  if (lk->n > 0) {
+    n = snprintf(buf, sz, "lock: %s: #test-and-set %d #acquire() %d\n",
+                 lk->name, lk->nts, lk->n);
+  }
+  return n;
+}
+
+int statslock(char *buf, int sz) {
+  int n;
+  int tot = 0;
+
+  acquire(&lock_locks);
+  n = snprintf(buf, sz, "--- lock kmem/bcache stats\n");
+  for (int i = 0; i < NLOCK; i++) {
+    if (locks[i] == 0)
+      break;
+    if (strncmp(locks[i]->name, "bcache", strlen("bcache")) == 0 ||
+        strncmp(locks[i]->name, "kmem", strlen("kmem")) == 0) {
+      tot += locks[i]->nts;
+      n += snprint_lock(buf + n, sz - n, locks[i]);
+    }
+  }
+
+  n += snprintf(buf + n, sz - n, "--- top 5 contended locks:\n");
+  int last = 100000000;
+  // stupid way to compute top 5 contended locks
+  for (int t = 0; t < 5; t++) {
+    int top = 0;
+    for (int i = 0; i < NLOCK; i++) {
+      if (locks[i] == 0)
+        break;
+      if (locks[i]->nts > locks[top]->nts && locks[i]->nts < last) {
+        top = i;
+      }
+    }
+    n += snprint_lock(buf + n, sz - n, locks[top]);
+    last = locks[top]->nts;
+  }
+  n += snprintf(buf + n, sz - n, "tot= %d\n", tot);
+  release(&lock_locks);
+  return n;
+}
+#endif
