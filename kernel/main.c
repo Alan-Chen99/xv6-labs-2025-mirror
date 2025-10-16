@@ -31,6 +31,7 @@ void main() {
     virtio_disk_init(); // emulated hard disk
 #ifdef LAB_NET
     pci_init();
+    netinit();
 #endif
     userinit(); // first user process
 #ifdef KCSAN
