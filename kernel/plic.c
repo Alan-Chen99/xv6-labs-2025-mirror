@@ -29,8 +29,10 @@ void plicinithart(void) {
   *(uint32 *)PLIC_SENABLE(hart) = (1 << UART0_IRQ) | (1 << VIRTIO0_IRQ);
 
 #ifdef LAB_NET
-  // hack to get at next 32 IRQs for e1000
-  *(uint32 *)(PLIC_SENABLE(hart) + 4) = 0xffffffff;
+  // hack to get at next 32 IRQs for e1000.
+  // volatile prevents the compiler from merging this with
+  // the assignment above to generate a single 64-bit store.
+  *(volatile uint32 *)(PLIC_SENABLE(hart) + 4) = 0xffffffff;
 #endif
 
   // set this hart's S-mode priority threshold to 0.
