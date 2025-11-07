@@ -444,12 +444,11 @@ int statslock(char *buf, int sz) {
   int tot = 0;
 
   acquire(&lock_locks);
-  n = snprintf(buf, sz, "--- lock kmem/bcache stats\n");
+  n = snprintf(buf, sz, "--- lock kmem stats\n");
   for (int i = 0; i < NLOCK; i++) {
     if (locks[i] == 0)
       break;
-    if (strncmp(locks[i]->name, "bcache", strlen("bcache")) == 0 ||
-        strncmp(locks[i]->name, "kmem", strlen("kmem")) == 0) {
+    if (strncmp(locks[i]->name, "kmem", strlen("kmem")) == 0) {
       tot += locks[i]->nts;
       n += snprint_lock(buf + n, sz - n, locks[i]);
     }

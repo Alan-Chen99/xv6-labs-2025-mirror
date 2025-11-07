@@ -36,3 +36,4 @@
 #define SYS_pgpte 33
 #define SYS_kpgtbl 34
 #define SYS_rwlktest 35
+#define SYS_cpupin 36

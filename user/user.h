@@ -42,6 +42,7 @@ void kpgtbl(void);
 #endif
 #ifdef LAB_LOCK
 int rwlktest(void);
+int cpupin(int);
 #endif
 
 // ulib.c

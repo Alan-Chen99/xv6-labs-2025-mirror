@@ -100,6 +100,9 @@ extern uint64 sys_recv(void);
 extern uint64 sys_pgpte(void);
 extern uint64 sys_kpgtbl(void);
 #endif
+#ifdef LAB_LOCK
+extern uint64 sys_cpupin(void);
+#endif
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -123,7 +126,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_pgpte] sys_pgpte,       [SYS_kpgtbl] sys_kpgtbl,
 #endif
 #ifdef LAB_LOCK
-    [SYS_rwlktest] sys_rwlktest,
+    [SYS_rwlktest] sys_rwlktest, [SYS_cpupin] sys_cpupin,
 #endif
 };
 

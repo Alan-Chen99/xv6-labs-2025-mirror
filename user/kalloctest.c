@@ -7,6 +7,7 @@
 #include "user/user.h"
 
 #define NCHILD 2
+#define NCHILD4 4
 #define N1 100000
 #define N2 1000
 #define NPAGES2 128
@@ -199,16 +200,18 @@ void test4(void) {
   }
   // Leave some headroom to avoid running out of memory or
   // contending on the last few available pages.
-  npages -= 100;
+  npages -= (NCHILD4 - 1) * 100;
 
-  for (int i = 0; i < NCHILD; i++) {
+  for (int i = 0; i < NCHILD4; i++) {
     pid = fork();
     if (pid < 0) {
       printf("fork failed");
       exit(-1);
     }
     if (pid == 0) {
-      if (i == 0) {
+      cpupin(i);
+
+      if (i < NCHILD4 - 1) {
         for (i = 0; i < N4; i++) {
           a = (uint64)sbrk(4096);
           if (a == 0xffffffffffffffff) {
@@ -242,7 +245,7 @@ void test4(void) {
   }
 
   int status = 0;
-  for (int i = 0; i < NCHILD - 1; i++) {
+  for (int i = 0; i < NCHILD4 - 1; i++) {
     wait(&status);
     if (status != 0) {
       printf("a child failed\n");
@@ -253,7 +256,7 @@ void test4(void) {
   wait(&status);
 
   n = ntas(1);
-  if (n - m < 10000)
+  if (n - m < (NCHILD4 - 1) * 10000)
     printf("\ntest4 OK\n");
   else
     printf("test4 FAIL m %d n %d\n", m, n);
